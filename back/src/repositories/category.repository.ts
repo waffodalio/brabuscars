@@ -1,6 +1,7 @@
 import { Like } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { Category } from "../entities/Category";
+import { escapeLike } from "../utils/escapeLike";
 
 /**
  * Data-access layer for {@link Category}. All TypeORM queries touching the
@@ -12,7 +13,7 @@ import { Category } from "../entities/Category";
 export const categoryRepository = AppDataSource.getRepository(Category).extend({
   findAllOrdered(search?: string): Promise<Category[]> {
     return this.find({
-      where: search ? { name: Like(`%${search}%`) } : {},
+      where: search ? { name: Like(`%${escapeLike(search)}%`) } : {},
       order: { name: "ASC" },
     });
   },

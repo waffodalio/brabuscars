@@ -1,7 +1,11 @@
 import type { LoginDto, RegisterDto } from "../dto/auth.dto";
 import { userRepository } from "../repositories/user.repository";
 import { ApiError } from "../utils/ApiError";
-import { hashPassword, verifyPassword } from "../utils/password";
+import {
+  DUMMY_PASSWORD_HASH,
+  hashPassword,
+  verifyPassword,
+} from "../utils/password";
 import { signAuthToken } from "../utils/jwt";
 import { toPublicUser, type PublicUser } from "../utils/publicUser";
 
@@ -38,8 +42,14 @@ export const authService = {
 
   async login(dto: LoginDto): Promise<AuthResult> {
     const user = await userRepository.findByEmail(dto.email);
+    // Always run a bcrypt comparison (against a dummy hash when the email is
+    // unknown) so response time doesn't reveal whether the account exists.
+    const passwordMatches = await verifyPassword(
+      dto.password,
+      user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+    );
     // Same error whether the email is unknown or the password is wrong.
-    if (!user || !(await verifyPassword(dto.password, user.passwordHash))) {
+    if (!user || !passwordMatches) {
       throw ApiError.unauthorized("Invalid email or password");
     }
 

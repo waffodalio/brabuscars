@@ -9,6 +9,7 @@ import { AppDataSource } from "../config/data-source";
 import { Listing } from "../entities/Listing";
 import { Vehicle } from "../entities/Vehicle";
 import type { ListListingQuery } from "../dto/listing.dto";
+import { escapeLike } from "../utils/escapeLike";
 
 const LIST_RELATIONS = {
   seller: true,
@@ -20,7 +21,7 @@ function buildWhere(query: ListListingQuery): FindOptionsWhere<Listing> {
 
   if (query.status) where.status = query.status;
   if (query.sellerId) where.sellerId = query.sellerId;
-  if (query.search) where.title = Like(`%${query.search}%`);
+  if (query.search) where.title = Like(`%${escapeLike(query.search)}%`);
 
   if (query.minPrice !== undefined && query.maxPrice !== undefined) {
     where.price = Between(query.minPrice, query.maxPrice);

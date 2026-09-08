@@ -1,6 +1,7 @@
 import { Like } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { CarModel } from "../entities/CarModel";
+import { escapeLike } from "../utils/escapeLike";
 
 interface CarModelFilters {
   search?: string;
@@ -16,7 +17,9 @@ export const carModelRepository = AppDataSource.getRepository(CarModel).extend({
     return this.find({
       where: {
         ...(filters.brandId ? { brandId: filters.brandId } : {}),
-        ...(filters.search ? { name: Like(`%${filters.search}%`) } : {}),
+        ...(filters.search
+          ? { name: Like(`%${escapeLike(filters.search)}%`) }
+          : {}),
       },
       relations: { brand: true },
       order: { brandId: "ASC", name: "ASC" },

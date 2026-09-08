@@ -25,7 +25,14 @@ const envSchema = z.object({
     .default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
   API_PREFIX: z.string().startsWith("/").default("/api"),
-  CORS_ORIGIN: z.string().min(1).default("http://localhost:3000"),
+  /** Exact origin of the frontend allowed by CORS (no wildcard). */
+  CORS_ORIGIN: z.string().url().default("http://localhost:3000"),
+  /**
+   * Number of reverse proxies in front of the app (0 = none). Required so
+   * rate limiting sees the real client IP behind a proxy without being
+   * spoofable via X-Forwarded-For.
+   */
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
 
   DB_HOST: z.string().min(1),
   DB_PORT: z.coerce.number().int().positive().default(3306),
@@ -33,7 +40,8 @@ const envSchema = z.object({
   DB_PASSWORD: z.string().default(""),
   DB_DATABASE: z.string().min(1),
 
-  JWT_SECRET: z.string().min(1),
+  /** At least 32 chars — reject weak signing keys outright. */
+  JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().min(1).default("1d"),
 });
 

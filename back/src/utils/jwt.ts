@@ -2,6 +2,9 @@ import jwt, { type SignOptions } from "jsonwebtoken";
 import { env } from "../config/env";
 import type { UserRole } from "../entities/User";
 
+/** Only HMAC-SHA256 is accepted — prevents algorithm-confusion attacks. */
+const ALGORITHM = "HS256" as const;
+
 export interface AuthTokenPayload {
   /** User id. */
   sub: number;
@@ -11,6 +14,7 @@ export interface AuthTokenPayload {
 /** Signs a short-lived authentication token for the given user. */
 export function signAuthToken(payload: AuthTokenPayload): string {
   const options: SignOptions = {
+    algorithm: ALGORITHM,
     subject: String(payload.sub),
     expiresIn: env.JWT_EXPIRES_IN as SignOptions["expiresIn"],
   };
@@ -22,7 +26,9 @@ export function signAuthToken(payload: AuthTokenPayload): string {
  * TokenExpiredError) when the token is missing, malformed or expired.
  */
 export function verifyAuthToken(token: string): AuthTokenPayload {
-  const decoded = jwt.verify(token, env.JWT_SECRET);
+  const decoded = jwt.verify(token, env.JWT_SECRET, {
+    algorithms: [ALGORITHM],
+  });
 
   if (
     typeof decoded === "string" ||
