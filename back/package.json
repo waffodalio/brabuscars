@@ -10,6 +10,9 @@
     "start:test": "cross-env NODE_ENV=test tsx src/server.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "migrate": "cross-env NODE_ENV=development tsx src/scripts/migrate.ts",
+    "migrate:test": "cross-env NODE_ENV=test tsx src/scripts/migrate.ts",
+    "migrate:prod": "cross-env NODE_ENV=production tsx src/scripts/migrate.ts",
     "create-admin": "cross-env NODE_ENV=development tsx src/scripts/createAdmin.ts",
     "create-admin:prod": "cross-env NODE_ENV=production tsx src/scripts/createAdmin.ts",
     "lint": "eslint src"

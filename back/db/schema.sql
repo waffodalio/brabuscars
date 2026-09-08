@@ -1,17 +1,21 @@
 -- CHCars — schéma de référence complet (8 tables)
 --
--- Ce fichier est fourni À TITRE DE RÉFÉRENCE. L'application ne crée ni ne
--- modifie aucune table (synchronize = false). C'est au propriétaire du projet
--- d'exécuter ce script, après relecture, sur sa base MariaDB (10.11 LTS ou
--- plus récent) :
+-- L'application ne crée ni ne modifie aucune table au runtime (synchronize = false).
+-- Ce fichier est le schéma de référence. L'appliquer avec, au choix :
 --
+--   npm run migrate                      (depuis back/, utilise .env.<NODE_ENV>)
 --   mariadb -u chcarsdev -p chcars_dev < back/db/schema.sql
 --
--- Les tables sont créées dans l'ordre imposé par les clés étrangères :
+-- Les `CREATE TABLE IF NOT EXISTS` rendent le script ré-exécutable : il crée
+-- les tables manquantes sans toucher aux existantes. Les modifications de
+-- colonnes sur des tables déjà créées restent manuelles (voir « Migrations »
+-- en fin de fichier).
+--
+-- Ordre imposé par les clés étrangères :
 --   user → brand → category → car_model → vehicle → listing
---        → listing_image → favorite
+--        → listing_image → favorite  (MariaDB 10.11 LTS ou plus récent)
 
-CREATE TABLE `user` (
+CREATE TABLE IF NOT EXISTS `user` (
   `id`            INT           NOT NULL AUTO_INCREMENT,
   `email`         VARCHAR(255)  NOT NULL,
   `password_hash` VARCHAR(255)  NOT NULL,
@@ -24,7 +28,7 @@ CREATE TABLE `user` (
   UNIQUE KEY `uq_user_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `brand` (
+CREATE TABLE IF NOT EXISTS `brand` (
   `id`         INT          NOT NULL AUTO_INCREMENT,
   `name`       VARCHAR(100) NOT NULL,
   `slug`       VARCHAR(120) NOT NULL,
@@ -34,7 +38,7 @@ CREATE TABLE `brand` (
   UNIQUE KEY `uq_brand_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `category` (
+CREATE TABLE IF NOT EXISTS `category` (
   `id`         INT          NOT NULL AUTO_INCREMENT,
   `name`       VARCHAR(80)  NOT NULL,
   `slug`       VARCHAR(100) NOT NULL,
@@ -44,7 +48,7 @@ CREATE TABLE `category` (
   UNIQUE KEY `uq_category_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `car_model` (
+CREATE TABLE IF NOT EXISTS `car_model` (
   `id`         INT          NOT NULL AUTO_INCREMENT,
   `name`       VARCHAR(100) NOT NULL,
   `brand_id`   INT          NOT NULL,
@@ -57,7 +61,7 @@ CREATE TABLE `car_model` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `vehicle` (
+CREATE TABLE IF NOT EXISTS `vehicle` (
   `id`           INT               NOT NULL AUTO_INCREMENT,
   `model_id`     INT               NOT NULL,
   `category_id`  INT               NULL,
@@ -80,7 +84,7 @@ CREATE TABLE `vehicle` (
     ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `listing` (
+CREATE TABLE IF NOT EXISTS `listing` (
   `id`           INT           NOT NULL AUTO_INCREMENT,
   `seller_id`    INT           NOT NULL,
   `vehicle_id`   INT           NOT NULL,
@@ -104,7 +108,7 @@ CREATE TABLE `listing` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `listing_image` (
+CREATE TABLE IF NOT EXISTS `listing_image` (
   `id`          INT          NOT NULL AUTO_INCREMENT,
   `listing_id`  INT          NOT NULL,
   `storage_key` VARCHAR(255) NOT NULL,                  -- chemin du WebP sur disque
@@ -122,7 +126,7 @@ CREATE TABLE `listing_image` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `favorite` (
+CREATE TABLE IF NOT EXISTS `favorite` (
   `id`         INT      NOT NULL AUTO_INCREMENT,
   `user_id`    INT      NOT NULL,
   `listing_id` INT      NOT NULL,

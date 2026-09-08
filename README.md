@@ -64,11 +64,11 @@ BD, `JWT_SECRET`) vont dans le `.local`.
 
 ## 1. Base de données
 
-> ⚠️ L'application ne crée, ne modifie ni ne supprime aucune table
-> (`synchronize: false`). Les opérations ci-dessous sont à exécuter
-> **manuellement** avec un client MariaDB, **pour chaque environnement utilisé**.
+L'application ne crée ni ne modifie aucune table au runtime (`synchronize: false`).
+La création de la **base** et de l'**utilisateur** MariaDB reste manuelle ; les
+**tables** s'appliquent avec `npm run migrate`.
 
-Exemple pour le développement :
+**a. Base + utilisateur** (exemple développement) :
 
 ```sql
 CREATE DATABASE chcars_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -77,11 +77,17 @@ GRANT ALL PRIVILEGES ON chcars_dev.* TO 'chcarsdev'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
+**b. Tables** — depuis `back/`, une fois `.env.development` renseigné :
+
 ```bash
-mariadb -u chcarsdev -p chcars_dev < back/db/schema.sql
+npm run migrate            # dev  (npm run migrate:test / migrate:prod pour les autres)
 ```
 
-Répéter avec `chcars_test` / `chcarstest` et `chcars_prod` / `chcarsprod` selon
+Le script applique `back/db/schema.sql` (`CREATE TABLE IF NOT EXISTS` : ré-exécutable,
+crée seulement les tables manquantes). Les changements de colonnes sur des tables
+existantes restent manuels (section « Migrations » de `schema.sql`).
+
+Répéter (a) avec `chcars_test` / `chcarstest` et `chcars_prod` / `chcarsprod` selon
 les besoins. Aucun jeu de données à charger : le contenu est ajouté par
 l'administrateur via l'application.
 
@@ -220,6 +226,7 @@ la valeur du cookie `chcars_csrf` dans l'en‑tête `X-CSRF-Token`.
 | `back/` | `npm run start` | API compilée, `NODE_ENV=production` |
 | `back/` | `npm run start:test` | API, `NODE_ENV=test` |
 | `back/` | `npm run build` / `npm run typecheck` | compilation / vérification TS |
+| `back/` | `npm run migrate[:test\|:prod]` | applique `db/schema.sql` (tables manquantes) |
 | `back/` | `npm run create-admin[:prod]` | crée ou promeut un administrateur |
 | `front/` | `npm run dev` / `npm run build` / `npm start` | Next.js |
 | `front/` | `npm run lint` | ESLint |

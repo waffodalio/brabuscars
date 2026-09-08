@@ -79,14 +79,13 @@ Vérification : `npm run typecheck` puis `npm run build`.
 
 Les photos sont rattachées à l'**annonce** (`ListingImage`, route imbriquée `/api/listings/:listingId/images`). Upload en `multipart/form-data` (champ `file`), admin only : `multer` (mémoire) → validation via `sharp().metadata()` → ré-encodage **WebP ≤ 2000 px** + vignette 400 px (`imageProcessor`), EXIF supprimée. Les fichiers vont sur disque via `StorageService` (`LocalDiskStorage`, dossier `env.UPLOAD_DIR`) ; la base ne stocke que `storage_key` + métadonnées. L'URL publique est reconstruite à partir de `env.PUBLIC_UPLOADS_URL`. Supprimer une annonce efface aussi ses fichiers (`listingImageService.purgeForListing`).
 
-### Base de données — RÈGLE STRICTE
+### Base de données
 
-La création et la gestion des tables sont faites **manuellement par le propriétaire du projet**.
-
-- `synchronize` et `migrationsRun` sont **toujours** à `false` dans `data-source.ts`.
-- Ne jamais créer, modifier ou supprimer de table ; ne jamais lancer de migration ou de commande destructive sur la base.
-- Rôle des entités TypeORM : mapper des tables **existantes**.
-- À chaque nouvelle entité, fournir au propriétaire : rôle, propriétés, relations, et le `CREATE TABLE` MariaDB correspondant qu'il exécutera lui-même.
+- `synchronize` et `migrationsRun` sont **toujours** à `false` dans `data-source.ts` — l'app ne touche jamais au schéma au runtime.
+- Le schéma vit dans `back/db/schema.sql` (`CREATE TABLE IF NOT EXISTS`). Il s'applique via `npm run migrate` (`src/scripts/migrate.ts`, connexion `mysql2` directe, ciblé par `NODE_ENV`).
+- **Ne jamais lancer de commande destructive** (`DROP`, `TRUNCATE`, `DELETE` massif) sur la base sans demande explicite de l'utilisateur.
+- À chaque changement de schéma : mettre à jour `schema.sql` (nouvelle table = `CREATE TABLE IF NOT EXISTS` ; changement de colonne = ajouter un `ALTER` commenté dans la section « Migrations » en bas), puis `npm run migrate`.
+- La création de la **base** et de l'**utilisateur** MariaDB reste manuelle (hors périmètre du script).
 
 ## Démarrage local
 
