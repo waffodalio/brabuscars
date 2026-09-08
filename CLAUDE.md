@@ -17,7 +17,7 @@ Ne jamais mélanger le code `front/` et `back/`. Le frontend communique **unique
 
 - Tout le code est en TypeScript.
 - Code simple, lisible, maintenable ; respect de SOLID quand c'est pertinent ; pas de duplication.
-- Aucun secret dans le code : tout passe par des variables d'environnement. Les fichiers `.env` / `.env.<env>` sont versionnés avec des valeurs par défaut **non sensibles** ; les vrais secrets vont dans `.env.local` / `.env.<env>.local` (non versionnés).
+- Aucun secret dans le code : tout passe par des variables d'environnement. **Aucun fichier `.env*` n'est versionné** (contenu documenté dans `README.md` §2) ; les secrets vont dans `.env.<env>.local`, chargés en priorité par `env.ts`.
 - **Environnements dissociés** : `development` / `test` / `production`, chacun avec sa base MariaDB, son utilisateur (`chcarsdev` / `chcarstest` / `chcarsprod`) et son fichier `back/.env.<env>`. `env.ts` charge le bon fichier selon `NODE_ENV`, ordre `.env.<env>.local` > `.env.<env>` > `.env`.
 - Ne pas supprimer de code fonctionnel sans le signaler.
 

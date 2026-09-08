@@ -57,12 +57,10 @@ Trois environnements dissociés, chacun avec sa base, son utilisateur MariaDB et
 | test | `chcars_test` | `chcarstest` | `back/.env.test` |
 | production | `chcars_prod` | `chcarsprod` | `back/.env.production` |
 
-Les fichiers `back/.env.development`, `back/.env.test` et `back/.env.production`
-sont **versionnés** avec des valeurs par défaut non sensibles. `env.ts` charge
-automatiquement le bon fichier selon `NODE_ENV`, dans l'ordre
-`.env.<env>.local` > `.env.<env>` > `.env`. Les vraies valeurs sensibles (mot de
-passe BD, `JWT_SECRET` de production) se mettent dans un fichier **non versionné**
-`back/.env.<env>.local` (ou directement dans le fichier sur le serveur).
+`env.ts` charge automatiquement le bon fichier selon `NODE_ENV`, dans l'ordre
+`.env.<env>.local` > `.env.<env>` > `.env`. **Aucun de ces fichiers n'est
+versionné** ; leur contenu est décrit en section 2, et les secrets (mot de passe
+BD, `JWT_SECRET`) vont dans le `.local`.
 
 ## 1. Base de données
 
@@ -89,36 +87,58 @@ l'administrateur via l'application.
 
 ## 2. Configuration
 
+**Aucun fichier `.env` n'est versionné.** `env.ts` charge, dans l'ordre,
+`.env.<env>.local` > `.env.<env>` > `.env` (le plus spécifique gagne). On met
+les secrets (`DB_PASSWORD`, `JWT_SECRET`) dans le `.local`.
+
 ### Backend
 
-En développement, `back/.env.development` fonctionne tel quel une fois la base
-`chcars_dev` créée. Sinon, surcharger les valeurs sensibles :
+Créer `back/.env.development` :
 
-```bash
-cd back
-echo "DB_PASSWORD=mon_mot_de_passe" > .env.development.local   # non versionné
+```dotenv
+NODE_ENV=development
+PORT=4000
+API_PREFIX=/api
+CORS_ORIGIN=http://localhost:3000
+TRUST_PROXY=0
+DB_HOST=localhost
+DB_PORT=3306
+DB_USERNAME=chcarsdev
+DB_PASSWORD=
+DB_DATABASE=chcars_dev
+JWT_SECRET=chcars_dev_only_not_a_real_secret_change_in_prod
+JWT_EXPIRES_IN=1d
 ```
 
-En production : éditer `back/.env.production` sur le serveur (renseigner
-`JWT_SECRET`, `DB_PASSWORD`, `CORS_ORIGIN`) ou utiliser `back/.env.production.local`.
+Puis `back/.env.development.local` avec le mot de passe MariaDB :
+
+```dotenv
+DB_PASSWORD=le_mot_de_passe_de_chcarsdev
+```
+
+Pour `test` / `production` : mêmes clés, adapter `NODE_ENV`, `DB_*`, `CORS_ORIGIN`,
+`TRUST_PROXY`. **En production, `JWT_SECRET` doit faire ≥ 32 caractères aléatoires**
+(`node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`)
+et vivre dans `back/.env.production.local`.
 
 | Variable | Rôle |
 |---|---|
 | `NODE_ENV` | `development` \| `test` \| `production` |
 | `PORT` / `API_PREFIX` | port et préfixe de l'API |
-| `CORS_ORIGIN` | origine autorisée (le frontend) |
-| `DB_HOST` / `DB_PORT` / `DB_USERNAME` / `DB_PASSWORD` / `DB_DATABASE` | connexion MariaDB de l'environnement |
-| `JWT_SECRET` / `JWT_EXPIRES_IN` | signature et durée de validité des tokens |
+| `CORS_ORIGIN` | origine exacte autorisée (le frontend) |
+| `TRUST_PROXY` | nombre de reverse proxies devant l'API (0 en local) |
+| `DB_HOST` / `DB_PORT` / `DB_USERNAME` / `DB_PASSWORD` / `DB_DATABASE` | connexion MariaDB |
+| `JWT_SECRET` (≥ 32 car.) / `JWT_EXPIRES_IN` | signature et durée de validité des sessions |
 
 ### Frontend
 
-`front/.env` (versionné) pointe l'API sur `http://localhost:4000/api`. Pour une
-autre URL sans committer, créer `front/.env.local` :
+Créer `front/.env` :
 
-```bash
-cd front
-echo "NEXT_PUBLIC_API_URL=https://api.chcars.example/api" > .env.local
+```dotenv
+NEXT_PUBLIC_API_URL=http://localhost:4000/api
 ```
+
+(surcharge possible sans toucher au fichier : `front/.env.local`).
 
 | Variable | Exemple |
 |---|---|
@@ -203,6 +223,4 @@ la valeur du cookie `chcars_csrf` dans l'en‑tête `X-CSRF-Token`.
   `synchronize` est désactivé.
 - Toute évolution du schéma : mettre à jour `back/db/schema.sql` puis l'appliquer
   manuellement à chaque environnement.
-- Les fichiers `.env` / `.env.<env>` versionnés ne contiennent que des valeurs par
-  défaut non sensibles ; les vrais secrets vont dans les fichiers `.env.local` /
-  `.env.<env>.local`, non versionnés.
+- Aucun fichier `.env*` n'est versionné (voir section 2 pour leur contenu).
