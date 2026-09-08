@@ -142,7 +142,7 @@ Base : `http://localhost:4000/api`. Réponses :
 | Ressource | Endpoints | Accès |
 |---|---|---|
 | Santé | `GET /health` | public |
-| Auth | `POST /auth/register` · `POST /auth/login` · `GET /auth/me` | public / token pour `/me` |
+| Auth | `POST /auth/register` · `POST /auth/login` · `POST /auth/logout` · `GET /auth/me` | public / session pour `/me` |
 | Marques | `GET /brands` · `GET /brands/:id` | public |
 | | `POST /brands` · `PUT /brands/:id` · `DELETE /brands/:id` | **admin** |
 | Catégories | `GET /categories` · `GET /categories/:id` | public |
@@ -155,10 +155,14 @@ Base : `http://localhost:4000/api`. Réponses :
 | | `POST` · `PATCH /…/:imageId` · `DELETE /…/:imageId` | **admin** |
 | Annonces | `GET /listings` · `GET /listings/:id` | public |
 | | `POST` · `PUT /:id` · `PATCH /:id/status` · `DELETE /:id` | **admin** |
-| Favoris | `GET /favorites` · `POST /favorites` · `DELETE /favorites/:listingId` | token (tout `user`) |
+| Favoris | `GET /favorites` · `POST /favorites` · `DELETE /favorites/:listingId` | session (tout `user`) |
 
-En-tête des routes protégées : `Authorization: Bearer <token>` (obtenu via
-`/auth/login` ou `/auth/register`).
+**Authentification par cookie.** `POST /auth/login` et `/auth/register` posent
+un cookie `chcars_token` **httpOnly** (le JWT n'est jamais dans le corps de la
+réponse) et un cookie lisible `chcars_csrf`. Les requêtes doivent être envoyées
+avec les cookies (`credentials: "include"` côté navigateur, `-c/-b` avec curl).
+Toute requête **non‑GET** (hors `/auth/login` et `/auth/register`) doit renvoyer
+la valeur du cookie `chcars_csrf` dans l'en‑tête `X-CSRF-Token`.
 
 ## Scripts npm
 

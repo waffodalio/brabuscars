@@ -38,7 +38,13 @@ export function AppNavbar() {
                   <Navbar.Text className="mx-lg-3">
                     Bonjour, {user.firstName}
                   </Navbar.Text>
-                  <Button size="sm" variant="outline-light" onClick={logout}>
+                  <Button
+                    size="sm"
+                    variant="outline-light"
+                    onClick={() => {
+                      void logout();
+                    }}
+                  >
                     Déconnexion
                   </Button>
                 </>

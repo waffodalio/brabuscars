@@ -62,12 +62,13 @@ Vérification : `npm run typecheck` puis `npm run build`.
 - `app.ts` : `helmet` (CSP `default-src 'none'`, HSTS en prod, CORP `same-site`), CORS restreint à `env.CORS_ORIGIN` (méthodes/headers explicites), corps JSON limité à 32 kB, `hpp`, `x-powered-by` désactivé, `trust proxy` = `env.TRUST_PROXY`.
 - Rate limiting (`middlewares/rateLimit.ts`) : général 300/15 min sur toute l'API, strict 10/15 min sur `/auth/register` et `/auth/login`.
 - JWT : algorithme épinglé à `HS256` (signature **et** vérification) ; `JWT_SECRET` ≥ 32 caractères imposé par `env.ts`.
+- **Authentification par cookie** : `auth.controller` pose le JWT dans un cookie `chcars_token` **httpOnly** (jamais dans le corps de réponse) + un cookie lisible `chcars_csrf` (`utils/cookies.ts`). `authenticate` lit le cookie (repli sur `Authorization: Bearer` pour l'outillage). `POST /auth/logout` efface les cookies.
+- **CSRF** : double-submit (`middlewares/csrf.ts`) — `ensureCsrfCookie` garantit le cookie, `verifyCsrf` exige l'en-tête `X-CSRF-Token` = cookie sur toute requête non-GET, sauf `/auth/login` et `/auth/register`. CORS avec `credentials: true` et origine unique.
 - Login à temps constant (`auth.service.ts` : bcrypt toujours exécuté, hash factice si l'e-mail est inconnu) ; bcrypt en 12 tours.
 - Recherches : `escapeLike()` sur toute valeur passée à `Like(...)`.
 - `errorHandler` : jamais de stack ni de message interne au client en production.
 - Validation d'entrée : schémas zod `.strict()` (rejet des clés inconnues).
-- Frontend : en-têtes via `next.config.ts` (`X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS, `poweredByHeader: false`) et CSP via `middleware.ts` (stricte + nonce en production, permissive en dev pour le HMR).
-- Le token JWT est stocké côté client dans `localStorage` ; la CSP est la principale défense contre le vol par XSS.
+- Frontend : en-têtes via `next.config.ts` (`X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS, `poweredByHeader: false`) et CSP via `middleware.ts` (stricte + nonce en production, permissive en dev pour le HMR). `apiClient` envoie `credentials: "include"` et l'en-tête `X-CSRF-Token` sur les requêtes mutantes.
 
 ### Base de données — RÈGLE STRICTE
 

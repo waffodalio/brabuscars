@@ -1,26 +1,43 @@
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
 import type { UserRole } from "../entities/User";
 import { ApiError } from "../utils/ApiError";
 import { verifyAuthToken } from "../utils/jwt";
+import { AUTH_COOKIE } from "../utils/cookies";
 
 const BEARER_PREFIX = "Bearer ";
 
 /**
- * Requires a valid `Authorization: Bearer <token>` header and attaches the
- * decoded principal to `req.user`. Rejects with 401 otherwise.
+ * Reads the JWT from the httpOnly auth cookie, falling back to an
+ * `Authorization: Bearer <token>` header (useful for tooling / tests).
+ */
+function readToken(req: Request): string | undefined {
+  const cookieToken = req.cookies?.[AUTH_COOKIE];
+  if (typeof cookieToken === "string" && cookieToken.length > 0) {
+    return cookieToken;
+  }
+  const header = req.headers.authorization;
+  if (header?.startsWith(BEARER_PREFIX)) {
+    return header.slice(BEARER_PREFIX.length);
+  }
+  return undefined;
+}
+
+/**
+ * Requires a valid auth token (cookie or bearer) and attaches the decoded
+ * principal to `req.user`. Rejects with 401 otherwise.
  */
 export const authenticate: RequestHandler = (req, _res, next) => {
-  const header = req.headers.authorization;
-  if (!header?.startsWith(BEARER_PREFIX)) {
-    throw ApiError.unauthorized("Missing bearer token");
+  const token = readToken(req);
+  if (!token) {
+    throw ApiError.unauthorized("Authentication required");
   }
 
   try {
-    const payload = verifyAuthToken(header.slice(BEARER_PREFIX.length));
+    const payload = verifyAuthToken(token);
     req.user = { id: payload.sub, role: payload.role };
     next();
   } catch {
-    throw ApiError.unauthorized("Invalid or expired token");
+    throw ApiError.unauthorized("Invalid or expired session");
   }
 };
 

@@ -1,4 +1,4 @@
-import { apiClient } from "./apiClient";
+import { apiClient, setCsrfToken } from "./apiClient";
 import type { ApiSuccess } from "@/types/api";
 import type {
   AuthResult,
@@ -8,25 +8,35 @@ import type {
 } from "@/types/auth";
 
 /**
- * Access to the `/auth` endpoints. `register` and `login` return the user and
- * a JWT; `me` reads the current user (requires the token to be set on the
- * API client).
+ * Access to the `/auth` endpoints. The JWT is handled by the browser as an
+ * httpOnly cookie; these methods only deal with the user object and the CSRF
+ * token.
  */
 export const authService = {
-  async register(input: RegisterInput): Promise<AuthResult> {
+  async register(input: RegisterInput): Promise<AuthUser> {
     const response = await apiClient.post<ApiSuccess<AuthResult>>(
       "/auth/register",
       input,
     );
-    return response.data;
+    setCsrfToken(response.data.csrfToken);
+    return response.data.user;
   },
 
-  async login(credentials: Credentials): Promise<AuthResult> {
+  async login(credentials: Credentials): Promise<AuthUser> {
     const response = await apiClient.post<ApiSuccess<AuthResult>>(
       "/auth/login",
       credentials,
     );
-    return response.data;
+    setCsrfToken(response.data.csrfToken);
+    return response.data.user;
+  },
+
+  async logout(): Promise<void> {
+    try {
+      await apiClient.post<void>("/auth/logout");
+    } finally {
+      setCsrfToken(null);
+    }
   },
 
   async me(): Promise<AuthUser> {

@@ -9,9 +9,11 @@ export interface AuthUser {
   createdAt: string;
 }
 
+/** Register / login response — the JWT lives in an httpOnly cookie, not here. */
 export interface AuthResult {
   user: AuthUser;
-  token: string;
+  /** Double-submit CSRF token; also set as a readable cookie. */
+  csrfToken: string;
 }
 
 export interface Credentials {

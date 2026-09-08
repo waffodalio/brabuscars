@@ -1,23 +1,39 @@
 /**
  * Minimal typed HTTP client for the CHCars backend API.
  *
- * The base URL is read from NEXT_PUBLIC_API_URL so it can be configured per
- * environment. The frontend never talks to the database directly: every call
- * goes through this client to the backend REST API.
+ * Authentication is cookie-based: the JWT lives in an httpOnly cookie the
+ * browser attaches automatically (`credentials: "include"`). State-changing
+ * requests carry the double-submit CSRF token, read from the readable
+ * `chcars_csrf` cookie (or seeded from the login/register response).
+ *
+ * The frontend never talks to the database directly: every call goes through
+ * this client to the backend REST API.
  */
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+
+const CSRF_COOKIE = "chcars_csrf";
+const CSRF_HEADER = "X-CSRF-Token";
+const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export interface ApiErrorBody {
   message: string;
   details?: unknown;
 }
 
-let authToken: string | null = null;
+/** In-memory copy of the CSRF token, primed by login/register responses. */
+let csrfToken: string | null = null;
 
-/** Sets (or clears) the bearer token sent with every subsequent request. */
-export function setApiAuthToken(token: string | null): void {
-  authToken = token;
+export function setCsrfToken(token: string | null): void {
+  csrfToken = token;
+}
+
+function readCsrfCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie
+    .split("; ")
+    .find((entry) => entry.startsWith(`${CSRF_COOKIE}=`));
+  return match ? decodeURIComponent(match.slice(CSRF_COOKIE.length + 1)) : null;
 }
 
 export class ApiClientError extends Error {
@@ -32,13 +48,22 @@ export class ApiClientError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+
+  if (UNSAFE_METHODS.has(method)) {
+    const token = csrfToken ?? readCsrfCookie();
+    if (token) headers[CSRF_HEADER] = token;
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...(init?.headers ?? {}),
-    },
+    method,
+    credentials: "include",
+    headers,
   });
 
   const hasJson = response.headers
@@ -60,8 +85,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const apiClient = {
   get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, data: unknown) =>
-    request<T>(path, { method: "POST", body: JSON.stringify(data) }),
+  post: <T>(path: string, data?: unknown) =>
+    request<T>(path, {
+      method: "POST",
+      body: data === undefined ? undefined : JSON.stringify(data),
+    }),
   put: <T>(path: string, data: unknown) =>
     request<T>(path, { method: "PUT", body: JSON.stringify(data) }),
   patch: <T>(path: string, data: unknown) =>

@@ -1,10 +1,12 @@
 import express, { type Express } from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
 import hpp from "hpp";
 import { env, isProduction } from "./config/env";
 import { apiRouter } from "./routes";
 import { generalRateLimiter } from "./middlewares/rateLimit";
+import { ensureCsrfCookie, verifyCsrf } from "./middlewares/csrf";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
 import { errorHandler } from "./middlewares/errorHandler";
 
@@ -39,15 +41,19 @@ export function createApp(): Express {
     }),
   );
 
-  // Strict CORS — a single known origin, only the verbs/headers we use.
+  // Strict CORS — a single known origin, credentials enabled for the auth
+  // cookie, only the verbs/headers we use.
   app.use(
     cors({
       origin: env.CORS_ORIGIN,
+      credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-      allowedHeaders: ["Content-Type", "Authorization"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
       maxAge: 600,
     }),
   );
+
+  app.use(cookieParser());
 
   // Bounded body parsing.
   app.use(express.json({ limit: "32kb" }));
@@ -56,8 +62,10 @@ export function createApp(): Express {
   // Collapse duplicated query/body params (HTTP parameter pollution).
   app.use(hpp());
 
-  // Baseline rate limiting for the whole API.
+  // API-scoped protections.
   app.use(env.API_PREFIX, generalRateLimiter);
+  app.use(env.API_PREFIX, ensureCsrfCookie);
+  app.use(env.API_PREFIX, verifyCsrf);
 
   app.use(env.API_PREFIX, apiRouter);
 
