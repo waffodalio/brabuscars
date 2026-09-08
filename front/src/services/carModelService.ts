@@ -7,9 +7,14 @@ export interface CarModelFilters {
   brandId?: number;
 }
 
+export interface CarModelInput {
+  name: string;
+  brandId: number;
+}
+
 /**
- * Access to the `/car-models` endpoints of the backend API. Unwraps the
- * `{ success, data }` envelope and returns the payload.
+ * Access to the `/car-models` endpoints. Reads are public; writes require an
+ * admin token.
  */
 export const carModelService = {
   async list(filters: CarModelFilters = {}): Promise<CarModel[]> {
@@ -29,5 +34,25 @@ export const carModelService = {
       `/car-models/${id}`,
     );
     return response.data;
+  },
+
+  async create(input: CarModelInput): Promise<CarModel> {
+    const response = await apiClient.post<ApiSuccess<CarModel>>(
+      "/car-models",
+      input,
+    );
+    return response.data;
+  },
+
+  async update(id: number, input: Partial<CarModelInput>): Promise<CarModel> {
+    const response = await apiClient.put<ApiSuccess<CarModel>>(
+      `/car-models/${id}`,
+      input,
+    );
+    return response.data;
+  },
+
+  async remove(id: number): Promise<void> {
+    await apiClient.delete<void>(`/car-models/${id}`);
   },
 };

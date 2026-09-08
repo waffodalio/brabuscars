@@ -10,9 +10,21 @@ export interface VehicleFilters {
   transmission?: Transmission;
 }
 
+export interface VehicleInput {
+  modelId: number;
+  categoryId?: number | null;
+  year: number;
+  mileage: number;
+  fuelType: FuelType;
+  transmission: Transmission;
+  power?: number | null;
+  doors?: number | null;
+  color?: string | null;
+}
+
 /**
- * Access to the `/vehicles` endpoints of the backend API. Unwraps the
- * `{ success, data }` envelope and returns the payload.
+ * Access to the `/vehicles` endpoints. Reads are public; writes require an
+ * admin token.
  */
 export const vehicleService = {
   async list(filters: VehicleFilters = {}): Promise<Vehicle[]> {
@@ -31,5 +43,25 @@ export const vehicleService = {
   async getById(id: number): Promise<Vehicle> {
     const response = await apiClient.get<ApiSuccess<Vehicle>>(`/vehicles/${id}`);
     return response.data;
+  },
+
+  async create(input: VehicleInput): Promise<Vehicle> {
+    const response = await apiClient.post<ApiSuccess<Vehicle>>(
+      "/vehicles",
+      input,
+    );
+    return response.data;
+  },
+
+  async update(id: number, input: Partial<VehicleInput>): Promise<Vehicle> {
+    const response = await apiClient.put<ApiSuccess<Vehicle>>(
+      `/vehicles/${id}`,
+      input,
+    );
+    return response.data;
+  },
+
+  async remove(id: number): Promise<void> {
+    await apiClient.delete<void>(`/vehicles/${id}`);
   },
 };

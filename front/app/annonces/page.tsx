@@ -22,8 +22,8 @@ export default function ListingsPage() {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 className="h3 mb-0">Annonces</h1>
         {user?.role === "admin" && (
-          <Link href="/annonces/nouvelle" className="btn btn-primary">
-            Nouvelle annonce
+          <Link href="/admin/annonces" className="btn btn-outline-primary">
+            Gérer les annonces
           </Link>
         )}
       </div>

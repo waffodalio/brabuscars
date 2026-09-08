@@ -2,9 +2,14 @@ import { apiClient } from "./apiClient";
 import type { ApiSuccess } from "@/types/api";
 import type { Category } from "@/types/category";
 
+export interface CategoryInput {
+  name: string;
+  slug?: string;
+}
+
 /**
- * Access to the `/categories` endpoints of the backend API. Unwraps the
- * `{ success, data }` envelope and returns the payload.
+ * Access to the `/categories` endpoints. Reads are public; writes require an
+ * admin token.
  */
 export const categoryService = {
   async list(search?: string): Promise<Category[]> {
@@ -20,5 +25,25 @@ export const categoryService = {
       `/categories/${id}`,
     );
     return response.data;
+  },
+
+  async create(input: CategoryInput): Promise<Category> {
+    const response = await apiClient.post<ApiSuccess<Category>>(
+      "/categories",
+      input,
+    );
+    return response.data;
+  },
+
+  async update(id: number, input: Partial<CategoryInput>): Promise<Category> {
+    const response = await apiClient.put<ApiSuccess<Category>>(
+      `/categories/${id}`,
+      input,
+    );
+    return response.data;
+  },
+
+  async remove(id: number): Promise<void> {
+    await apiClient.delete<void>(`/categories/${id}`);
   },
 };

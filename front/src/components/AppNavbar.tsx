@@ -32,6 +32,9 @@ export function AppNavbar() {
               {user ? (
                 <>
                   <Nav.Link href="/favoris">Favoris</Nav.Link>
+                  {user.role === "admin" && (
+                    <Nav.Link href="/admin">Administration</Nav.Link>
+                  )}
                   <Navbar.Text className="mx-lg-3">
                     Bonjour, {user.firstName}
                   </Navbar.Text>
