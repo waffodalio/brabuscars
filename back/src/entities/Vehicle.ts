@@ -4,7 +4,6 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -12,7 +11,6 @@ import {
 import { CarModel } from "./CarModel";
 import { Category } from "./Category";
 import { Listing } from "./Listing";
-import { VehicleImage } from "./VehicleImage";
 
 export const FUEL_TYPES = [
   "petrol",
@@ -83,7 +81,4 @@ export class Vehicle {
 
   @OneToOne(() => Listing, (listing) => listing.vehicle)
   listing!: Listing | null;
-
-  @OneToMany(() => VehicleImage, (image) => image.vehicle)
-  images!: VehicleImage[];
 }

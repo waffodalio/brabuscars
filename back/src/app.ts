@@ -1,4 +1,5 @@
-import express, { type Express } from "express";
+import path from "node:path";
+import express, { type Express, type Response } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
@@ -9,6 +10,9 @@ import { generalRateLimiter } from "./middlewares/rateLimit";
 import { ensureCsrfCookie, verifyCsrf } from "./middlewares/csrf";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
 import { errorHandler } from "./middlewares/errorHandler";
+
+/** Path segment under which uploaded images are served (e.g. `/uploads`). */
+const UPLOADS_ROUTE = new URL(env.PUBLIC_UPLOADS_URL).pathname || "/uploads";
 
 /**
  * Builds the Express application (security middlewares, routes, error
@@ -53,9 +57,25 @@ export function createApp(): Express {
     }),
   );
 
+  // Uploaded images — long-cached, embeddable anywhere, never executed.
+  // In production a reverse proxy (Nginx / CDN) should serve this directory.
+  app.use(
+    UPLOADS_ROUTE,
+    express.static(path.resolve(env.UPLOAD_DIR), {
+      index: false,
+      immutable: true,
+      maxAge: "365d",
+      setHeaders: (res: Response) => {
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        res.setHeader("Content-Disposition", "inline");
+      },
+    }),
+  );
+
   app.use(cookieParser());
 
-  // Bounded body parsing.
+  // Bounded body parsing (multipart is handled by multer on upload routes).
   app.use(express.json({ limit: "32kb" }));
   app.use(express.urlencoded({ extended: false, limit: "32kb" }));
 

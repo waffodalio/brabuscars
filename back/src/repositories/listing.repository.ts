@@ -14,6 +14,7 @@ import { escapeLike } from "../utils/escapeLike";
 const LIST_RELATIONS = {
   seller: true,
   vehicle: { model: { brand: true }, category: true },
+  images: true,
 } as const;
 
 function buildWhere(query: ListListingQuery): FindOptionsWhere<Listing> {
@@ -41,8 +42,8 @@ function buildWhere(query: ListListingQuery): FindOptionsWhere<Listing> {
 }
 
 /**
- * Data-access layer for {@link Listing}. List queries load the seller and the
- * vehicle (with model, brand, category); detail also loads the image gallery.
+ * Data-access layer for {@link Listing}. Queries load the seller, the vehicle
+ * (with model, brand, category) and the image gallery.
  */
 export const listingRepository = AppDataSource.getRepository(Listing).extend({
   findAllFiltered(query: ListListingQuery): Promise<Listing[]> {
@@ -58,7 +59,8 @@ export const listingRepository = AppDataSource.getRepository(Listing).extend({
       where: { id },
       relations: {
         seller: true,
-        vehicle: { model: { brand: true }, category: true, images: true },
+        vehicle: { model: { brand: true }, category: true },
+        images: true,
       },
     });
   },

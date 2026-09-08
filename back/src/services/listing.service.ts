@@ -9,6 +9,7 @@ import { vehicleRepository } from "../repositories/vehicle.repository";
 import { ApiError } from "../utils/ApiError";
 import type { Actor } from "../utils/actor";
 import { toListingResponse, type ListingResponse } from "../utils/listingResponse";
+import { listingImageService } from "./listingImage.service";
 
 async function loadOrFail(id: number): Promise<Listing> {
   const listing = await listingRepository.findById(id);
@@ -86,6 +87,8 @@ export const listingService = {
   },
 
   async remove(id: number): Promise<void> {
+    await loadOrFail(id); // 404 if missing
+    await listingImageService.purgeForListing(id); // delete image files first
     const result = await listingRepository.delete({ id });
     if (!result.affected) {
       throw ApiError.notFound(`Listing ${id} not found`);

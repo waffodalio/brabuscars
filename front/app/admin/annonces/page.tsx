@@ -226,6 +226,12 @@ export default function AdminListingsPage() {
                           ))}
                         </Dropdown.Menu>
                       </Dropdown>
+                      <Link
+                        href={`/annonces/${listing.id}`}
+                        className="btn btn-sm btn-outline-primary me-2"
+                      >
+                        Photos
+                      </Link>
                       <Button
                         size="sm"
                         variant="outline-secondary"

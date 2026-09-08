@@ -14,13 +14,13 @@ const apiOrigin = (() => {
 })();
 
 /**
- * Adds a Content-Security-Policy to every document response.
+ * Proxy — adds a Content-Security-Policy to every document response.
  *
  * In production the policy is strict and nonce-based (`strict-dynamic`);
  * Next.js picks up the nonce from the request header and stamps it onto its
  * own scripts. In development it is relaxed so Turbopack HMR keeps working.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID());
 
   const scriptSrc = isProduction
@@ -31,7 +31,7 @@ export function middleware(request: NextRequest) {
     `default-src 'self'`,
     `script-src ${scriptSrc}`,
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' data: blob: https:`,
+    `img-src 'self' data: blob: https: ${apiOrigin}`,
     `font-src 'self' data:`,
     `connect-src 'self' ${apiOrigin}${isProduction ? "" : " ws: wss:"}`,
     `frame-ancestors 'none'`,

@@ -10,9 +10,9 @@ import Spinner from "react-bootstrap/Spinner";
 import Table from "react-bootstrap/Table";
 import { useAuth } from "@/context/AuthContext";
 import { FavoriteButton } from "@/components/FavoriteButton";
-import { VehicleImagePanel } from "@/components/VehicleImagePanel";
+import { ListingImagePanel } from "@/components/ListingImagePanel";
 import { listingService } from "@/services/listingService";
-import type { Listing, ListingStatus } from "@/types/listing";
+import type { Listing, ListingImage, ListingStatus } from "@/types/listing";
 import {
   LISTING_STATUS_LABELS,
   LISTING_STATUS_VARIANTS,
@@ -24,12 +24,7 @@ import {
   vehicleTitle,
 } from "@/utils/vehicleLabels";
 
-const NEXT_STATUSES: ListingStatus[] = [
-  "draft",
-  "published",
-  "sold",
-  "archived",
-];
+const ALL_STATUSES: ListingStatus[] = ["draft", "published", "sold", "archived"];
 
 export default function ListingDetailPage() {
   const params = useParams<{ id: string }>();
@@ -54,6 +49,10 @@ export default function ListingDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  function setImages(images: ListingImage[]) {
+    setListing((current) => (current ? { ...current, images } : current));
+  }
 
   async function changeStatus(status: ListingStatus) {
     setBusy(true);
@@ -87,6 +86,7 @@ export default function ListingDetailPage() {
   }
 
   const { vehicle } = listing;
+  const cover = listing.images[0];
 
   return (
     <article>
@@ -99,6 +99,16 @@ export default function ListingDetailPage() {
           </Badge>
         </div>
       </div>
+
+      {cover && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={cover.url}
+          alt={listing.title}
+          className="rounded border mb-3 w-100"
+          style={{ maxHeight: 420, objectFit: "cover" }}
+        />
+      )}
 
       <p className="fs-4 fw-semibold mb-1">{formatPrice(listing.price)}</p>
       <p className="text-secondary">
@@ -148,16 +158,23 @@ export default function ListingDetailPage() {
               )}
             </tbody>
           </Table>
-
-          <VehicleImagePanel vehicleId={vehicle.id} canManage={isAdmin} />
         </>
+      )}
+
+      {(listing.images.length > 0 || isAdmin) && (
+        <ListingImagePanel
+          listingId={listing.id}
+          images={listing.images}
+          canManage={isAdmin}
+          onChange={setImages}
+        />
       )}
 
       {isAdmin && (
         <section className="mt-4 border-top pt-3">
           <h2 className="h6">Gérer l&apos;annonce</h2>
           <ButtonGroup className="me-2">
-            {NEXT_STATUSES.filter((status) => status !== listing.status).map(
+            {ALL_STATUSES.filter((status) => status !== listing.status).map(
               (status) => (
                 <Button
                   key={status}

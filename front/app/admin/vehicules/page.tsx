@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
@@ -189,12 +188,6 @@ export default function AdminVehiclesPage() {
                     <td>{vehicle.mileage.toLocaleString("fr-FR")} km</td>
                     <td>{FUEL_TYPE_LABELS[vehicle.fuelType]}</td>
                     <td className="text-end text-nowrap">
-                      <Link
-                        href={`/admin/vehicules/${vehicle.id}`}
-                        className="btn btn-sm btn-outline-primary me-2"
-                      >
-                        Photos
-                      </Link>
                       <Button
                         size="sm"
                         variant="outline-secondary"

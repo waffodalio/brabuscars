@@ -4,6 +4,9 @@ node_modules/
 # build output
 dist/
 
+# images téléversées (UPLOAD_DIR)
+uploads/
+
 # env — jamais versionnés (voir README pour le contenu attendu)
 .env
 .env.*

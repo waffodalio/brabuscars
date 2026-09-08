@@ -4,9 +4,8 @@ import { Vehicle } from "../entities/Vehicle";
 import type { ListVehicleQuery } from "../dto/vehicle.dto";
 
 /**
- * Data-access layer for {@link Vehicle}. List/detail queries load the parent
- * `model` (with its `brand`) and `category` relations; detail also loads the
- * image gallery.
+ * Data-access layer for {@link Vehicle}. Queries load the parent `model`
+ * (with its `brand`) and `category` relations.
  */
 export const vehicleRepository = AppDataSource.getRepository(Vehicle).extend({
   findAllFiltered(query: ListVehicleQuery): Promise<Vehicle[]> {
@@ -27,7 +26,7 @@ export const vehicleRepository = AppDataSource.getRepository(Vehicle).extend({
   findById(id: number): Promise<Vehicle | null> {
     return this.findOne({
       where: { id },
-      relations: { model: { brand: true }, category: true, images: true },
+      relations: { model: { brand: true }, category: true },
     });
   },
 });

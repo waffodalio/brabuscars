@@ -43,6 +43,24 @@ const envSchema = z.object({
   /** At least 32 chars — reject weak signing keys outright. */
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().min(1).default("1d"),
+
+  // --- Uploads (image files stored on the local disk) ---
+  /** Directory where image files are written. Keep it outside the repo and,
+   *  in production, outside the deploy directory. */
+  UPLOAD_DIR: z.string().min(1).default("uploads"),
+  /** URL prefix the API prepends to a storage key to build a public image URL. */
+  PUBLIC_UPLOADS_URL: z
+    .string()
+    .url()
+    .default("http://localhost:4000/uploads"),
+  /** Max accepted upload size, in bytes (default 15 MiB). */
+  MAX_UPLOAD_BYTES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(15 * 1024 * 1024),
+  /** Max images per listing. */
+  MAX_IMAGES_PER_LISTING: z.coerce.number().int().positive().default(20),
 });
 
 const parsed = envSchema.safeParse(process.env);

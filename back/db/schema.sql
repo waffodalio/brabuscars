@@ -9,7 +9,7 @@
 --
 -- Les tables sont créées dans l'ordre imposé par les clés étrangères :
 --   user → brand → category → car_model → vehicle → listing
---        → vehicle_image → favorite
+--        → listing_image → favorite
 
 CREATE TABLE `user` (
   `id`            INT           NOT NULL AUTO_INCREMENT,
@@ -104,17 +104,21 @@ CREATE TABLE `listing` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `vehicle_image` (
-  `id`         INT          NOT NULL AUTO_INCREMENT,
-  `vehicle_id` INT          NOT NULL,
-  `url`        VARCHAR(500) NOT NULL,
-  `position`   INT UNSIGNED NOT NULL DEFAULT 0,         -- ordre dans la galerie
-  `is_cover`   TINYINT(1)   NOT NULL DEFAULT 0,         -- image principale
-  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+CREATE TABLE `listing_image` (
+  `id`          INT          NOT NULL AUTO_INCREMENT,
+  `listing_id`  INT          NOT NULL,
+  `storage_key` VARCHAR(255) NOT NULL,                  -- chemin du WebP sur disque
+  `mime_type`   VARCHAR(50)  NOT NULL,
+  `size_bytes`  INT UNSIGNED NOT NULL,
+  `width`       SMALLINT UNSIGNED NULL,
+  `height`      SMALLINT UNSIGNED NULL,
+  `position`    INT UNSIGNED NOT NULL DEFAULT 0,        -- ordre dans la galerie
+  `is_cover`    TINYINT(1)   NOT NULL DEFAULT 0,        -- image principale
+  `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_vehicle_image_vehicle` (`vehicle_id`),
-  CONSTRAINT `fk_vehicle_image_vehicle`
-    FOREIGN KEY (`vehicle_id`) REFERENCES `vehicle` (`id`)
+  KEY `idx_listing_image_listing` (`listing_id`),
+  CONSTRAINT `fk_listing_image_listing`
+    FOREIGN KEY (`listing_id`) REFERENCES `listing` (`id`)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

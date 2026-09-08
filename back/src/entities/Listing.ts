@@ -10,6 +10,7 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 import { Favorite } from "./Favorite";
+import { ListingImage } from "./ListingImage";
 import { User } from "./User";
 import { Vehicle } from "./Vehicle";
 import { decimalTransformer } from "../utils/decimalTransformer";
@@ -83,4 +84,7 @@ export class Listing {
 
   @OneToMany(() => Favorite, (favorite) => favorite.listing)
   favorites!: Favorite[];
+
+  @OneToMany(() => ListingImage, (image) => image.listing)
+  images!: ListingImage[];
 }

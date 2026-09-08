@@ -108,6 +108,10 @@ DB_PASSWORD=
 DB_DATABASE=chcars_dev
 JWT_SECRET=chcars_dev_only_not_a_real_secret_change_in_prod
 JWT_EXPIRES_IN=1d
+UPLOAD_DIR=uploads
+PUBLIC_UPLOADS_URL=http://localhost:4000/uploads
+MAX_UPLOAD_BYTES=15728640
+MAX_IMAGES_PER_LISTING=20
 ```
 
 Puis `back/.env.development.local` avec le mot de passe MariaDB :
@@ -129,6 +133,9 @@ et vivre dans `back/.env.production.local`.
 | `TRUST_PROXY` | nombre de reverse proxies devant l'API (0 en local) |
 | `DB_HOST` / `DB_PORT` / `DB_USERNAME` / `DB_PASSWORD` / `DB_DATABASE` | connexion MariaDB |
 | `JWT_SECRET` (≥ 32 car.) / `JWT_EXPIRES_IN` | signature et durée de validité des sessions |
+| `UPLOAD_DIR` | dossier où sont écrits les fichiers image (hors dépôt ; hors dossier de déploiement en prod) |
+| `PUBLIC_UPLOADS_URL` | préfixe d'URL publique des images (`…/uploads`) |
+| `MAX_UPLOAD_BYTES` / `MAX_IMAGES_PER_LISTING` | limites d'upload (défaut 15 Mo / 20 images) |
 
 ### Frontend
 
@@ -192,10 +199,10 @@ Base : `http://localhost:4000/api`. Réponses :
 | | `POST` · `PUT` · `DELETE /car-models/:id` | **admin** |
 | Véhicules | `GET /vehicles` · `GET /vehicles/:id` | public |
 | | `POST` · `PUT` · `DELETE /vehicles/:id` | **admin** |
-| Photos | `GET /vehicles/:vehicleId/images` | public |
-| | `POST` · `PATCH /…/:imageId` · `DELETE /…/:imageId` | **admin** |
 | Annonces | `GET /listings` · `GET /listings/:id` | public |
 | | `POST` · `PUT /:id` · `PATCH /:id/status` · `DELETE /:id` | **admin** |
+| Photos | `GET /listings/:listingId/images` | public |
+| | `POST /…` (multipart, champ `file`) · `PATCH /…/:imageId` · `DELETE /…/:imageId` | **admin** |
 | Favoris | `GET /favorites` · `POST /favorites` · `DELETE /favorites/:listingId` | session (tout `user`) |
 
 **Authentification par cookie.** `POST /auth/login` et `/auth/register` posent
@@ -224,3 +231,7 @@ la valeur du cookie `chcars_csrf` dans l'en‑tête `X-CSRF-Token`.
 - Toute évolution du schéma : mettre à jour `back/db/schema.sql` puis l'appliquer
   manuellement à chaque environnement.
 - Aucun fichier `.env*` n'est versionné (voir section 2 pour leur contenu).
+- **Images** : à l'upload, chaque image est ré-encodée en WebP (≤ 2000 px) + une
+  vignette 400 px, écrites dans `UPLOAD_DIR` (`back/uploads/` par défaut, non
+  versionné). La base ne stocke que la clé de stockage. En dev, l'API sert
+  `/uploads` ; en production, laisser Nginx (ou un CDN) servir ce dossier.

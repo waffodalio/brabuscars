@@ -9,6 +9,16 @@ export const LISTING_STATUSES = [
 ] as const;
 export type ListingStatus = (typeof LISTING_STATUSES)[number];
 
+export interface ListingImage {
+  id: number;
+  url: string;
+  thumbnailUrl: string;
+  width: number | null;
+  height: number | null;
+  position: number;
+  isCover: boolean;
+}
+
 export interface Listing {
   id: number;
   sellerId: number;
@@ -23,6 +33,8 @@ export interface Listing {
   postalCode: string | null;
   status: ListingStatus;
   publishedAt: string | null;
+  /** Cover first, then by position. Empty until images are uploaded. */
+  images: ListingImage[];
   createdAt: string;
   updatedAt: string;
 }

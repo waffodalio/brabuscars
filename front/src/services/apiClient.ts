@@ -49,10 +49,14 @@ export class ApiClientError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method ?? "GET").toUpperCase();
+  const isFormData =
+    typeof FormData !== "undefined" && init?.body instanceof FormData;
+
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...(init?.headers as Record<string, string> | undefined),
   };
+  // Let the browser set the multipart Content-Type (with its boundary).
+  if (!isFormData) headers["Content-Type"] = "application/json";
 
   if (UNSAFE_METHODS.has(method)) {
     const token = csrfToken ?? readCsrfCookie();
@@ -90,6 +94,9 @@ export const apiClient = {
       method: "POST",
       body: data === undefined ? undefined : JSON.stringify(data),
     }),
+  /** POST a `multipart/form-data` body (file upload). */
+  postForm: <T>(path: string, form: FormData) =>
+    request<T>(path, { method: "POST", body: form }),
   put: <T>(path: string, data: unknown) =>
     request<T>(path, { method: "PUT", body: JSON.stringify(data) }),
   patch: <T>(path: string, data: unknown) =>

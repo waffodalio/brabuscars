@@ -14,8 +14,20 @@ import { vehicleTitle } from "@/utils/vehicleLabels";
 
 /** Compact listing summary used in the listings and favourites grids. */
 export function ListingCard({ listing }: { listing: Listing }) {
+  const cover = listing.images[0];
+
   return (
     <Card className="h-100">
+      {cover && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={cover.thumbnailUrl}
+          alt=""
+          loading="lazy"
+          className="card-img-top"
+          style={{ height: 160, objectFit: "cover" }}
+        />
+      )}
       <Card.Body className="d-flex flex-column">
         <div className="d-flex justify-content-between align-items-start gap-2">
           <Card.Title className="h6 mb-1">

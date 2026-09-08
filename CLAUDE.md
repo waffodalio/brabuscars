@@ -50,7 +50,7 @@ Architecture en couches : **Route → Controller → Service → Repository → 
 Hiérarchie : `user` < `admin` < `super_admin`. `authorize(minRole)` vérifie un **rang minimal** (via `ROLE_RANK`), donc un `super_admin` passe partout où un `admin` est requis.
 
 - **`user`** : consulter le catalogue + annonces publiées, gérer ses favoris. L'inscription publique ne crée que des `user`.
-- **`admin`** : + gérer tout le **catalogue** (marques, catégories, modèles, véhicules, photos) et les **annonces**. Routes d'écriture protégées par `adminOnly`.
+- **`admin`** : + gérer tout le **catalogue** (marques, catégories, modèles, véhicules) et les **annonces** (dont leurs **photos**). Routes d'écriture protégées par `adminOnly`.
 - **`super_admin`** : + gérer les **comptes** — `GET /api/users`, `PATCH /api/users/:id/role` (bascule `user` ⇄ `admin`), routes protégées par `superAdminOnly`. Ne peut pas changer son propre rôle ni celui d'un autre `super_admin` ; le rôle `super_admin` ne s'attribue jamais via l'API.
 - Côté front : `useAuth()` expose `isAdmin` / `isSuperAdmin` ; `AdminGuard` protège `/admin/*`, la page `/admin/utilisateurs` exige `isSuperAdmin`.
 - **Pas de données préremplies / de seed** : le contenu est saisi par l'administrateur via l'application.
@@ -73,7 +73,11 @@ Vérification : `npm run typecheck` puis `npm run build`.
 - Recherches : `escapeLike()` sur toute valeur passée à `Like(...)`.
 - `errorHandler` : jamais de stack ni de message interne au client en production.
 - Validation d'entrée : schémas zod `.strict()` (rejet des clés inconnues).
-- Frontend : en-têtes via `next.config.ts` (`X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS, `poweredByHeader: false`) et CSP via `middleware.ts` (stricte + nonce en production, permissive en dev pour le HMR). `apiClient` envoie `credentials: "include"` et l'en-tête `X-CSRF-Token` sur les requêtes mutantes.
+- Frontend : en-têtes via `next.config.ts` (`X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS, `poweredByHeader: false`) et CSP via `proxy.ts` (le « middleware » Next 16 ; stricte + nonce en production, permissive en dev pour le HMR). `apiClient` envoie `credentials: "include"` et l'en-tête `X-CSRF-Token` sur les requêtes mutantes.
+
+### Images
+
+Les photos sont rattachées à l'**annonce** (`ListingImage`, route imbriquée `/api/listings/:listingId/images`). Upload en `multipart/form-data` (champ `file`), admin only : `multer` (mémoire) → validation via `sharp().metadata()` → ré-encodage **WebP ≤ 2000 px** + vignette 400 px (`imageProcessor`), EXIF supprimée. Les fichiers vont sur disque via `StorageService` (`LocalDiskStorage`, dossier `env.UPLOAD_DIR`) ; la base ne stocke que `storage_key` + métadonnées. L'URL publique est reconstruite à partir de `env.PUBLIC_UPLOADS_URL`. Supprimer une annonce efface aussi ses fichiers (`listingImageService.purgeForListing`).
 
 ### Base de données — RÈGLE STRICTE
 
