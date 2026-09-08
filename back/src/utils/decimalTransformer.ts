@@ -1,7 +1,7 @@
 import type { ValueTransformer } from "typeorm";
 
 /**
- * MySQL `DECIMAL` columns are returned as strings by the driver. This
+ * MariaDB `DECIMAL` columns are returned as strings by the driver. This
  * transformer keeps the entity property typed as `number` on the way out
  * while leaving values untouched on the way in.
  */

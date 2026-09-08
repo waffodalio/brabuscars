@@ -7,7 +7,7 @@ import { z } from "zod";
  *   .env.<NODE_ENV>.local  >  .env.<NODE_ENV>  >  .env
  *
  * Each environment (development / test / production) has its own `.env.<env>`
- * file with its own database, MySQL user and secrets.
+ * file with its own database, MariaDB user and secrets.
  */
 const NODE_ENV = process.env.NODE_ENV ?? "development";
 loadEnvFile({ path: `.env.${NODE_ENV}.local` });

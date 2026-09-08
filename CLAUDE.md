@@ -9,7 +9,7 @@ Monorepo à deux applications **strictement séparées** :
 | Dossier  | Rôle                        | Stack                                                   |
 | -------- | --------------------------- | ------------------------------------------------------- |
 | `front/` | Application cliente         | Next.js 16 (App Router), React 19, TypeScript, Bootstrap (`react-bootstrap`) |
-| `back/`  | API REST                    | Node.js, Express 5, TypeScript, TypeORM, MySQL/MariaDB  |
+| `back/`  | API REST                    | Node.js, Express 5, TypeScript, TypeORM, MariaDB (10.11 LTS+) |
 
 Ne jamais mélanger le code `front/` et `back/`. Le frontend communique **uniquement** avec l'API backend (jamais directement avec la base de données).
 
@@ -18,7 +18,7 @@ Ne jamais mélanger le code `front/` et `back/`. Le frontend communique **unique
 - Tout le code est en TypeScript.
 - Code simple, lisible, maintenable ; respect de SOLID quand c'est pertinent ; pas de duplication.
 - Aucun secret dans le code : tout passe par des variables d'environnement. Seuls les fichiers `*.example` sont commités.
-- **Environnements dissociés** : `development` / `test` / `production`, chacun avec sa base MySQL, son utilisateur (`chcarsdev` / `chcarstest` / `chcarsprod`) et son fichier `back/.env.<env>` (modèle `back/.env.<env>.example`). `env.ts` charge le bon fichier selon `NODE_ENV`.
+- **Environnements dissociés** : `development` / `test` / `production`, chacun avec sa base MariaDB, son utilisateur (`chcarsdev` / `chcarstest` / `chcarsprod`) et son fichier `back/.env.<env>` (modèle `back/.env.<env>.example`). `env.ts` charge le bon fichier selon `NODE_ENV`.
 - Ne pas supprimer de code fonctionnel sans le signaler.
 
 ## Frontend (`front/`)
@@ -77,7 +77,7 @@ La création et la gestion des tables sont faites **manuellement par le proprié
 - `synchronize` et `migrationsRun` sont **toujours** à `false` dans `data-source.ts`.
 - Ne jamais créer, modifier ou supprimer de table ; ne jamais lancer de migration ou de commande destructive sur la base.
 - Rôle des entités TypeORM : mapper des tables **existantes**.
-- À chaque nouvelle entité, fournir au propriétaire : rôle, propriétés, relations, et le `CREATE TABLE` MySQL correspondant qu'il exécutera lui-même.
+- À chaque nouvelle entité, fournir au propriétaire : rôle, propriétés, relations, et le `CREATE TABLE` MariaDB correspondant qu'il exécutera lui-même.
 
 ## Démarrage local
 

@@ -3,7 +3,7 @@
 Plateforme web de consultation et de vente de véhicules.
 
 - **`front/`** — application cliente : Next.js 16 (App Router), React 19, TypeScript, Bootstrap (`react-bootstrap`)
-- **`back/`** — API REST : Node.js, Express 5, TypeScript, TypeORM, MySQL / MariaDB
+- **`back/`** — API REST : Node.js, Express 5, TypeScript, TypeORM, MariaDB
 
 Le frontend ne parle **qu'à l'API backend** ; toute la communication avec la base de données passe par `back/`.
 
@@ -39,13 +39,13 @@ depuis l'application ; il n'y a **aucune donnée préremplie** dans la base.
 ## Prérequis
 
 - **Node.js 20+** et npm
-- Un serveur **MySQL** ou **MariaDB** accessible en local
+- Un serveur **MariaDB 10.11 LTS** (ou plus récent) accessible en local
 
 ## Environnements
 
-Trois environnements dissociés, chacun avec sa base, son utilisateur MySQL et ses secrets :
+Trois environnements dissociés, chacun avec sa base, son utilisateur MariaDB et ses secrets :
 
-| Environnement | Base MySQL | Utilisateur MySQL | Fichier backend |
+| Environnement | Base MariaDB | Utilisateur MariaDB | Fichier backend |
 |---|---|---|---|
 | développement | `chcars_dev` | `chcarsdev` | `back/.env.development` |
 | test | `chcars_test` | `chcarstest` | `back/.env.test` |
@@ -59,7 +59,7 @@ correspondant (versionné). `env.ts` charge automatiquement le bon fichier selon
 
 > ⚠️ L'application ne crée, ne modifie ni ne supprime aucune table
 > (`synchronize: false`). Les opérations ci-dessous sont à exécuter
-> **manuellement** avec un client MySQL, **pour chaque environnement utilisé**.
+> **manuellement** avec un client MariaDB, **pour chaque environnement utilisé**.
 
 Exemple pour le développement :
 
@@ -71,7 +71,7 @@ FLUSH PRIVILEGES;
 ```
 
 ```bash
-mysql -u chcarsdev -p chcars_dev < back/db/schema.sql
+mariadb -u chcarsdev -p chcars_dev < back/db/schema.sql
 ```
 
 Répéter avec `chcars_test` / `chcarstest` et `chcars_prod` / `chcarsprod` selon
@@ -93,7 +93,7 @@ cp .env.development.example .env.development     # puis renseigner DB_PASSWORD, 
 | `NODE_ENV` | `development` \| `test` \| `production` |
 | `PORT` / `API_PREFIX` | port et préfixe de l'API |
 | `CORS_ORIGIN` | origine autorisée (le frontend) |
-| `DB_HOST` / `DB_PORT` / `DB_USERNAME` / `DB_PASSWORD` / `DB_DATABASE` | connexion MySQL de l'environnement |
+| `DB_HOST` / `DB_PORT` / `DB_USERNAME` / `DB_PASSWORD` / `DB_DATABASE` | connexion MariaDB de l'environnement |
 | `JWT_SECRET` / `JWT_EXPIRES_IN` | signature et durée de validité des tokens |
 
 ### Frontend — `front/.env.local`

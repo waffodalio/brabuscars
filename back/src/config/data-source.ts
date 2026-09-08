@@ -4,7 +4,7 @@ import { DataSource } from "typeorm";
 import { env, isProduction } from "./env";
 
 /**
- * TypeORM connection for CHCars.
+ * TypeORM connection for CHCars (MariaDB, via the `mysql2` client).
  *
  * IMPORTANT: `synchronize` and `migrationsRun` are always disabled. The
  * database schema is owned and managed manually by the project owner — this
@@ -12,7 +12,7 @@ import { env, isProduction } from "./env";
  * synchronization or run migrations automatically.
  */
 export const AppDataSource = new DataSource({
-  type: "mysql",
+  type: "mariadb",
   host: env.DB_HOST,
   port: env.DB_PORT,
   username: env.DB_USERNAME,

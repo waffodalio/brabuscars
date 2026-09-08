@@ -2,9 +2,10 @@
 --
 -- Ce fichier est fourni À TITRE DE RÉFÉRENCE. L'application ne crée ni ne
 -- modifie aucune table (synchronize = false). C'est au propriétaire du projet
--- d'exécuter ce script, après relecture, sur sa base MySQL / MariaDB :
+-- d'exécuter ce script, après relecture, sur sa base MariaDB (10.11 LTS ou
+-- plus récent) :
 --
---   mysql -u chcars -p chcars < back/db/schema.sql
+--   mariadb -u chcarsdev -p chcars_dev < back/db/schema.sql
 --
 -- Les tables sont créées dans l'ordre imposé par les clés étrangères :
 --   user → brand → category → car_model → vehicle → listing

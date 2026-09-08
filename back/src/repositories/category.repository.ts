@@ -7,7 +7,7 @@ import { escapeLike } from "../utils/escapeLike";
  * Data-access layer for {@link Category}. All TypeORM queries touching the
  * `category` table live here.
  *
- * (MySQL `LIKE` is case-insensitive with the default `utf8mb4_unicode_ci`
+ * (MariaDB `LIKE` is case-insensitive with the default `utf8mb4_unicode_ci`
  * collation, so `Like` is enough for the search filter.)
  */
 export const categoryRepository = AppDataSource.getRepository(Category).extend({

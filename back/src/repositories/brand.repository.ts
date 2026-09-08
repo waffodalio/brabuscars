@@ -7,7 +7,7 @@ import { escapeLike } from "../utils/escapeLike";
  * Data-access layer for {@link Brand}. All TypeORM queries touching the
  * `brand` table live here; services and controllers never query directly.
  *
- * (MySQL `LIKE` is case-insensitive with the default `utf8mb4_unicode_ci`
+ * (MariaDB `LIKE` is case-insensitive with the default `utf8mb4_unicode_ci`
  * collation, so `Like` is enough for the search filter.)
  */
 export const brandRepository = AppDataSource.getRepository(Brand).extend({
