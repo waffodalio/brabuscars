@@ -29,14 +29,18 @@ chcars/
 
 | Rôle | Peut… |
 |---|---|
-| *(visiteur)* | consulter marques, catégories, modèles, véhicules, annonces publiées |
+| *(visiteur)* | consulter le catalogue et les annonces publiées, envoyer un message via `/contact` |
 | `user` | + s'inscrire / se connecter, gérer ses favoris |
-| `admin` | + gérer **tout le catalogue** : marques, catégories, modèles, véhicules, **photos**, annonces |
+| `admin` | + gérer **tout le catalogue** (marques, catégories, modèles, véhicules), les **annonces** (dont leurs **photos**) et les **messages de contact** |
 | `super_admin` | + **gérer les comptes** : lister les utilisateurs, basculer un compte `user` ⇄ `admin` |
 
 Les rôles sont hiérarchiques (`user` < `admin` < `super_admin`). Les informations
 et les images des véhicules sont saisies par l'administrateur depuis
 l'application ; il n'y a **aucune donnée préremplie** dans la base.
+
+CHCars est une **concession unique** : tous les véhicules sont à la même adresse.
+Il n'y a donc pas de ville par annonce — les coordonnées (adresse, téléphone,
+horaires) viennent des variables `COMPANY_*` et sont exposées par `GET /api/company`.
 
 Un `super_admin` ne peut ni modifier son propre rôle ni celui d'un autre
 `super_admin` ; le rôle `super_admin` ne s'attribue jamais via l'application
@@ -118,6 +122,14 @@ UPLOAD_DIR=uploads
 PUBLIC_UPLOADS_URL=http://localhost:4000/uploads
 MAX_UPLOAD_BYTES=15728640
 MAX_IMAGES_PER_LISTING=20
+COMPANY_NAME=CHCars
+COMPANY_ADDRESS=12 avenue de l'Automobile
+COMPANY_POSTAL_CODE=69003
+COMPANY_CITY=Lyon
+COMPANY_COUNTRY=France
+COMPANY_PHONE=+33 4 78 00 00 00
+COMPANY_EMAIL=contact@chcars.fr
+COMPANY_HOURS=Du lundi au samedi, 9h–19h
 ```
 
 Puis `back/.env.development.local` avec le mot de passe MariaDB :
@@ -142,6 +154,7 @@ et vivre dans `back/.env.production.local`.
 | `UPLOAD_DIR` | dossier où sont écrits les fichiers image (hors dépôt ; hors dossier de déploiement en prod) |
 | `PUBLIC_UPLOADS_URL` | préfixe d'URL publique des images (`…/uploads`) |
 | `MAX_UPLOAD_BYTES` / `MAX_IMAGES_PER_LISTING` | limites d'upload (défaut 15 Mo / 20 images) |
+| `COMPANY_*` | coordonnées de la concession (nom, adresse, CP, ville, pays, téléphone, e-mail, horaires) |
 
 ### Frontend
 
@@ -195,6 +208,7 @@ Base : `http://localhost:4000/api`. Réponses :
 | Ressource | Endpoints | Accès |
 |---|---|---|
 | Santé | `GET /health` | public |
+| Entreprise | `GET /company` | public |
 | Auth | `POST /auth/register` · `POST /auth/login` · `POST /auth/logout` · `GET /auth/me` | public / session pour `/me` |
 | Utilisateurs | `GET /users` (`?role=` `?search=`) · `PATCH /users/:id/role` | **super_admin** |
 | Marques | `GET /brands` · `GET /brands/:id` | public |
@@ -210,13 +224,15 @@ Base : `http://localhost:4000/api`. Réponses :
 | Photos | `GET /listings/:listingId/images` | public |
 | | `POST /…` (multipart, champ `file`) · `PATCH /…/:imageId` · `DELETE /…/:imageId` | **admin** |
 | Favoris | `GET /favorites` · `POST /favorites` · `DELETE /favorites/:listingId` | session (tout `user`) |
+| Contact | `POST /contact` (formulaire public) | public |
+| | `GET /contact` · `PATCH /contact/:id` · `DELETE /contact/:id` | **admin** |
 
 **Authentification par cookie.** `POST /auth/login` et `/auth/register` posent
 un cookie `chcars_token` **httpOnly** (le JWT n'est jamais dans le corps de la
 réponse) et un cookie lisible `chcars_csrf`. Les requêtes doivent être envoyées
 avec les cookies (`credentials: "include"` côté navigateur, `-c/-b` avec curl).
-Toute requête **non‑GET** (hors `/auth/login` et `/auth/register`) doit renvoyer
-la valeur du cookie `chcars_csrf` dans l'en‑tête `X-CSRF-Token`.
+Toute requête **non‑GET** (hors `/auth/login`, `/auth/register` et `/contact`)
+doit renvoyer la valeur du cookie `chcars_csrf` dans l'en‑tête `X-CSRF-Token`.
 
 ## Scripts npm
 

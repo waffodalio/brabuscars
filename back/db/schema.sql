@@ -91,8 +91,6 @@ CREATE TABLE IF NOT EXISTS `listing` (
   `title`        VARCHAR(150)  NOT NULL,
   `description`  TEXT          NULL,
   `price`        DECIMAL(10,2) NOT NULL,
-  `city`         VARCHAR(120)  NOT NULL,
-  `postal_code`  VARCHAR(10)   NULL,
   `status`       ENUM('draft','published','sold','archived') NOT NULL DEFAULT 'draft',
   `published_at` DATETIME      NULL,
   `created_at`   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -142,9 +140,23 @@ CREATE TABLE IF NOT EXISTS `favorite` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `contact_message` (
+  `id`         INT          NOT NULL AUTO_INCREMENT,
+  `name`       VARCHAR(120) NOT NULL,
+  `email`      VARCHAR(255) NOT NULL,
+  `message`    TEXT         NOT NULL,
+  `handled`    TINYINT(1)   NOT NULL DEFAULT 0,
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_contact_message_handled` (`handled`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------------------------------------------------------------------------
 --  Migrations pour une base déjà créée avec une version antérieure du schéma
 -- ---------------------------------------------------------------------------
 -- Rôle super administrateur (ajout de la valeur d'enum) :
 -- ALTER TABLE `user`
 --   MODIFY COLUMN `role` ENUM('user','admin','super_admin') NOT NULL DEFAULT 'user';
+--
+-- Retrait de la ville/CP par annonce (tous les véhicules sont chez l'entreprise) :
+-- ALTER TABLE `listing` DROP COLUMN `city`, DROP COLUMN `postal_code`;

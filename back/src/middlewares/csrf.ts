@@ -7,10 +7,11 @@ import { ApiError } from "../utils/ApiError";
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 /**
- * Paths (relative to the API prefix) exempt from the CSRF check: the visitor
- * has no session yet, so there is nothing to forge.
+ * Paths (relative to the API prefix) exempt from the CSRF check: no session is
+ * involved, so there is nothing to forge. `/contact` is a public form (rate
+ * limited + honeypot).
  */
-const EXEMPT_PATHS = new Set(["/auth/login", "/auth/register"]);
+const EXEMPT_PATHS = new Set(["/auth/login", "/auth/register", "/contact"]);
 
 function safeEqual(a: string, b: string): boolean {
   const bufferA = Buffer.from(a);

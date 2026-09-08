@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import Alert from "react-bootstrap/Alert";
 import Badge from "react-bootstrap/Badge";
@@ -10,6 +11,7 @@ import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
 import Spinner from "react-bootstrap/Spinner";
 import { useAuth } from "@/context/AuthContext";
+import { useCompany } from "@/context/CompanyContext";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { ListingImagePanel } from "@/components/ListingImagePanel";
 import { VehicleSpecs } from "@/components/VehicleSpecs";
@@ -33,6 +35,7 @@ export default function ListingDetailPage() {
   const id = Number(params.id);
   const router = useRouter();
   const { isAdmin } = useAuth();
+  const company = useCompany();
 
   const [listing, setListing] = useState<Listing | null>(null);
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
@@ -168,20 +171,21 @@ export default function ListingDetailPage() {
 
               {vehicle && <VehicleSpecs vehicle={vehicle} className="mb-3" />}
 
-              <div className="small text-secondary">
-                <div>
-                  {listing.city}
-                  {listing.postalCode ? ` (${listing.postalCode})` : ""}
-                </div>
-                {listing.seller && (
-                  <div>
-                    Vendeur : {listing.seller.firstName}{" "}
-                    {listing.seller.lastName}
+              {company && (
+                <div className="small text-secondary mb-3">
+                  <div className="fw-semibold text-body">
+                    Disponible chez {company.name}
                   </div>
-                )}
-              </div>
+                  <div>
+                    {company.address}, {company.postalCode} {company.city}
+                  </div>
+                </div>
+              )}
 
-              <div className="mt-3">
+              <div className="d-flex flex-wrap gap-2 mt-3">
+                <Link href="/contact" className="btn btn-primary">
+                  Contacter
+                </Link>
                 <FavoriteButton listingId={listing.id} />
               </div>
             </Card.Body>

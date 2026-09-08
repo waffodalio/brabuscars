@@ -29,3 +29,13 @@ export const authRateLimiter = rateLimit({
   skip: () => isTest,
   message: error("Too many authentication attempts, please try again later"),
 });
+
+/** Slows down spam through the public contact form. */
+export const contactRateLimiter = rateLimit({
+  windowMs: FIFTEEN_MINUTES,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skip: () => isTest,
+  message: error("Too many messages sent, please try again later"),
+});

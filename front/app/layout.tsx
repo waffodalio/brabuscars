@@ -3,6 +3,7 @@ import { Manrope } from "next/font/google";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { CompanyProvider } from "@/context/CompanyContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { MainLayout } from "@/layouts/MainLayout";
 
@@ -22,11 +23,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={manrope.variable}>
       <body className="min-vh-100 d-flex flex-column">
-        <AuthProvider>
-          <FavoritesProvider>
-            <MainLayout>{children}</MainLayout>
-          </FavoritesProvider>
-        </AuthProvider>
+        <CompanyProvider>
+          <AuthProvider>
+            <FavoritesProvider>
+              <MainLayout>{children}</MainLayout>
+            </FavoritesProvider>
+          </AuthProvider>
+        </CompanyProvider>
       </body>
     </html>
   );

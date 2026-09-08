@@ -61,6 +61,19 @@ const envSchema = z.object({
     .default(15 * 1024 * 1024),
   /** Max images per listing. */
   MAX_IMAGES_PER_LISTING: z.coerce.number().int().positive().default(20),
+
+  // --- Company (single dealership: all vehicles are at this address) ---
+  COMPANY_NAME: z.string().min(1).default("CHCars"),
+  COMPANY_ADDRESS: z.string().min(1).default("12 avenue de l'Automobile"),
+  COMPANY_POSTAL_CODE: z.string().min(1).default("69003"),
+  COMPANY_CITY: z.string().min(1).default("Lyon"),
+  COMPANY_COUNTRY: z.string().min(1).default("France"),
+  COMPANY_PHONE: z.string().min(1).default("+33 4 78 00 00 00"),
+  COMPANY_EMAIL: z.string().email().default("contact@chcars.fr"),
+  COMPANY_HOURS: z
+    .string()
+    .min(1)
+    .default("Du lundi au samedi, 9h–19h"),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -56,6 +56,11 @@ Hiérarchie : `user` < `admin` < `super_admin`. `authorize(minRole)` vérifie un
 - **Pas de données préremplies / de seed** : le contenu est saisi par l'administrateur via l'application.
 - Attente de l'utilisateur : livrer de **vraies fonctionnalités de gestion** (actions/CRUD/interrupteurs qui modifient l'état via l'API), pas seulement des pages d'affichage.
 
+### Concession unique & contact
+
+- CHCars est **une seule concession** : tous les véhicules sont à la même adresse. Pas de ville par annonce (`Listing.city`/`postal_code` retirés). Les coordonnées viennent des variables `env.COMPANY_*`, exposées par `GET /api/company` (public) et partagées côté front via `CompanyContext` / `useCompany()`.
+- Formulaire de contact public : `POST /api/contact` (exempt de CSRF, rate-limité, honeypot `website` que le service ignore silencieusement) → table `contact_message`. `GET`/`PATCH`/`DELETE /api/contact[/:id]` réservés à l'admin (page `/admin/messages`).
+
 Réponses API cohérentes :
 - succès : `{ "success": true, "data": ... }`
 - erreur : `{ "success": false, "message": "...", "details"?: ... }`

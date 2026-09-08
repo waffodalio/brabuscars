@@ -14,6 +14,8 @@ const BASE_LINKS = [
   { href: "/admin/annonces", label: "Annonces" },
 ];
 
+const ADMIN_LINKS = [{ href: "/admin/messages", label: "Messages" }];
+
 const SUPER_ADMIN_LINKS = [
   { href: "/admin/utilisateurs", label: "Utilisateurs" },
 ];
@@ -21,9 +23,11 @@ const SUPER_ADMIN_LINKS = [
 export function AdminNav() {
   const pathname = usePathname();
   const { isSuperAdmin } = useAuth();
-  const links = isSuperAdmin
-    ? [...BASE_LINKS, ...SUPER_ADMIN_LINKS]
-    : BASE_LINKS;
+  const links = [
+    ...BASE_LINKS,
+    ...ADMIN_LINKS,
+    ...(isSuperAdmin ? SUPER_ADMIN_LINKS : []),
+  ];
 
   return (
     <Nav variant="pills" className="mb-4 flex-wrap gap-1">

@@ -5,6 +5,7 @@ import Badge from "react-bootstrap/Badge";
 import Card from "react-bootstrap/Card";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { VehicleSpecs } from "@/components/VehicleSpecs";
+import { useCompany } from "@/context/CompanyContext";
 import type { Listing } from "@/types/listing";
 import {
   LISTING_STATUS_LABELS,
@@ -16,6 +17,7 @@ import { vehicleTitle } from "@/utils/vehicleLabels";
 /** Listing summary used in the listings and favourites grids. */
 export function ListingCard({ listing }: { listing: Listing }) {
   const cover = listing.images[0];
+  const company = useCompany();
 
   return (
     <Card className="chc-listing-card h-100 position-relative overflow-hidden">
@@ -56,7 +58,11 @@ export function ListingCard({ listing }: { listing: Listing }) {
         {listing.vehicle && (
           <VehicleSpecs vehicle={listing.vehicle} className="mb-2" />
         )}
-        <div className="mt-auto small text-secondary pt-1">{listing.city}</div>
+        {company && (
+          <div className="mt-auto small text-secondary pt-1">
+            {company.city}
+          </div>
+        )}
       </Card.Body>
     </Card>
   );

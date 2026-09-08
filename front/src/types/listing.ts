@@ -29,8 +29,6 @@ export interface Listing {
   title: string;
   description: string | null;
   price: number;
-  city: string;
-  postalCode: string | null;
   status: ListingStatus;
   publishedAt: string | null;
   /** Cover first, then by position. Empty until images are uploaded. */
@@ -44,8 +42,6 @@ export interface CreateListingInput {
   title: string;
   description?: string | null;
   price: number;
-  city: string;
-  postalCode?: string | null;
 }
 
 export type UpdateListingInput = Partial<Omit<CreateListingInput, "vehicleId">>;

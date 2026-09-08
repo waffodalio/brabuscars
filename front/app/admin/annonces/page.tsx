@@ -27,8 +27,6 @@ const EMPTY_FORM = {
   vehicleId: "",
   title: "",
   price: "",
-  city: "",
-  postalCode: "",
   description: "",
 };
 
@@ -89,8 +87,6 @@ export default function AdminListingsPage() {
       vehicleId: String(listing.vehicleId),
       title: listing.title,
       price: String(listing.price),
-      city: listing.city,
-      postalCode: listing.postalCode ?? "",
       description: listing.description ?? "",
     });
     setFormError("");
@@ -103,8 +99,6 @@ export default function AdminListingsPage() {
     const common = {
       title: form.title.trim(),
       price: Number(form.price),
-      city: form.city.trim(),
-      postalCode: form.postalCode.trim() || null,
       description: form.description.trim() || null,
     };
     try {
@@ -292,39 +286,15 @@ export default function AdminListingsPage() {
           />
         </Form.Group>
 
-        <Row>
-          <Col sm={6}>
-            <Form.Group className="mb-3" controlId="listing-price">
-              <Form.Label>Prix (€)</Form.Label>
-              <Form.Control
-                type="number"
-                min={1}
-                step="0.01"
-                value={form.price}
-                onChange={(event) => set("price", event.target.value)}
-                required
-              />
-            </Form.Group>
-          </Col>
-          <Col sm={6}>
-            <Form.Group className="mb-3" controlId="listing-postal">
-              <Form.Label>Code postal</Form.Label>
-              <Form.Control
-                value={form.postalCode}
-                onChange={(event) => set("postalCode", event.target.value)}
-                maxLength={10}
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-
-        <Form.Group className="mb-3" controlId="listing-city">
-          <Form.Label>Ville</Form.Label>
+        <Form.Group className="mb-3" controlId="listing-price">
+          <Form.Label>Prix (€)</Form.Label>
           <Form.Control
-            value={form.city}
-            onChange={(event) => set("city", event.target.value)}
+            type="number"
+            min={1}
+            step="0.01"
+            value={form.price}
+            onChange={(event) => set("price", event.target.value)}
             required
-            maxLength={120}
           />
         </Form.Group>
 

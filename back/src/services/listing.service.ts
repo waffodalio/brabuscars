@@ -50,8 +50,6 @@ export const listingService = {
         title: dto.title,
         description: dto.description ?? null,
         price: dto.price,
-        city: dto.city,
-        postalCode: dto.postalCode ?? null,
         status: "draft",
       }),
     );
@@ -64,8 +62,6 @@ export const listingService = {
     if (dto.title !== undefined) listing.title = dto.title;
     if (dto.description !== undefined) listing.description = dto.description;
     if (dto.price !== undefined) listing.price = dto.price;
-    if (dto.city !== undefined) listing.city = dto.city;
-    if (dto.postalCode !== undefined) listing.postalCode = dto.postalCode;
 
     await listingRepository.save(listing);
     return toListingResponse(await loadOrFail(id));

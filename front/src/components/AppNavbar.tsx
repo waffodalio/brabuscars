@@ -32,6 +32,7 @@ export function AppNavbar() {
             <Nav.Link href="/marques">Marques</Nav.Link>
             <Nav.Link href="/modeles">Modèles</Nav.Link>
             <Nav.Link href="/categories">Catégories</Nav.Link>
+            <Nav.Link href="/contact">Contact</Nav.Link>
           </Nav>
 
           {!initializing && (

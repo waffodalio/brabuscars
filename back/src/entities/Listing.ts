@@ -64,12 +64,6 @@ export class Listing {
   })
   price!: number;
 
-  @Column({ type: "varchar", length: 120 })
-  city!: string;
-
-  @Column({ name: "postal_code", type: "varchar", length: 10, nullable: true })
-  postalCode!: string | null;
-
   @Column({ type: "enum", enum: [...LISTING_STATUSES], default: "draft" })
   status!: ListingStatus;
 

@@ -12,6 +12,7 @@ const SECTIONS = [
   { href: "/admin/categories", title: "Catégories", text: "Types de carrosserie / segments." },
   { href: "/admin/vehicules", title: "Véhicules", text: "Fiches véhicule et galeries photos." },
   { href: "/admin/annonces", title: "Annonces", text: "Mises en vente et cycle de publication." },
+  { href: "/admin/messages", title: "Messages", text: "Demandes reçues via le formulaire de contact." },
 ];
 
 const SUPER_ADMIN_SECTIONS = [

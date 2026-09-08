@@ -13,13 +13,11 @@ const priceRule = z
   .max(99_999_999.99)
   .multipleOf(0.01, "price supports at most 2 decimals");
 
-/** Fields a seller can edit after creation. */
+/** Fields an admin can edit after creation. */
 const editableFields = {
   title: z.string().trim().min(1).max(150),
   description: z.string().trim().min(1).max(5000).nullable().optional(),
   price: priceRule,
-  city: z.string().trim().min(1).max(120),
-  postalCode: z.string().trim().min(1).max(10).nullable().optional(),
 };
 
 export const createListingSchema = z
