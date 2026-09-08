@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# env files — commit only the *.example templates, never the real ones
+.env
+.env.*
+!.env.development.example
+!.env.test.example
+!.env.production.example
+
+# logs
+*.log
+npm-debug.log*
+
+# misc
+.DS_Store

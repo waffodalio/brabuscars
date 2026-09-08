@@ -1,0 +1,9 @@
+/*
+ * Global styles for CHCars.
+ * Bootstrap (imported in app/layout.tsx) covers the bulk of the UI.
+ * Keep this file only for the few app-wide rules Bootstrap does not provide.
+ */
+
+:root {
+  color-scheme: light;
+}
