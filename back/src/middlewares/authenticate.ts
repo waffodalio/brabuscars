@@ -6,6 +6,13 @@ import { AUTH_COOKIE } from "../utils/cookies";
 
 const BEARER_PREFIX = "Bearer ";
 
+/** Role hierarchy: a higher rank includes every lower-ranked permission. */
+const ROLE_RANK: Record<UserRole, number> = {
+  user: 0,
+  admin: 1,
+  super_admin: 2,
+};
+
 /**
  * Reads the JWT from the httpOnly auth cookie, falling back to an
  * `Authorization: Bearer <token>` header (useful for tooling / tests).
@@ -42,16 +49,23 @@ export const authenticate: RequestHandler = (req, _res, next) => {
 };
 
 /**
- * Restricts a route to the given roles. Must be chained after `authenticate`.
+ * Requires the authenticated user to hold at least `minRole`. Must be chained
+ * after `authenticate`.
  */
 export const authorize =
-  (...roles: UserRole[]): RequestHandler =>
+  (minRole: UserRole): RequestHandler =>
   (req, _res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user || ROLE_RANK[req.user.role] < ROLE_RANK[minRole]) {
       throw ApiError.forbidden("Insufficient permissions");
     }
     next();
   };
 
-/** Require an authenticated administrator. Spread into a route's handlers. */
+/** Require at least an administrator (`admin` or `super_admin`). */
 export const adminOnly: RequestHandler[] = [authenticate, authorize("admin")];
+
+/** Require a super administrator. */
+export const superAdminOnly: RequestHandler[] = [
+  authenticate,
+  authorize("super_admin"),
+];

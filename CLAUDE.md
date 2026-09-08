@@ -42,14 +42,19 @@ Architecture en couches : **Route → Controller → Service → Repository → 
 - `entities/` : entités TypeORM.
 - `middlewares/` : `errorHandler` (gestion centralisée), `notFoundHandler`, `authenticate` / `authorize` (+ `adminOnly`).
 - `config/` : `env.ts` (chargement `.env.<env>` + validation zod), `data-source.ts` (TypeORM).
-- `scripts/` : `createAdmin.ts` (`npm run create-admin`), seul moyen d'obtenir un compte `admin`.
-- `utils/` : `ApiError`, enveloppes de réponse, `actor.ts`, mappers de réponse.
+- `scripts/` : `createAdmin.ts` (`npm run create-admin [-- --super]`), seul moyen d'obtenir un compte `admin` / `super_admin` hors interface.
+- `utils/` : `ApiError`, enveloppes de réponse, `actor.ts`, `cookies.ts`, mappers de réponse.
 
 ### Rôles et accès
 
-- Le **catalogue** (marques, catégories, modèles, véhicules, photos) et les **annonces** sont gérés **uniquement par un `admin`** : routes d'écriture protégées par `adminOnly`.
-- Un `user` peut seulement consulter et gérer ses favoris. L'inscription publique ne crée que des comptes `user`.
+Hiérarchie : `user` < `admin` < `super_admin`. `authorize(minRole)` vérifie un **rang minimal** (via `ROLE_RANK`), donc un `super_admin` passe partout où un `admin` est requis.
+
+- **`user`** : consulter le catalogue + annonces publiées, gérer ses favoris. L'inscription publique ne crée que des `user`.
+- **`admin`** : + gérer tout le **catalogue** (marques, catégories, modèles, véhicules, photos) et les **annonces**. Routes d'écriture protégées par `adminOnly`.
+- **`super_admin`** : + gérer les **comptes** — `GET /api/users`, `PATCH /api/users/:id/role` (bascule `user` ⇄ `admin`), routes protégées par `superAdminOnly`. Ne peut pas changer son propre rôle ni celui d'un autre `super_admin` ; le rôle `super_admin` ne s'attribue jamais via l'API.
+- Côté front : `useAuth()` expose `isAdmin` / `isSuperAdmin` ; `AdminGuard` protège `/admin/*`, la page `/admin/utilisateurs` exige `isSuperAdmin`.
 - **Pas de données préremplies / de seed** : le contenu est saisi par l'administrateur via l'application.
+- Attente de l'utilisateur : livrer de **vraies fonctionnalités de gestion** (actions/CRUD/interrupteurs qui modifient l'état via l'API), pas seulement des pages d'affichage.
 
 Réponses API cohérentes :
 - succès : `{ "success": true, "data": ... }`

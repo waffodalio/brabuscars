@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
  * relies on Bootstrap's responsive collapse behaviour.
  */
 export function AppNavbar() {
-  const { user, initializing, logout } = useAuth();
+  const { user, initializing, isAdmin, logout } = useAuth();
 
   return (
     <Navbar bg="dark" variant="dark" expand="lg">
@@ -32,7 +32,7 @@ export function AppNavbar() {
               {user ? (
                 <>
                   <Nav.Link href="/favoris">Favoris</Nav.Link>
-                  {user.role === "admin" && (
+                  {isAdmin && (
                     <Nav.Link href="/admin">Administration</Nav.Link>
                   )}
                   <Navbar.Text className="mx-lg-3">

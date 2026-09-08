@@ -16,6 +16,9 @@ interface AuthContextValue {
   user: AuthUser | null;
   /** True while the existing session is being checked on first load. */
   initializing: boolean;
+  /** `admin` or `super_admin`. */
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
   login: (credentials: Credentials) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
@@ -50,7 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, initializing, login, register, logout }),
+    () => ({
+      user,
+      initializing,
+      isAdmin: user?.role === "admin" || user?.role === "super_admin",
+      isSuperAdmin: user?.role === "super_admin",
+      login,
+      register,
+      logout,
+    }),
     [user, initializing, login, register, logout],
   );
 

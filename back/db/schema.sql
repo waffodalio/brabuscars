@@ -17,7 +17,7 @@ CREATE TABLE `user` (
   `password_hash` VARCHAR(255)  NOT NULL,
   `first_name`    VARCHAR(100)  NOT NULL,
   `last_name`     VARCHAR(100)  NOT NULL,
-  `role`          ENUM('user','admin') NOT NULL DEFAULT 'user',
+  `role`          ENUM('user','admin','super_admin') NOT NULL DEFAULT 'user',
   `created_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -133,3 +133,10 @@ CREATE TABLE `favorite` (
     FOREIGN KEY (`listing_id`) REFERENCES `listing` (`id`)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+--  Migrations pour une base déjà créée avec une version antérieure du schéma
+-- ---------------------------------------------------------------------------
+-- Rôle super administrateur (ajout de la valeur d'enum) :
+-- ALTER TABLE `user`
+--   MODIFY COLUMN `role` ENUM('user','admin','super_admin') NOT NULL DEFAULT 'user';

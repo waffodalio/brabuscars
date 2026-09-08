@@ -35,7 +35,7 @@ export default function ListingDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const router = useRouter();
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
 
   const [listing, setListing] = useState<Listing | null>(null);
   const [error, setError] = useState("");
@@ -54,8 +54,6 @@ export default function ListingDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
-
-  const isAdmin = user?.role === "admin";
 
   async function changeStatus(status: ListingStatus) {
     setBusy(true);

@@ -32,9 +32,15 @@ chcars/
 | *(visiteur)* | consulter marques, catégories, modèles, véhicules, annonces publiées |
 | `user` | + s'inscrire / se connecter, gérer ses favoris |
 | `admin` | + gérer **tout le catalogue** : marques, catégories, modèles, véhicules, **photos**, annonces |
+| `super_admin` | + **gérer les comptes** : lister les utilisateurs, basculer un compte `user` ⇄ `admin` |
 
-Les informations et les images des véhicules sont saisies par l'administrateur
-depuis l'application ; il n'y a **aucune donnée préremplie** dans la base.
+Les rôles sont hiérarchiques (`user` < `admin` < `super_admin`). Les informations
+et les images des véhicules sont saisies par l'administrateur depuis
+l'application ; il n'y a **aucune donnée préremplie** dans la base.
+
+Un `super_admin` ne peut ni modifier son propre rôle ni celui d'un autre
+`super_admin` ; le rôle `super_admin` ne s'attribue jamais via l'application
+(script `create-admin --super` ou base de données uniquement).
 
 ## Prérequis
 
@@ -134,16 +140,19 @@ curl http://localhost:4000/api/health
 
 ## 4. Créer le premier administrateur
 
-L'inscription publique ne crée que des comptes `user`. Pour obtenir un `admin` :
+L'inscription publique ne crée que des comptes `user`. Créez le **premier compte
+en `super_admin`** (il pourra ensuite nommer les autres administrateurs depuis
+l'interface, `/admin/utilisateurs`) :
 
 ```bash
 cd back
 npm run create-admin -- --email=admin@chcars.fr --password=motdepasse123 \
-  --firstName=Alice --lastName=Martin
+  --firstName=Alice --lastName=Martin --super
 ```
 
+- sans `--super`, le compte est créé en `admin` simple
 - cible l'environnement `development` ; pour la production : `npm run create-admin:prod -- …`
-- si l'e-mail existe déjà, le compte est promu `admin` (mot de passe réinitialisé)
+- si l'e-mail existe déjà, le compte est promu (mot de passe réinitialisé)
 
 ## API REST
 
@@ -154,6 +163,7 @@ Base : `http://localhost:4000/api`. Réponses :
 |---|---|---|
 | Santé | `GET /health` | public |
 | Auth | `POST /auth/register` · `POST /auth/login` · `POST /auth/logout` · `GET /auth/me` | public / session pour `/me` |
+| Utilisateurs | `GET /users` (`?role=` `?search=`) · `PATCH /users/:id/role` | **super_admin** |
 | Marques | `GET /brands` · `GET /brands/:id` | public |
 | | `POST /brands` · `PUT /brands/:id` · `DELETE /brands/:id` | **admin** |
 | Catégories | `GET /categories` · `GET /categories/:id` | public |

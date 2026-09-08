@@ -11,8 +11,7 @@ import { useAuth } from "@/context/AuthContext";
  */
 export function AdminGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { user, initializing } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const { user, initializing, isAdmin } = useAuth();
 
   useEffect(() => {
     if (initializing) return;

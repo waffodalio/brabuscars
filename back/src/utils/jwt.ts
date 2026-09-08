@@ -1,6 +1,6 @@
 import jwt, { type SignOptions } from "jsonwebtoken";
 import { env } from "../config/env";
-import type { UserRole } from "../entities/User";
+import { USER_ROLES, type UserRole } from "../entities/User";
 
 /** Only HMAC-SHA256 is accepted — prevents algorithm-confusion attacks. */
 const ALGORITHM = "HS256" as const;
@@ -33,10 +33,10 @@ export function verifyAuthToken(token: string): AuthTokenPayload {
   if (
     typeof decoded === "string" ||
     typeof decoded.sub !== "string" ||
-    (decoded.role !== "user" && decoded.role !== "admin")
+    !USER_ROLES.includes(decoded.role as UserRole)
   ) {
     throw new jwt.JsonWebTokenError("Malformed token payload");
   }
 
-  return { sub: Number(decoded.sub), role: decoded.role };
+  return { sub: Number(decoded.sub), role: decoded.role as UserRole };
 }

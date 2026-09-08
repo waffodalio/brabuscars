@@ -9,11 +9,22 @@ import {
 import { Favorite } from "./Favorite";
 import { Listing } from "./Listing";
 
-export type UserRole = "user" | "admin";
+export const USER_ROLES = ["user", "admin", "super_admin"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+/** Roles a super admin may assign through the API (never `super_admin`). */
+export const ASSIGNABLE_ROLES = ["user", "admin"] as const;
+export type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
 /**
- * A registered account. Sellers publish listings; the `role` field gates
- * administrative actions. Passwords are only ever stored hashed.
+ * A registered account.
+ *
+ * Roles form a hierarchy: `user` < `admin` < `super_admin`.
+ *  - `user`        — browse the catalogue, manage favourites
+ *  - `admin`       — manage the catalogue and the listings
+ *  - `super_admin` — everything, plus manage other users' roles
+ *
+ * Passwords are only ever stored hashed.
  */
 @Entity("user")
 export class User {
@@ -32,7 +43,7 @@ export class User {
   @Column({ name: "last_name", type: "varchar", length: 100 })
   lastName!: string;
 
-  @Column({ type: "enum", enum: ["user", "admin"], default: "user" })
+  @Column({ type: "enum", enum: [...USER_ROLES], default: "user" })
   role!: UserRole;
 
   @CreateDateColumn({ name: "created_at", type: "datetime" })

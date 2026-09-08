@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { AppDataSource } from "../config/data-source";
-import { User } from "../entities/User";
+import { User, type UserRole } from "../entities/User";
 import { hashPassword } from "../utils/password";
 
 /**
@@ -8,16 +8,23 @@ import { hashPassword } from "../utils/password";
  * accounts). Runs against the environment selected by NODE_ENV.
  *
  *   npm run create-admin -- --email=a@b.fr --password=secret123 \
- *     --firstName=Alice --lastName=Martin
+ *     --firstName=Alice --lastName=Martin [--super]
  *
- * If the email already exists, the account is promoted to `admin` (and its
- * password reset when `--password` is provided).
+ * `--super` creates a `super_admin` (can manage other users' roles). Create
+ * the very first account with `--super`.
+ *
+ * If the email already exists, the account is promoted (and its password
+ * reset).
  */
 function arg(name: string): string | undefined {
   const prefix = `--${name}=`;
-  return process.argv.find((value) => value.startsWith(prefix))?.slice(
-    prefix.length,
-  );
+  return process.argv
+    .find((value) => value.startsWith(prefix))
+    ?.slice(prefix.length);
+}
+
+function flag(name: string): boolean {
+  return process.argv.includes(`--${name}`);
 }
 
 async function main(): Promise<void> {
@@ -25,10 +32,11 @@ async function main(): Promise<void> {
   const password = arg("password");
   const firstName = arg("firstName") ?? "Admin";
   const lastName = arg("lastName") ?? "CHCars";
+  const role: UserRole = flag("super") ? "super_admin" : "admin";
 
   if (!email || !password) {
     console.error(
-      "Usage: npm run create-admin -- --email=<email> --password=<mot de passe> [--firstName=<x>] [--lastName=<y>]",
+      "Usage: npm run create-admin -- --email=<email> --password=<mot de passe> [--firstName=<x>] [--lastName=<y>] [--super]",
     );
     process.exit(1);
   }
@@ -41,12 +49,13 @@ async function main(): Promise<void> {
   try {
     const users = AppDataSource.getRepository(User);
     const existing = await users.findOneBy({ email });
+    const label = role === "super_admin" ? "super administrateur" : "administrateur";
 
     if (existing) {
-      existing.role = "admin";
+      existing.role = role;
       existing.passwordHash = await hashPassword(password);
       await users.save(existing);
-      console.log(`Utilisateur "${email}" promu administrateur.`);
+      console.log(`Utilisateur "${email}" promu ${label}.`);
     } else {
       await users.save(
         users.create({
@@ -54,10 +63,10 @@ async function main(): Promise<void> {
           passwordHash: await hashPassword(password),
           firstName,
           lastName,
-          role: "admin",
+          role,
         }),
       );
-      console.log(`Compte administrateur créé : "${email}".`);
+      console.log(`Compte ${label} créé : "${email}".`);
     }
   } finally {
     await AppDataSource.destroy();
