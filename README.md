@@ -51,9 +51,12 @@ Trois environnements dissociés, chacun avec sa base, son utilisateur MariaDB et
 | test | `chcars_test` | `chcarstest` | `back/.env.test` |
 | production | `chcars_prod` | `chcarsprod` | `back/.env.production` |
 
-Chaque fichier `back/.env.<env>` se crée à partir du `back/.env.<env>.example`
-correspondant (versionné). `env.ts` charge automatiquement le bon fichier selon
-`NODE_ENV` (`.env.<env>.local` > `.env.<env>` > `.env`).
+Les fichiers `back/.env.development`, `back/.env.test` et `back/.env.production`
+sont **versionnés** avec des valeurs par défaut non sensibles. `env.ts` charge
+automatiquement le bon fichier selon `NODE_ENV`, dans l'ordre
+`.env.<env>.local` > `.env.<env>` > `.env`. Les vraies valeurs sensibles (mot de
+passe BD, `JWT_SECRET` de production) se mettent dans un fichier **non versionné**
+`back/.env.<env>.local` (ou directement dans le fichier sur le serveur).
 
 ## 1. Base de données
 
@@ -82,11 +85,16 @@ l'administrateur via l'application.
 
 ### Backend
 
+En développement, `back/.env.development` fonctionne tel quel une fois la base
+`chcars_dev` créée. Sinon, surcharger les valeurs sensibles :
+
 ```bash
 cd back
-cp .env.development.example .env.development     # puis renseigner DB_PASSWORD, JWT_SECRET…
-# (idem .env.test.example / .env.production.example si besoin)
+echo "DB_PASSWORD=mon_mot_de_passe" > .env.development.local   # non versionné
 ```
+
+En production : éditer `back/.env.production` sur le serveur (renseigner
+`JWT_SECRET`, `DB_PASSWORD`, `CORS_ORIGIN`) ou utiliser `back/.env.production.local`.
 
 | Variable | Rôle |
 |---|---|
@@ -96,11 +104,14 @@ cp .env.development.example .env.development     # puis renseigner DB_PASSWORD, 
 | `DB_HOST` / `DB_PORT` / `DB_USERNAME` / `DB_PASSWORD` / `DB_DATABASE` | connexion MariaDB de l'environnement |
 | `JWT_SECRET` / `JWT_EXPIRES_IN` | signature et durée de validité des tokens |
 
-### Frontend — `front/.env.local`
+### Frontend
+
+`front/.env` (versionné) pointe l'API sur `http://localhost:4000/api`. Pour une
+autre URL sans committer, créer `front/.env.local` :
 
 ```bash
 cd front
-cp .env.example .env.local
+echo "NEXT_PUBLIC_API_URL=https://api.chcars.example/api" > .env.local
 ```
 
 | Variable | Exemple |
@@ -182,4 +193,6 @@ la valeur du cookie `chcars_csrf` dans l'en‑tête `X-CSRF-Token`.
   `synchronize` est désactivé.
 - Toute évolution du schéma : mettre à jour `back/db/schema.sql` puis l'appliquer
   manuellement à chaque environnement.
-- Les secrets ne sont jamais commités : seuls les fichiers `*.env.*.example` le sont.
+- Les fichiers `.env` / `.env.<env>` versionnés ne contiennent que des valeurs par
+  défaut non sensibles ; les vrais secrets vont dans les fichiers `.env.local` /
+  `.env.<env>.local`, non versionnés.

@@ -13,10 +13,10 @@ build/
 coverage/
 *.tsbuildinfo
 
-# env files (keep .env.example committed)
-.env
-.env.*
-!.env.example
+# env files — les .env / .env.<env> versionnés portent des valeurs par défaut
+# non sensibles ; les surcharges locales vont dans .env.local / .env.*.local
+.env.local
+.env.*.local
 
 # Next.js generated types (front/)
 next-env.d.ts

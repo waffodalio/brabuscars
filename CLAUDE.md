@@ -17,8 +17,8 @@ Ne jamais mélanger le code `front/` et `back/`. Le frontend communique **unique
 
 - Tout le code est en TypeScript.
 - Code simple, lisible, maintenable ; respect de SOLID quand c'est pertinent ; pas de duplication.
-- Aucun secret dans le code : tout passe par des variables d'environnement. Seuls les fichiers `*.example` sont commités.
-- **Environnements dissociés** : `development` / `test` / `production`, chacun avec sa base MariaDB, son utilisateur (`chcarsdev` / `chcarstest` / `chcarsprod`) et son fichier `back/.env.<env>` (modèle `back/.env.<env>.example`). `env.ts` charge le bon fichier selon `NODE_ENV`.
+- Aucun secret dans le code : tout passe par des variables d'environnement. Les fichiers `.env` / `.env.<env>` sont versionnés avec des valeurs par défaut **non sensibles** ; les vrais secrets vont dans `.env.local` / `.env.<env>.local` (non versionnés).
+- **Environnements dissociés** : `development` / `test` / `production`, chacun avec sa base MariaDB, son utilisateur (`chcarsdev` / `chcarstest` / `chcarsprod`) et son fichier `back/.env.<env>`. `env.ts` charge le bon fichier selon `NODE_ENV`, ordre `.env.<env>.local` > `.env.<env>` > `.env`.
 - Ne pas supprimer de code fonctionnel sans le signaler.
 
 ## Frontend (`front/`)
@@ -82,14 +82,13 @@ La création et la gestion des tables sont faites **manuellement par le proprié
 ## Démarrage local
 
 ```bash
-# Backend
-cd back && cp .env.development.example .env.development   # renseigner DB_PASSWORD, JWT_SECRET…
-npm install && npm run dev                                # http://localhost:4000/api
+# Backend  (back/.env.development est déjà versionné ; surcharger DB_PASSWORD
+#           dans back/.env.development.local si besoin)
+cd back && npm install && npm run dev                     # http://localhost:4000/api
 npm run create-admin -- --email=… --password=…            # 1er administrateur
 
-# Frontend
-cd front && cp .env.example .env.local
-npm install && npm run dev                                # http://localhost:3000
+# Frontend (front/.env est déjà versionné)
+cd front && npm install && npm run dev                    # http://localhost:3000
 ```
 
 Voir `README.md` pour la création des bases par environnement.
