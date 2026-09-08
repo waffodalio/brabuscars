@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import { useAuth } from "@/context/AuthContext";
 
@@ -29,8 +30,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto" style={{ maxWidth: 420 }}>
-      <h1 className="h3 mb-4">Connexion</h1>
+    <Card className="mx-auto my-4 my-lg-5" style={{ maxWidth: 420 }}>
+      <Card.Body className="p-4">
+      <h1 className="h4 mb-4">Connexion</h1>
 
       {error && <Alert variant="danger">{error}</Alert>}
 
@@ -57,7 +59,7 @@ export default function LoginPage() {
           />
         </Form.Group>
 
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting} className="w-100">
           {submitting ? "Connexion…" : "Se connecter"}
         </Button>
       </Form>
@@ -65,6 +67,7 @@ export default function LoginPage() {
       <p className="mt-3 mb-0 small text-secondary">
         Pas encore de compte ? <a href="/inscription">Créer un compte</a>
       </p>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

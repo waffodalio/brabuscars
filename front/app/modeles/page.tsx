@@ -1,6 +1,7 @@
 "use client";
 
 import Alert from "react-bootstrap/Alert";
+import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import Table from "react-bootstrap/Table";
 import { useAsync } from "@/hooks/useAsync";
@@ -23,28 +24,32 @@ export default function CarModelsPage() {
       )}
 
       {state.status === "ready" && state.data.length === 0 && (
-        <Alert variant="info">Aucun modèle enregistré.</Alert>
+        <Alert variant="light" className="border text-center py-4">
+          Aucun modèle enregistré.
+        </Alert>
       )}
 
       {state.status === "ready" && state.data.length > 0 && (
-        <Table striped hover responsive>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Marque</th>
-              <th>Modèle</th>
-            </tr>
-          </thead>
-          <tbody>
-            {state.data.map((carModel) => (
-              <tr key={carModel.id}>
-                <td>{carModel.id}</td>
-                <td>{carModel.brand?.name ?? carModel.brandId}</td>
-                <td>{carModel.name}</td>
+        <Card className="overflow-hidden">
+          <Table hover responsive className="mb-0 align-middle">
+            <thead className="table-light">
+              <tr>
+                <th className="ps-3">Marque</th>
+                <th className="pe-3">Modèle</th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {state.data.map((carModel) => (
+                <tr key={carModel.id}>
+                  <td className="ps-3">
+                    {carModel.brand?.name ?? carModel.brandId}
+                  </td>
+                  <td className="pe-3 fw-medium">{carModel.name}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Card>
       )}
     </section>
   );

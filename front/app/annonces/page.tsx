@@ -19,10 +19,19 @@ export default function ListingsPage() {
 
   return (
     <section>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h3 mb-0">Annonces</h1>
+      <div className="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-4">
+        <div>
+          <h1 className="h3 mb-0">Annonces</h1>
+          {state.status === "ready" && (
+            <p className="text-secondary small mb-0">
+              {state.data.length} véhicule
+              {state.data.length > 1 ? "s" : ""} disponible
+              {state.data.length > 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
         {isAdmin && (
-          <Link href="/admin/annonces" className="btn btn-outline-primary">
+          <Link href="/admin/annonces" className="btn btn-outline-secondary">
             Gérer les annonces
           </Link>
         )}
@@ -37,11 +46,13 @@ export default function ListingsPage() {
       )}
 
       {state.status === "ready" && state.data.length === 0 && (
-        <Alert variant="info">Aucune annonce publiée pour le moment.</Alert>
+        <Alert variant="light" className="border text-center py-5">
+          Aucune annonce publiée pour le moment.
+        </Alert>
       )}
 
       {state.status === "ready" && state.data.length > 0 && (
-        <Row xs={1} md={2} lg={3} className="g-3">
+        <Row xs={1} sm={2} lg={3} className="g-4">
           {state.data.map((listing) => (
             <Col key={listing.id}>
               <ListingCard listing={listing} />

@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -40,8 +41,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto" style={{ maxWidth: 480 }}>
-      <h1 className="h3 mb-4">Créer un compte</h1>
+    <Card className="mx-auto my-4 my-lg-5" style={{ maxWidth: 480 }}>
+      <Card.Body className="p-4">
+      <h1 className="h4 mb-4">Créer un compte</h1>
 
       {error && <Alert variant="danger">{error}</Alert>}
 
@@ -95,7 +97,7 @@ export default function RegisterPage() {
           <Form.Text muted>8 caractères minimum.</Form.Text>
         </Form.Group>
 
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting} className="w-100">
           {submitting ? "Création…" : "Créer le compte"}
         </Button>
       </Form>
@@ -103,6 +105,7 @@ export default function RegisterPage() {
       <p className="mt-3 mb-0 small text-secondary">
         Déjà inscrit ? <a href="/connexion">Se connecter</a>
       </p>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Alert from "react-bootstrap/Alert";
+import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import Table from "react-bootstrap/Table";
 import { useAsync } from "@/hooks/useAsync";
@@ -41,30 +42,34 @@ export function ReferenceTable<T extends ReferenceRow>({
       )}
 
       {state.status === "ready" && state.data.length === 0 && (
-        <Alert variant="info">{emptyLabel}</Alert>
+        <Alert variant="light" className="border text-center py-4">
+          {emptyLabel}
+        </Alert>
       )}
 
       {state.status === "ready" && state.data.length > 0 && (
-        <Table striped hover responsive>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nom</th>
-              <th>Slug</th>
-            </tr>
-          </thead>
-          <tbody>
-            {state.data.map((row) => (
-              <tr key={row.id}>
-                <td>{row.id}</td>
-                <td>{row.name}</td>
-                <td>
-                  <code>{row.slug}</code>
-                </td>
+        <Card className="overflow-hidden">
+          <Table hover responsive className="mb-0 align-middle">
+            <thead className="table-light">
+              <tr>
+                <th className="ps-3">#</th>
+                <th>Nom</th>
+                <th className="pe-3">Slug</th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {state.data.map((row) => (
+                <tr key={row.id}>
+                  <td className="ps-3 text-secondary">{row.id}</td>
+                  <td className="fw-medium">{row.name}</td>
+                  <td className="pe-3">
+                    <code>{row.slug}</code>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Card>
       )}
     </section>
   );

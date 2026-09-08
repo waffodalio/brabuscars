@@ -14,9 +14,16 @@ export function AppNavbar() {
   const { user, initializing, isAdmin, logout } = useAuth();
 
   return (
-    <Navbar bg="dark" variant="dark" expand="lg">
-      <Container>
-        <Navbar.Brand href="/">CHCars</Navbar.Brand>
+    <Navbar
+      expand="lg"
+      sticky="top"
+      className="chc-navbar py-2"
+      collapseOnSelect
+    >
+      <Container style={{ maxWidth: 1140 }}>
+        <Navbar.Brand href="/" className="chc-brand">
+          CHCars
+        </Navbar.Brand>
         <Navbar.Toggle aria-controls="main-navbar" />
         <Navbar.Collapse id="main-navbar">
           <Nav className="me-auto">
@@ -28,19 +35,19 @@ export function AppNavbar() {
           </Nav>
 
           {!initializing && (
-            <Nav className="align-items-lg-center">
+            <Nav className="align-items-lg-center gap-lg-1">
               {user ? (
                 <>
                   <Nav.Link href="/favoris">Favoris</Nav.Link>
                   {isAdmin && (
                     <Nav.Link href="/admin">Administration</Nav.Link>
                   )}
-                  <Navbar.Text className="mx-lg-3">
-                    Bonjour, {user.firstName}
-                  </Navbar.Text>
+                  <span className="text-secondary small mx-lg-2 d-none d-lg-inline">
+                    {user.firstName}
+                  </span>
                   <Button
                     size="sm"
-                    variant="outline-light"
+                    variant="outline-secondary"
                     onClick={() => {
                       void logout();
                     }}
@@ -51,7 +58,13 @@ export function AppNavbar() {
               ) : (
                 <>
                   <Nav.Link href="/connexion">Connexion</Nav.Link>
-                  <Nav.Link href="/inscription">Inscription</Nav.Link>
+                  <Button
+                    size="sm"
+                    href="/inscription"
+                    className="ms-lg-2 mt-2 mt-lg-0"
+                  >
+                    Créer un compte
+                  </Button>
                 </>
               )}
             </Nav>

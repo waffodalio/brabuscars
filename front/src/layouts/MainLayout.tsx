@@ -10,8 +10,10 @@ export function MainLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <AppNavbar />
-      <main className="flex-grow-1 py-4">
-        <div className="container">{children}</div>
+      <main className="flex-grow-1 py-4 py-lg-5">
+        <div className="container" style={{ maxWidth: 1140 }}>
+          {children}
+        </div>
       </main>
       <AppFooter />
     </>

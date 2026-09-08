@@ -34,11 +34,13 @@ export default function FavoritesPage() {
       )}
 
       {!loading && favorites.length === 0 && (
-        <Alert variant="info">Vous n&apos;avez aucune annonce en favori.</Alert>
+        <Alert variant="light" className="border text-center py-5">
+          Vous n&apos;avez aucune annonce en favori.
+        </Alert>
       )}
 
       {!loading && favorites.length > 0 && (
-        <Row xs={1} md={2} lg={3} className="g-3">
+        <Row xs={1} sm={2} lg={3} className="g-4">
           {favorites.map((favorite) => (
             <Col key={favorite.id}>
               <ListingCard listing={favorite.listing} />

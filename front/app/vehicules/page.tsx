@@ -1,6 +1,7 @@
 "use client";
 
 import Alert from "react-bootstrap/Alert";
+import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
 import Table from "react-bootstrap/Table";
 import { useAsync } from "@/hooks/useAsync";
@@ -28,36 +29,40 @@ export default function VehiclesPage() {
       )}
 
       {state.status === "ready" && state.data.length === 0 && (
-        <Alert variant="info">Aucun véhicule enregistré.</Alert>
+        <Alert variant="light" className="border text-center py-4">
+          Aucun véhicule enregistré.
+        </Alert>
       )}
 
       {state.status === "ready" && state.data.length > 0 && (
-        <Table striped hover responsive>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Véhicule</th>
-              <th>Catégorie</th>
-              <th>Année</th>
-              <th>Kilométrage</th>
-              <th>Carburant</th>
-              <th>Boîte</th>
-            </tr>
-          </thead>
-          <tbody>
-            {state.data.map((vehicle) => (
-              <tr key={vehicle.id}>
-                <td>{vehicle.id}</td>
-                <td>{vehicleTitle(vehicle)}</td>
-                <td>{vehicle.category?.name ?? "—"}</td>
-                <td>{vehicle.year}</td>
-                <td>{vehicle.mileage.toLocaleString("fr-FR")} km</td>
-                <td>{FUEL_TYPE_LABELS[vehicle.fuelType]}</td>
-                <td>{TRANSMISSION_LABELS[vehicle.transmission]}</td>
+        <Card className="overflow-hidden">
+          <Table hover responsive className="mb-0 align-middle">
+            <thead className="table-light">
+              <tr>
+                <th className="ps-3">Véhicule</th>
+                <th>Catégorie</th>
+                <th>Année</th>
+                <th>Kilométrage</th>
+                <th>Carburant</th>
+                <th className="pe-3">Boîte</th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {state.data.map((vehicle) => (
+                <tr key={vehicle.id}>
+                  <td className="ps-3 fw-medium">{vehicleTitle(vehicle)}</td>
+                  <td>{vehicle.category?.name ?? "—"}</td>
+                  <td>{vehicle.year}</td>
+                  <td>{vehicle.mileage.toLocaleString("fr-FR")} km</td>
+                  <td>{FUEL_TYPE_LABELS[vehicle.fuelType]}</td>
+                  <td className="pe-3">
+                    {TRANSMISSION_LABELS[vehicle.transmission]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Card>
       )}
     </section>
   );

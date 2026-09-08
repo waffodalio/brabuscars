@@ -1,9 +1,206 @@
 /*
- * Global styles for CHCars.
- * Bootstrap (imported in app/layout.tsx) covers the bulk of the UI.
- * Keep this file only for the few app-wide rules Bootstrap does not provide.
+ * CHCars theme layer.
+ *
+ * Bootstrap 5.3 is driven almost entirely by CSS custom properties, so the
+ * look is set by overriding those here rather than writing bespoke rules.
+ * The few `.chc-*` utilities below cover things Bootstrap has no primitive
+ * for (media boxes, spec chips, the hero).
  */
 
 :root {
   color-scheme: light;
+
+  /* Brand */
+  --bs-primary: #1a56db;
+  --bs-primary-rgb: 26, 86, 219;
+  --bs-primary-text-emphasis: #123a94;
+  --bs-primary-bg-subtle: #e9f0fd;
+  --bs-primary-border-subtle: #bcd3f7;
+  --bs-link-color: #1a56db;
+  --bs-link-color-rgb: 26, 86, 219;
+  --bs-link-hover-color: #123a94;
+  --bs-link-decoration: none;
+
+  /* Surfaces & text */
+  --bs-body-bg: #f5f6f8;
+  --bs-body-color: #1b1f24;
+  --bs-emphasis-color: #0e1013;
+  --bs-heading-color: #0e1013;
+  --bs-secondary-color: rgba(27, 31, 36, 0.6);
+  --bs-tertiary-bg: #eceef1;
+  --bs-border-color: #e4e6ea;
+  --bs-border-color-translucent: rgba(14, 16, 19, 0.08);
+
+  /* Shape */
+  --bs-border-radius: 0.625rem;
+  --bs-border-radius-sm: 0.4rem;
+  --bs-border-radius-lg: 0.9rem;
+  --bs-border-radius-xl: 1.35rem;
+
+  /* Type */
+  --bs-body-font-family: var(--font-sans), system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --bs-body-font-size: 0.97rem;
+  --bs-body-line-height: 1.6;
+
+  /* App shadows */
+  --chc-shadow-sm: 0 1px 2px rgba(14, 16, 19, 0.05),
+    0 2px 6px rgba(14, 16, 19, 0.05);
+  --chc-shadow-md: 0 6px 18px rgba(14, 16, 19, 0.09);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.btn {
+  --bs-btn-font-weight: 600;
+  --bs-btn-border-radius: var(--bs-border-radius);
+}
+.btn-lg {
+  --bs-btn-border-radius: var(--bs-border-radius-lg);
+}
+
+.card {
+  --bs-card-border-color: var(--bs-border-color);
+  --bs-card-border-radius: var(--bs-border-radius-lg);
+  --bs-card-inner-border-radius: calc(var(--bs-border-radius-lg) - 1px);
+  box-shadow: var(--chc-shadow-sm);
+}
+
+.form-control,
+.form-select {
+  --bs-border-radius: 0.55rem;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: #8fb2f0;
+  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.18);
+}
+
+.table {
+  --bs-table-border-color: var(--bs-border-color);
+}
+
+/* ---------------------------------------------------------------- utilities */
+
+/* Navigation bar */
+.chc-navbar {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(10px);
+  border-bottom: 1px solid var(--bs-border-color);
+}
+.chc-brand {
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+  color: var(--bs-primary) !important;
+}
+
+/* Media box for listing images (keeps a stable 4:3 frame) */
+.chc-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--bs-tertiary-bg);
+}
+.chc-media > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.chc-media--placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--bs-secondary-color);
+  font-size: 2.5rem;
+}
+.chc-media--placeholder > img {
+  display: none;
+}
+.chc-media__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.6rem;
+  pointer-events: none;
+}
+.chc-media__overlay > * {
+  pointer-events: auto;
+}
+
+/* Listing card: lifts on hover; the title carries a stretched-link */
+.chc-listing-card {
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.chc-listing-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--chc-shadow-md);
+}
+.chc-listing-card .chc-fav {
+  position: relative;
+  z-index: 2;
+}
+
+/* Spec chips */
+.chc-specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.chc-spec {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.62rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #35404d;
+  background: var(--bs-tertiary-bg);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.chc-price {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--bs-heading-color);
+}
+.chc-price--lg {
+  font-size: 2rem;
+}
+
+/* Home hero */
+.chc-hero {
+  color: #fff;
+  border-radius: var(--bs-border-radius-xl);
+  padding: clamp(2rem, 6vw, 4.25rem);
+  background: radial-gradient(
+      120% 120% at 0% 0%,
+      #2f7ef0 0%,
+      #1a56db 45%,
+      #123a94 100%
+    );
+}
+.chc-hero .btn-light {
+  --bs-btn-color: #123a94;
+  --bs-btn-hover-color: #123a94;
+  --bs-btn-font-weight: 700;
 }
