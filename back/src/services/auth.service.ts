@@ -6,13 +6,20 @@ import {
   hashPassword,
   verifyPassword,
 } from "../utils/password";
-import { signAuthToken } from "../utils/jwt";
+import { isAdminRole } from "../entities/User";
+import { mfaService } from "./mfa.service";
+import { signAuthToken, signMfaPendingToken } from "../utils/jwt";
 import { toPublicUser, type PublicUser } from "../utils/publicUser";
 
 export interface AuthResult {
   user: PublicUser;
   token: string;
 }
+
+/** Login either opens a session or asks for the second factor. */
+export type LoginOutcome =
+  | ({ kind: "session" } & AuthResult)
+  | { kind: "mfa"; mfaToken: string; enrollmentRequired: boolean };
 
 /**
  * Registration, login and "who am I" logic. Passwords are hashed with bcrypt;
@@ -40,7 +47,12 @@ export const authService = {
     };
   },
 
-  async login(dto: LoginDto): Promise<AuthResult> {
+  /**
+   * Checks the password. Accounts that need a second factor (admins, or any
+   * account with 2FA enabled) get no session here: the caller receives a
+   * 2FA-pending outcome and finishes through `mfaService`.
+   */
+  async login(dto: LoginDto): Promise<LoginOutcome> {
     const user = await userRepository.findByEmail(dto.email);
     // Always run a bcrypt comparison (against a dummy hash when the email is
     // unknown) so response time doesn't reveal whether the account exists.
@@ -53,7 +65,17 @@ export const authService = {
       throw ApiError.unauthorized("Invalid email or password");
     }
 
+    const mfaEnabled = await mfaService.isEnabled(user.id);
+    if (mfaEnabled || isAdminRole(user.role)) {
+      return {
+        kind: "mfa",
+        mfaToken: signMfaPendingToken(user.id),
+        enrollmentRequired: !mfaEnabled,
+      };
+    }
+
     return {
+      kind: "session",
       user: toPublicUser(user),
       token: signAuthToken({ sub: user.id, role: user.role }),
     };

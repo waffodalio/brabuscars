@@ -1,12 +1,13 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent } from "react";
-import Alert from "react-bootstrap/Alert";
 import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { listingImageService } from "@/services/listingImageService";
 import type { ListingImage } from "@/types/listing";
+import { errorMessage } from "@/utils/errors";
 
 interface ListingImagePanelProps {
   listingId: number;
@@ -42,7 +43,7 @@ export function ListingImagePanel({
       await action();
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Action impossible");
+      setError(errorMessage(err, "Action impossible"));
     } finally {
       setBusy(false);
     }
@@ -61,7 +62,7 @@ export function ListingImagePanel({
       }
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Envoi impossible");
+      setError(errorMessage(err, "Envoi impossible"));
     } finally {
       setBusy(false);
     }
@@ -71,7 +72,7 @@ export function ListingImagePanel({
     <section className="mt-4">
       <h2 className="h5">Photos</h2>
 
-      {error && <Alert variant="danger">{error}</Alert>}
+      <ErrorAlert message={error} />
 
       {images.length === 0 ? (
         <p className="text-secondary">Aucune photo.</p>

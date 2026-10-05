@@ -18,6 +18,8 @@ export const companyController = {
         phone: env.COMPANY_PHONE,
         email: env.COMPANY_EMAIL,
         hours: env.COMPANY_HOURS,
+        instagramUrl: env.COMPANY_INSTAGRAM_URL ?? null,
+        facebookUrl: env.COMPANY_FACEBOOK_URL ?? null,
       }),
     );
   },

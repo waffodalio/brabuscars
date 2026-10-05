@@ -3,69 +3,79 @@ import {
   LessThanOrEqual,
   Like,
   MoreThanOrEqual,
+  type FindOperator,
+  type FindOptionsOrder,
   type FindOptionsWhere,
 } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { Listing } from "../entities/Listing";
-import { Vehicle } from "../entities/Vehicle";
-import type { ListListingQuery } from "../dto/listing.dto";
+import type { ListingSort, ListListingQuery } from "../dto/listing.dto";
 import { escapeLike } from "../utils/escapeLike";
 
-const LIST_RELATIONS = {
+const RELATIONS = {
   seller: true,
-  vehicle: { model: { brand: true }, category: true },
+  model: { brand: true },
+  category: true,
   images: true,
 } as const;
+
+const ORDER_BY: Record<ListingSort, FindOptionsOrder<Listing>> = {
+  recent: { createdAt: "DESC" },
+  price_asc: { price: "ASC" },
+  price_desc: { price: "DESC" },
+  year_desc: { year: "DESC" },
+  mileage_asc: { mileage: "ASC" },
+};
+
+function rangeOf(
+  min: number | undefined,
+  max: number | undefined,
+): FindOperator<number> | undefined {
+  if (min !== undefined && max !== undefined) return Between(min, max);
+  if (min !== undefined) return MoreThanOrEqual(min);
+  if (max !== undefined) return LessThanOrEqual(max);
+  return undefined;
+}
 
 function buildWhere(query: ListListingQuery): FindOptionsWhere<Listing> {
   const where: FindOptionsWhere<Listing> = {};
 
   if (query.status) where.status = query.status;
   if (query.sellerId) where.sellerId = query.sellerId;
+  if (query.modelId) where.modelId = query.modelId;
+  if (query.categoryId) where.categoryId = query.categoryId;
+  if (query.fuelType) where.fuelType = query.fuelType;
+  if (query.transmission) where.transmission = query.transmission;
   if (query.search) where.title = Like(`%${escapeLike(query.search)}%`);
+  if (query.brandId) where.model = { brandId: query.brandId };
 
-  if (query.minPrice !== undefined && query.maxPrice !== undefined) {
-    where.price = Between(query.minPrice, query.maxPrice);
-  } else if (query.minPrice !== undefined) {
-    where.price = MoreThanOrEqual(query.minPrice);
-  } else if (query.maxPrice !== undefined) {
-    where.price = LessThanOrEqual(query.maxPrice);
+  const price = rangeOf(query.minPrice, query.maxPrice);
+  if (price !== undefined) where.price = price;
+
+  const year = rangeOf(query.minYear, query.maxYear);
+  if (year !== undefined) where.year = year;
+
+  if (query.maxMileage !== undefined) {
+    where.mileage = LessThanOrEqual(query.maxMileage);
   }
-
-  const vehicleWhere: FindOptionsWhere<Vehicle> = {};
-  if (query.fuelType) vehicleWhere.fuelType = query.fuelType;
-  if (query.transmission) vehicleWhere.transmission = query.transmission;
-  if (query.brandId) vehicleWhere.model = { brandId: query.brandId };
-  if (Object.keys(vehicleWhere).length > 0) where.vehicle = vehicleWhere;
 
   return where;
 }
 
 /**
- * Data-access layer for {@link Listing}. Queries load the seller, the vehicle
- * (with model, brand, category) and the image gallery.
+ * Data-access layer for {@link Listing}. Queries load the seller, the model
+ * (with its brand), the category and the image gallery.
  */
 export const listingRepository = AppDataSource.getRepository(Listing).extend({
   findAllFiltered(query: ListListingQuery): Promise<Listing[]> {
     return this.find({
       where: buildWhere(query),
-      relations: LIST_RELATIONS,
-      order: { createdAt: "DESC" },
+      relations: RELATIONS,
+      order: ORDER_BY[query.sort] ?? ORDER_BY.recent,
     });
   },
 
   findById(id: number): Promise<Listing | null> {
-    return this.findOne({
-      where: { id },
-      relations: {
-        seller: true,
-        vehicle: { model: { brand: true }, category: true },
-        images: true,
-      },
-    });
-  },
-
-  existsByVehicleId(vehicleId: number): Promise<boolean> {
-    return this.existsBy({ vehicleId });
+    return this.findOne({ where: { id }, relations: RELATIONS });
   },
 });

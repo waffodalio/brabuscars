@@ -4,7 +4,9 @@ import { Favorite } from "../entities/Favorite";
 const LISTING_RELATIONS = {
   listing: {
     seller: true,
-    vehicle: { model: { brand: true }, category: true },
+    model: { brand: true },
+    category: true,
+    images: true,
   },
 } as const;
 

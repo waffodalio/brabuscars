@@ -4,13 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Nav from "react-bootstrap/Nav";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 const BASE_LINKS = [
   { href: "/admin", label: "Tableau de bord" },
   { href: "/admin/marques", label: "Marques" },
   { href: "/admin/modeles", label: "Modèles" },
   { href: "/admin/categories", label: "Catégories" },
-  { href: "/admin/vehicules", label: "Véhicules" },
   { href: "/admin/annonces", label: "Annonces" },
 ];
 
@@ -23,6 +23,7 @@ const SUPER_ADMIN_LINKS = [
 export function AdminNav() {
   const pathname = usePathname();
   const { isSuperAdmin } = useAuth();
+  const { withLocale } = useLanguage();
   const links = [
     ...BASE_LINKS,
     ...ADMIN_LINKS,
@@ -32,13 +33,12 @@ export function AdminNav() {
   return (
     <Nav variant="pills" className="mb-4 flex-wrap gap-1">
       {links.map((link) => {
+        const href = withLocale(link.href);
         const active =
-          link.href === "/admin"
-            ? pathname === "/admin"
-            : pathname.startsWith(link.href);
+          link.href === "/admin" ? pathname === href : pathname.startsWith(href);
         return (
           <Nav.Item key={link.href}>
-            <Nav.Link as={Link} href={link.href} active={active}>
+            <Nav.Link as={Link} href={href} active={active}>
               {link.label}
             </Nav.Link>
           </Nav.Item>

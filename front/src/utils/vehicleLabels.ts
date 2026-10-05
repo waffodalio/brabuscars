@@ -1,6 +1,7 @@
-import type { FuelType, Transmission, Vehicle } from "@/types/vehicle";
+import type { CarModel } from "@/types/carModel";
+import type { FuelType, Transmission } from "@/types/vehicle";
 
-/** French display labels for the vehicle enums stored in English. */
+/** French display labels for the technical enums stored in English. */
 export const FUEL_TYPE_LABELS: Record<FuelType, string> = {
   petrol: "Essence",
   diesel: "Diesel",
@@ -15,11 +16,12 @@ export const TRANSMISSION_LABELS: Record<Transmission, string> = {
 };
 
 /** "Peugeot 308", or a fallback when the model relation is not loaded. */
-export function vehicleTitle(
-  vehicle: Pick<Vehicle, "modelId" | "model">,
-): string {
-  const brand = vehicle.model?.brand?.name;
-  const model = vehicle.model?.name;
+export function vehicleTitle(input: {
+  modelId: number;
+  model?: CarModel;
+}): string {
+  const brand = input.model?.brand?.name;
+  const model = input.model?.name;
   if (brand && model) return `${brand} ${model}`;
-  return model ?? `Modèle #${vehicle.modelId}`;
+  return model ?? `Modèle #${input.modelId}`;
 }

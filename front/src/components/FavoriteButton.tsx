@@ -3,6 +3,7 @@
 import Button from "react-bootstrap/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useFavorites } from "@/context/FavoritesContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface FavoriteButtonProps {
   listingId: number;
@@ -16,6 +17,7 @@ interface FavoriteButtonProps {
 export function FavoriteButton({ listingId, className }: FavoriteButtonProps) {
   const { user } = useAuth();
   const { isFavorite, toggle, pending } = useFavorites();
+  const { t } = useLanguage();
 
   if (!user) return null;
 
@@ -32,7 +34,9 @@ export function FavoriteButton({ listingId, className }: FavoriteButtonProps) {
         void toggle(listingId);
       }}
     >
-      {active ? "★ Favori" : "☆ Favori"}
+      <span key={String(active)} className="chc-fav-pop d-inline-block">
+        {active ? "★" : "☆"} {t.favorites.button}
+      </span>
     </Button>
   );
 }

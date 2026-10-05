@@ -1,10 +1,10 @@
 "use client";
 
 import type { FormEvent, ReactNode } from "react";
-import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
+import { ErrorAlert } from "@/components/ErrorAlert";
 
 interface AdminFormModalProps {
   show: boolean;
@@ -40,7 +40,7 @@ export function AdminFormModal({
           <Modal.Title className="h5">{title}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {error && <Alert variant="danger">{error}</Alert>}
+          <ErrorAlert message={error} />
           {children}
         </Modal.Body>
         <Modal.Footer>

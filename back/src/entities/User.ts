@@ -12,6 +12,10 @@ import { Listing } from "./Listing";
 export const USER_ROLES = ["user", "admin", "super_admin"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
+/** `admin` or `super_admin` — the roles that must sign in with 2FA. */
+export const isAdminRole = (role: UserRole): boolean =>
+  role === "admin" || role === "super_admin";
+
 /** Roles a super admin may assign through the API (never `super_admin`). */
 export const ASSIGNABLE_ROLES = ["user", "admin"] as const;
 export type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];

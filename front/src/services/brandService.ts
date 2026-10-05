@@ -8,8 +8,8 @@ export interface BrandInput {
 }
 
 /**
- * Access to the `/brands` endpoints. Reads are public; writes require an
- * admin token.
+ * Access to the `/brands` endpoints. Brands are catalogue reference data:
+ * every call (reads included) requires an admin token.
  */
 export const brandService = {
   async list(search?: string): Promise<Brand[]> {

@@ -15,6 +15,19 @@ loadEnvFile({ path: `.env.${NODE_ENV}` });
 loadEnvFile({ path: ".env" });
 
 /**
+ * Optional public link: empty means "not set"; only `https://` is accepted so
+ * the value can be rendered as an `href` safely (no `javascript:` URL).
+ */
+const optionalHttpsUrl = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z
+    .string()
+    .url()
+    .refine((value) => value.startsWith("https://"), "must start with https://")
+    .optional(),
+);
+
+/**
  * Centralised, validated access to environment variables.
  * The process exits immediately if the configuration is invalid or incomplete,
  * so the rest of the codebase can rely on `env` being well-formed.
@@ -43,6 +56,16 @@ const envSchema = z.object({
   /** At least 32 chars — reject weak signing keys outright. */
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().min(1).default("1d"),
+  /**
+   * AES-256 key (64 hex chars) encrypting the admins' TOTP secrets at rest.
+   * Generate with `openssl rand -hex 32`. Never change it once admins have
+   * enrolled: their 2FA would have to be reset (`npm run reset-mfa`).
+   */
+  MFA_ENCRYPTION_KEY: z
+    .string()
+    .regex(/^[0-9a-fA-F]{64}$/, "must be 64 hexadecimal characters"),
+  /** Issuer name shown in authenticator apps. */
+  MFA_ISSUER: z.string().min(1).default("CHCars"),
 
   // --- Uploads (image files stored on the local disk) ---
   /** Directory where image files are written. Keep it outside the repo and,
@@ -74,6 +97,9 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default("Du lundi au samedi, 9h–19h"),
+  /** Social pages shown in the site footer — optional, hidden when empty. */
+  COMPANY_INSTAGRAM_URL: optionalHttpsUrl,
+  COMPANY_FACEBOOK_URL: optionalHttpsUrl,
 });
 
 const parsed = envSchema.safeParse(process.env);

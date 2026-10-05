@@ -1,21 +1,27 @@
-import type { Vehicle } from "@/types/vehicle";
-import { FUEL_TYPE_LABELS, TRANSMISSION_LABELS } from "@/utils/vehicleLabels";
+import { useLanguage } from "@/context/LanguageContext";
+import type { Listing } from "@/types/listing";
 
-/** Compact chip row of a vehicle's key characteristics. */
+type Specs = Pick<
+  Listing,
+  "year" | "mileage" | "fuelType" | "transmission" | "power"
+>;
+
+/** Compact chip row of a listing's key technical characteristics. */
 export function VehicleSpecs({
-  vehicle,
+  listing,
   className,
 }: {
-  vehicle: Vehicle;
+  listing: Specs;
   className?: string;
 }) {
+  const { t } = useLanguage();
   const chips = [
-    String(vehicle.year),
-    `${vehicle.mileage.toLocaleString("fr-FR")} km`,
-    FUEL_TYPE_LABELS[vehicle.fuelType],
-    TRANSMISSION_LABELS[vehicle.transmission],
+    String(listing.year),
+    `${listing.mileage.toLocaleString("fr-FR")} km`,
+    t.vehicle.fuelType[listing.fuelType],
+    t.vehicle.transmission[listing.transmission],
   ];
-  if (vehicle.power) chips.push(`${vehicle.power} ch`);
+  if (listing.power) chips.push(`${listing.power} ${t.vehicle.powerUnit}`);
 
   return (
     <div className={`chc-specs${className ? ` ${className}` : ""}`}>

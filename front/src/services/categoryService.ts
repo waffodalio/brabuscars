@@ -8,8 +8,8 @@ export interface CategoryInput {
 }
 
 /**
- * Access to the `/categories` endpoints. Reads are public; writes require an
- * admin token.
+ * Access to the `/categories` endpoints. Categories are catalogue reference
+ * data: every call (reads included) requires an admin token.
  */
 export const categoryService = {
   async list(search?: string): Promise<Category[]> {

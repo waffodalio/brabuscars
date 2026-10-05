@@ -21,5 +21,12 @@ export const updateUserRoleSchema = z
   })
   .strict();
 
+/** `GET /users/role-changes` — newest first, optionally for one account. */
+export const listRoleChangesQuerySchema = z.object({
+  userId: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
 export type UpdateUserRoleDto = z.infer<typeof updateUserRoleSchema>;
+export type ListRoleChangesQuery = z.infer<typeof listRoleChangesQuerySchema>;

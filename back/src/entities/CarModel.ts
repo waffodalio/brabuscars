@@ -4,16 +4,14 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
 } from "typeorm";
 import { Brand } from "./Brand";
-import { Vehicle } from "./Vehicle";
 
 /**
  * A model belonging to a brand (Peugeot 308, BMW Série 3, …). A model name is
- * unique within its brand. Reference data: many vehicles share one model.
+ * unique within its brand. Reference data used by listings.
  */
 @Entity("car_model")
 @Unique("uq_car_model_brand_name", ["brandId", "name"])
@@ -36,7 +34,4 @@ export class CarModel {
 
   @CreateDateColumn({ name: "created_at", type: "datetime" })
   createdAt!: Date;
-
-  @OneToMany(() => Vehicle, (vehicle) => vehicle.model)
-  vehicles!: Vehicle[];
 }

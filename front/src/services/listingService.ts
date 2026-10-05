@@ -3,6 +3,7 @@ import type { ApiSuccess } from "@/types/api";
 import type {
   CreateListingInput,
   Listing,
+  ListingSort,
   ListingStatus,
   UpdateListingInput,
 } from "@/types/listing";
@@ -12,11 +13,17 @@ export interface ListingFilters {
   status?: ListingStatus;
   sellerId?: number;
   brandId?: number;
+  modelId?: number;
+  categoryId?: number;
   fuelType?: FuelType;
   transmission?: Transmission;
   minPrice?: number;
   maxPrice?: number;
+  minYear?: number;
+  maxYear?: number;
+  maxMileage?: number;
   search?: string;
+  sort?: ListingSort;
 }
 
 /** Access to the `/listings` endpoints. Write calls require the auth token. */
@@ -24,7 +31,7 @@ export const listingService = {
   async list(filters: ListingFilters = {}): Promise<Listing[]> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined) params.set(key, String(value));
+      if (value !== undefined && value !== "") params.set(key, String(value));
     }
     const query = params.toString() ? `?${params.toString()}` : "";
 

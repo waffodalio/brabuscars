@@ -7,4 +7,7 @@ export interface Company {
   phone: string;
   email: string;
   hours: string;
+  /** Social pages (footer) — `null` when not configured. */
+  instagramUrl: string | null;
+  facebookUrl: string | null;
 }

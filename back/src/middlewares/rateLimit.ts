@@ -30,6 +30,19 @@ export const authRateLimiter = rateLimit({
   message: error("Too many authentication attempts, please try again later"),
 });
 
+/**
+ * 2FA endpoints (setup / code verification), per IP. Complements the
+ * per-account lockout of `mfaService` (5 wrong codes → 15 min).
+ */
+export const mfaRateLimiter = rateLimit({
+  windowMs: FIFTEEN_MINUTES,
+  limit: 20,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skip: () => isTest,
+  message: error("Too many attempts, please try again later"),
+});
+
 /** Slows down spam through the public contact form. */
 export const contactRateLimiter = rateLimit({
   windowMs: FIFTEEN_MINUTES,

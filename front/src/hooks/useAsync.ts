@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { errorMessage } from "@/utils/errors";
 
 export type AsyncState<T> =
   | { status: "loading" }
@@ -30,7 +31,7 @@ export function useAsync<T>(
         if (active) {
           setState({
             status: "error",
-            error: err instanceof Error ? err.message : "Erreur inconnue",
+            error: errorMessage(err, "Erreur inconnue"),
           });
         }
       });

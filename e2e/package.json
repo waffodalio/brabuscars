@@ -1,0 +1,16 @@
+{
+  "name": "chcars-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CHCars end-to-end tests (Playwright) run against a deployed environment",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

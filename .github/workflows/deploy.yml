@@ -1,0 +1,129 @@
+# Déploie une version des images GHCR sur un environnement (préprod ou prod).
+#
+# - Appelé par ci-cd.yml (préprod puis production).
+# - Lançable à la main (Actions → Deploy → Run workflow) pour un rollback :
+#   choisir l'environnement et un tag déjà publié (ex. sha-<commit>).
+#
+# Configuration (Settings → Secrets and variables → Actions) :
+#   secrets   : DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS
+#               (communs : préprod et prod partagent le serveur)
+#   variables : SITE_URL_PREPROD / SITE_URL_PROD (ex. https://preprod.chcars.fr),
+#               DEPLOY_PATH_PREPROD / DEPLOY_PATH_PROD (/opt/chcars-preprod,
+#               /opt/chcars-prod), DEPLOY_PORT (port SSH du serveur, obligatoire)
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      image_tag:
+        type: string
+        required: true
+    outputs:
+      url:
+        description: URL publique de l'environnement déployé
+        value: ${{ jobs.deploy.outputs.url }}
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [preprod, production]
+        required: true
+      image_tag:
+        description: Tag d'image à déployer (ex. sha-<commit>)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    name: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ steps.target.outputs.url }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    outputs:
+      url: ${{ steps.target.outputs.url }}
+    env:
+      IMAGE_TAG: ${{ inputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: deploy
+
+      - id: target
+        name: Cible
+        env:
+          TARGET: ${{ inputs.environment }}
+          SITE_URL_PREPROD: ${{ vars.SITE_URL_PREPROD }}
+          SITE_URL_PROD: ${{ vars.SITE_URL_PROD }}
+          DEPLOY_PATH_PREPROD: ${{ vars.DEPLOY_PATH_PREPROD }}
+          DEPLOY_PATH_PROD: ${{ vars.DEPLOY_PATH_PROD }}
+        run: |
+          case "$TARGET" in
+            preprod)    suffix=PREPROD ;;
+            production) suffix=PROD ;;
+            *) echo "::error::environnement inconnu : $TARGET"; exit 1 ;;
+          esac
+          url_var="SITE_URL_$suffix"; path_var="DEPLOY_PATH_$suffix"
+          SITE_URL="${!url_var}"; DEPLOY_PATH="${!path_var}"
+          test -n "$SITE_URL" || { echo "::error::variable $url_var manquante"; exit 1; }
+          test -n "$DEPLOY_PATH" || { echo "::error::variable $path_var manquante"; exit 1; }
+          echo "SITE_URL=$SITE_URL" >> "$GITHUB_ENV"
+          echo "DEPLOY_PATH=$DEPLOY_PATH" >> "$GITHUB_ENV"
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "IMAGE_BACK=ghcr.io/${owner}/chcars-back" >> "$GITHUB_ENV"
+          echo "IMAGE_FRONT=ghcr.io/${owner}/chcars-front" >> "$GITHUB_ENV"
+          echo "url=${SITE_URL%/}" >> "$GITHUB_OUTPUT"
+
+      - name: Clé SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+          SSH_PORT: ${{ vars.DEPLOY_PORT }}
+        run: |
+          test -n "$SSH_PORT" || { echo "::error::variable DEPLOY_PORT manquante"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host target\n  HostName %s\n  User %s\n  Port %s\n  IdentityFile ~/.ssh/id_deploy\n  IdentitiesOnly yes\n' \
+            "$SSH_HOST" "$SSH_USER" "$SSH_PORT" > ~/.ssh/config
+          chmod 600 ~/.ssh/id_deploy ~/.ssh/known_hosts ~/.ssh/config
+
+      - name: Copie de la stack
+        run: |
+          ssh target "mkdir -p '$DEPLOY_PATH'"
+          scp deploy/docker-compose.yml deploy/deploy.sh "target:$DEPLOY_PATH/"
+
+      - name: Déploiement ${{ inputs.image_tag }}
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | ssh target "docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin"
+          ssh target "cd '$DEPLOY_PATH' && IMAGE_BACK='$IMAGE_BACK' IMAGE_FRONT='$IMAGE_FRONT' IMAGE_TAG='$IMAGE_TAG' sh deploy.sh"
+
+      - name: Déconnexion de GHCR
+        if: always()
+        run: ssh target "docker logout ghcr.io" || true
+
+      - name: Vérification (health)
+        run: |
+          url="${SITE_URL%/}/api/health"
+          for _ in $(seq 1 30); do
+            if curl -fsS "$url" | grep -q '"database":"connected"'; then
+              echo "API OK"; exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::$url ne répond pas correctement"
+          exit 1

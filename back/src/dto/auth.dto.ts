@@ -16,5 +16,12 @@ export const loginSchema = z
   })
   .strict();
 
+/** 6-digit TOTP code or `XXXXX-XXXXX` recovery code. */
+export const mfaVerifySchema = z
+  .object({
+    code: z.string().trim().min(6).max(20),
+  })
+  .strict();
+
 export type RegisterDto = z.infer<typeof registerSchema>;
 export type LoginDto = z.infer<typeof loginSchema>;

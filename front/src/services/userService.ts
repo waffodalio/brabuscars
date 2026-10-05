@@ -1,6 +1,6 @@
 import { apiClient } from "./apiClient";
 import type { ApiSuccess } from "@/types/api";
-import type { AuthUser, UserRole } from "@/types/auth";
+import type { AuthUser, RoleChange, UserRole } from "@/types/auth";
 
 export interface UserFilters {
   role?: UserRole;
@@ -29,6 +29,32 @@ export const userService = {
     const response = await apiClient.patch<ApiSuccess<AuthUser>>(
       `/users/${id}/role`,
       { role },
+    );
+    return response.data;
+  },
+
+  /**
+   * Delete a client (`user`) account. Returns how many listings were
+   * reassigned to the current super admin (former admins only).
+   */
+  async remove(id: number): Promise<{ reassignedListings: number }> {
+    const response = await apiClient.delete<
+      ApiSuccess<{ reassignedListings: number }>
+    >(`/users/${id}`);
+    return response.data;
+  },
+
+  /** Audit trail of role changes, newest first. */
+  async listRoleChanges(
+    filters: { userId?: number; limit?: number } = {},
+  ): Promise<RoleChange[]> {
+    const params = new URLSearchParams();
+    if (filters.userId) params.set("userId", String(filters.userId));
+    if (filters.limit) params.set("limit", String(filters.limit));
+    const query = params.toString() ? `?${params.toString()}` : "";
+
+    const response = await apiClient.get<ApiSuccess<RoleChange[]>>(
+      `/users/role-changes${query}`,
     );
     return response.data;
   },

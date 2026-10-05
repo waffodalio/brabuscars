@@ -2,14 +2,12 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Vehicle } from "./Vehicle";
 
 /**
- * Body type / market segment of a vehicle (SUV, berline, citadine, break, …).
- * Reference data. A vehicle may belong to at most one category, or none.
+ * Body type / market segment (SUV, berline, citadine, break, …). Reference
+ * data. A listing may belong to at most one category, or none.
  */
 @Entity("category")
 export class Category {
@@ -24,7 +22,4 @@ export class Category {
 
   @CreateDateColumn({ name: "created_at", type: "datetime" })
   createdAt!: Date;
-
-  @OneToMany(() => Vehicle, (vehicle) => vehicle.category)
-  vehicles!: Vehicle[];
 }

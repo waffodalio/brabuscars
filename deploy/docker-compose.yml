@@ -1,0 +1,88 @@
+# CHCars — stack de déploiement (préprod et production).
+#
+# Même fichier pour les deux environnements ; seul le `.env` posé sur le
+# serveur change (domaine, base, secrets — voir README §« Déploiement »).
+# Les images sont produites par la CI et poussées sur GHCR ; IMAGE_BACK,
+# IMAGE_FRONT et IMAGE_TAG sont fournis par deploy.sh.
+#
+# Le reverse proxy est le nginx du serveur (deploy/nginx/chcars.conf, HTTPS via
+# certbot) : il expose une origine unique (/api et /uploads → back, le reste →
+# front). Les conteneurs n'écoutent donc que sur 127.0.0.1, jamais en public.
+#
+# Préprod et prod tournent sur le même serveur : chaque environnement a son
+# dossier, son .env, son COMPOSE_PROJECT_NAME (conteneurs, réseau et volumes
+# séparés) et sa plage de ports côté serveur (ports internes inchangés) :
+#                    prod   préprod
+#   FRONT_PORT       3010   3013    → front:3000     (nginx)
+#   BACK_PORT        3011   3014    → back:4000      (nginx)
+#   DB_HOST_PORT     3012   3015    → mariadb:3306   (administration en local)
+# Valeurs par défaut = prod.
+
+services:
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?}
+      MARIADB_DATABASE: ${DB_DATABASE:?}
+      MARIADB_USER: ${DB_USERNAME:?}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?}
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT:-3012}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  back:
+    image: ${IMAGE_BACK:?}:${IMAGE_TAG:?}
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      API_PREFIX: /api
+      CORS_ORIGIN: https://${SITE_DOMAIN:?}
+      TRUST_PROXY: 1
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+      JWT_SECRET: ${JWT_SECRET:?}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?}
+      UPLOAD_DIR: /app/uploads
+      PUBLIC_UPLOADS_URL: https://${SITE_DOMAIN}/uploads
+      COMPANY_NAME: ${COMPANY_NAME:-CHCars}
+      COMPANY_ADDRESS: ${COMPANY_ADDRESS:-12 avenue de l'Automobile}
+      COMPANY_POSTAL_CODE: ${COMPANY_POSTAL_CODE:-69003}
+      COMPANY_CITY: ${COMPANY_CITY:-Lyon}
+      COMPANY_COUNTRY: ${COMPANY_COUNTRY:-France}
+      COMPANY_PHONE: ${COMPANY_PHONE:-+33 4 78 00 00 00}
+      COMPANY_EMAIL: ${COMPANY_EMAIL:-contact@chcars.fr}
+      COMPANY_HOURS: ${COMPANY_HOURS:-Du lundi au samedi, 9h–19h}
+      COMPANY_INSTAGRAM_URL: ${COMPANY_INSTAGRAM_URL:-}
+      COMPANY_FACEBOOK_URL: ${COMPANY_FACEBOOK_URL:-}
+    ports:
+      - "127.0.0.1:${BACK_PORT:-3011}:4000"
+    volumes:
+      - uploads:/app/uploads
+
+  front:
+    image: ${IMAGE_FRONT:?}:${IMAGE_TAG:?}
+    restart: unless-stopped
+    depends_on:
+      back:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${FRONT_PORT:-3010}:3000"
+
+volumes:
+  db_data:
+  uploads:

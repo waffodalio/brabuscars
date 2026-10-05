@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  listRoleChangesQuerySchema,
   listUsersQuerySchema,
   updateUserRoleSchema,
   userIdParamSchema,
@@ -24,5 +25,17 @@ export const userController = {
     const dto = updateUserRoleSchema.parse(req.body);
     const user = await userService.setRole(id, dto, actorOf(req));
     res.status(200).json(success(user));
+  },
+
+  async remove(req: Request, res: Response): Promise<void> {
+    const { id } = userIdParamSchema.parse(req.params);
+    const result = await userService.remove(id, actorOf(req));
+    res.status(200).json(success(result));
+  },
+
+  async listRoleChanges(req: Request, res: Response): Promise<void> {
+    const query = listRoleChangesQuerySchema.parse(req.query);
+    const entries = await userService.listRoleChanges(query);
+    res.status(200).json(success(entries));
   },
 };

@@ -1,21 +1,37 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import mysql from "mysql2/promise";
 import { env } from "../config/env";
+import {
+  type AppliedMigration,
+  checksum,
+  parseMigrationFiles,
+  pendingMigrations,
+} from "../utils/migrations";
 
 /**
- * Applies `db/schema.sql` to the database of the current environment.
+ * Applies the pending files of `db/migrations/` (`NNN_name.sql`, in order) to
+ * the database of the current environment, and records each one in
+ * `schema_migrations`.
  *
  *   npm run migrate           (NODE_ENV=development)
- *   npm run migrate:prod
+ *   npm run migrate:test / migrate:prod
  *
- * The schema uses `CREATE TABLE IF NOT EXISTS`, so re-running only adds
- * missing tables. Column changes on existing tables stay manual — apply the
- * ALTER statements from the bottom of `db/schema.sql` yourself.
+ * Stops at the first error (non-zero exit, so a deployment fails instead of
+ * starting an API on a half-migrated schema). MariaDB commits each DDL
+ * statement immediately: a failed migration is not rolled back, fix the
+ * database by hand before re-running.
  */
+const MIGRATIONS_DIR = path.resolve(__dirname, "..", "..", "db", "migrations");
+const LOCK_NAME = "chcars_migrate";
+
 async function main(): Promise<void> {
-  const schemaPath = path.resolve(__dirname, "..", "..", "db", "schema.sql");
-  const sql = await readFile(schemaPath, "utf-8");
+  const files = await Promise.all(
+    parseMigrationFiles(await readdir(MIGRATIONS_DIR)).map(async (file) => {
+      const sql = await readFile(path.join(MIGRATIONS_DIR, file.filename), "utf-8");
+      return { ...file, sql, checksum: checksum(sql) };
+    }),
+  );
 
   const connection = await mysql.createConnection({
     host: env.DB_HOST,
@@ -31,20 +47,46 @@ async function main(): Promise<void> {
   );
 
   try {
-    const [before] = await connection.query<mysql.RowDataPacket[]>(
-      "SHOW TABLES",
+    // Deux déploiements simultanés ne doivent pas migrer en même temps.
+    const [[lock]] = await connection.query<mysql.RowDataPacket[]>(
+      "SELECT GET_LOCK(?, 60) AS acquired",
+      [LOCK_NAME],
     );
-    await connection.query(sql);
-    const [after] = await connection.query<mysql.RowDataPacket[]>("SHOW TABLES");
+    if (lock.acquired !== 1) {
+      throw new Error("une autre migration est en cours (verrou non obtenu en 60 s)");
+    }
 
-    const names = after.map((row) => String(Object.values(row)[0])).sort();
-    console.log(
-      `[migrate] tables : ${before.length} → ${after.length}` +
-        (after.length ? `  (${names.join(", ")})` : ""),
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS \`schema_migrations\` (
+        \`version\`    VARCHAR(10)  NOT NULL,
+        \`name\`       VARCHAR(255) NOT NULL,
+        \`checksum\`   CHAR(64)     NOT NULL,
+        \`applied_at\` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`version\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+
+    const [rows] = await connection.query<mysql.RowDataPacket[]>(
+      "SELECT version, checksum FROM schema_migrations ORDER BY version",
     );
-    console.log("[migrate] terminé.");
+    const applied = rows as AppliedMigration[];
+    const pending = pendingMigrations(files, applied);
+
+    if (pending.length === 0) {
+      console.log(`[migrate] à jour (${applied.length} migration(s) appliquée(s)).`);
+      return;
+    }
+
+    for (const file of pending) {
+      console.log(`[migrate] → ${file.filename}`);
+      await connection.query(file.sql);
+      await connection.query(
+        "INSERT INTO schema_migrations (version, name, checksum) VALUES (?, ?, ?)",
+        [file.version, file.name, file.checksum],
+      );
+    }
+    console.log(`[migrate] terminé : ${pending.length} migration(s) appliquée(s).`);
   } finally {
-    await connection.end();
+    await connection.end(); // libère aussi le verrou
   }
 }
 

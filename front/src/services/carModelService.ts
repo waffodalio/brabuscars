@@ -13,8 +13,8 @@ export interface CarModelInput {
 }
 
 /**
- * Access to the `/car-models` endpoints. Reads are public; writes require an
- * admin token.
+ * Access to the `/car-models` endpoints. Models are catalogue reference data:
+ * every call (reads included) requires an admin token.
  */
 export const carModelService = {
   async list(filters: CarModelFilters = {}): Promise<CarModel[]> {

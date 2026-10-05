@@ -7,6 +7,8 @@ import Form from "react-bootstrap/Form";
 import Spinner from "react-bootstrap/Spinner";
 import Table from "react-bootstrap/Table";
 import { AdminFormModal } from "@/components/admin/AdminFormModal";
+import { ErrorAlert } from "@/components/ErrorAlert";
+import { errorMessage } from "@/utils/errors";
 
 interface SlugRow {
   id: number;
@@ -56,7 +58,7 @@ export function SlugResourceAdmin<T extends SlugRow>({
         setStatus("ready");
       })
       .catch((err: unknown) => {
-        setListError(err instanceof Error ? err.message : "Erreur inconnue");
+        setListError(errorMessage(err, "Erreur inconnue"));
         setStatus("error");
       });
   }, [fetchAll]);
@@ -91,7 +93,7 @@ export function SlugResourceAdmin<T extends SlugRow>({
       setShowForm(false);
       load();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Enregistrement impossible");
+      setFormError(errorMessage(err, "Enregistrement impossible"));
     } finally {
       setSubmitting(false);
     }
@@ -103,7 +105,7 @@ export function SlugResourceAdmin<T extends SlugRow>({
       await remove(row.id);
       load();
     } catch (err) {
-      setListError(err instanceof Error ? err.message : "Suppression impossible");
+      setListError(errorMessage(err, "Suppression impossible"));
     }
   }
 
@@ -116,15 +118,15 @@ export function SlugResourceAdmin<T extends SlugRow>({
       {status === "loading" && (
         <Spinner animation="border" role="status" aria-label="Chargement" />
       )}
-      {status === "error" && <Alert variant="danger">{listError}</Alert>}
+      {status === "error" && <ErrorAlert message={listError} />}
 
       {status === "ready" && (
         <>
-          {listError && <Alert variant="danger">{listError}</Alert>}
+          <ErrorAlert message={listError} />
           {rows.length === 0 ? (
             <Alert variant="info">Aucune {singular} enregistrée.</Alert>
           ) : (
-            <Table striped hover responsive>
+            <Table striped hover responsive className="chc-table-cards">
               <thead>
                 <tr>
                   <th>#</th>
@@ -136,12 +138,12 @@ export function SlugResourceAdmin<T extends SlugRow>({
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td>{row.id}</td>
-                    <td>{row.name}</td>
-                    <td>
+                    <td data-label="#">{row.id}</td>
+                    <td data-label="Nom">{row.name}</td>
+                    <td data-label="Slug">
                       <code>{row.slug}</code>
                     </td>
-                    <td className="text-end text-nowrap">
+                    <td data-label="" className="text-end text-nowrap">
                       <Button
                         size="sm"
                         variant="outline-secondary"

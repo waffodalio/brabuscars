@@ -8,14 +8,17 @@
     "dev": "cross-env NODE_ENV=development tsx watch src/server.ts",
     "start": "cross-env NODE_ENV=production node dist/server.js",
     "start:test": "cross-env NODE_ENV=test tsx src/server.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "migrate": "cross-env NODE_ENV=development tsx src/scripts/migrate.ts",
     "migrate:test": "cross-env NODE_ENV=test tsx src/scripts/migrate.ts",
     "migrate:prod": "cross-env NODE_ENV=production tsx src/scripts/migrate.ts",
     "create-admin": "cross-env NODE_ENV=development tsx src/scripts/createAdmin.ts",
     "create-admin:prod": "cross-env NODE_ENV=production tsx src/scripts/createAdmin.ts",
-    "lint": "eslint src"
+    "reset-mfa": "cross-env NODE_ENV=development tsx src/scripts/resetMfa.ts",
+    "reset-mfa:prod": "cross-env NODE_ENV=production tsx src/scripts/resetMfa.ts",
+    "lint": "eslint src",
+    "test": "vitest run"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -45,6 +48,7 @@
     "@types/node": "^20",
     "cross-env": "^10.1.0",
     "tsx": "^4.19.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.9"
   }
 }
