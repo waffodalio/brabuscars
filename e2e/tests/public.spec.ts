@@ -18,7 +18,7 @@ test.describe("Pages publiques", () => {
   }) => {
     const company = (await (await request.get("/api/company")).json()).data;
     await page.goto("/fr/contact");
-    await expect(page.getByText(company.address)).toBeVisible();
+    await expect(page.locator("address")).toContainText(company.address);
   });
 
   test("l'espace admin n'est pas accessible aux visiteurs", async ({ page }) => {

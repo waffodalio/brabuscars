@@ -26,7 +26,9 @@ test.describe("Authentification", () => {
     await expect(page).toHaveURL(/\/fr\/?$/);
 
     await logout.click();
-    await expect(page.getByRole("link", { name: "Connexion" })).toBeVisible();
+    await expect(
+      page.locator("#main-navbar").getByRole("link", { name: "Connexion" }),
+    ).toBeVisible();
 
     await page.goto("/fr/connexion");
     await page.getByLabel("Adresse e-mail", { exact: true }).fill(email);
