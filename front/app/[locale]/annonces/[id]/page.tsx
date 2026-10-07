@@ -14,6 +14,7 @@ import { useCompany } from "@/context/CompanyContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { ImageLightbox } from "@/components/ImageLightbox";
 import { ListingImagePanel } from "@/components/ListingImagePanel";
 import { VehicleSpecs } from "@/components/VehicleSpecs";
 import { listingService } from "@/services/listingService";
@@ -40,6 +41,8 @@ export default function ListingDetailPage() {
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  /** Full-size viewer open on the active photo. */
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const load = useCallback(() => {
     setError("");
@@ -124,8 +127,15 @@ export default function ListingDetailPage() {
             }`}
           >
             {activeUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={activeUrl} alt={listing.title} />
+              <button
+                type="button"
+                className="chc-media__zoom"
+                aria-label={t.lightbox.open}
+                onClick={() => setLightboxOpen(true)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={activeUrl} alt={listing.title} />
+              </button>
             ) : (
               "🚗"
             )}
@@ -204,6 +214,14 @@ export default function ListingDetailPage() {
             </div>
           )}
         </Col>
+
+        <ImageLightbox
+          images={images}
+          index={lightboxOpen ? activeIndex : null}
+          onIndexChange={(index) => setActiveUrl(images[index].url)}
+          onClose={() => setLightboxOpen(false)}
+          alt={listing.title}
+        />
 
         {/* Summary */}
         <Col lg={5} className="chc-animate-in" style={{ animationDelay: "90ms" }}>

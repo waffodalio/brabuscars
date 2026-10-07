@@ -214,6 +214,11 @@ export const fr = {
     prevPhoto: "Photo précédente",
     nextPhoto: "Photo suivante",
   },
+  lightbox: {
+    open: "Agrandir la photo",
+    close: "Fermer",
+    counter: (current: number, total: number) => `Photo ${current} sur ${total}`,
+  },
   cookies: {
     message:
       "Nous utilisons des cookies essentiels au fonctionnement du site et, avec votre accord, un cookie de mesure d'audience interne. Seule la carte de la page Contact (Google Maps) provient d'un tiers.",
@@ -459,6 +464,11 @@ export const en: Dictionary = {
     prevPhoto: "Previous photo",
     nextPhoto: "Next photo",
   },
+  lightbox: {
+    open: "Enlarge photo",
+    close: "Close",
+    counter: (current: number, total: number) => `Photo ${current} of ${total}`,
+  },
   cookies: {
     message:
       "We use cookies essential to the site, and, with your consent, an internal audience-measurement cookie. Only the map on the Contact page (Google Maps) comes from a third party.",
@@ -702,6 +712,11 @@ export const nl: Dictionary = {
     unknownError: "Onbekende fout",
     prevPhoto: "Vorige foto",
     nextPhoto: "Volgende foto",
+  },
+  lightbox: {
+    open: "Foto vergroten",
+    close: "Sluiten",
+    counter: (current: number, total: number) => `Foto ${current} van ${total}`,
   },
   cookies: {
     message:
