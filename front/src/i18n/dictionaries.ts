@@ -18,7 +18,7 @@ export const fr = {
     listings: "Annonces",
     contact: "Contact",
     manageCookies: "Gérer les cookies",
-    rights: (year: number) => `© ${year} CHCars. Tous droits réservés.`,
+    rights: (year: number) => `© ${year} BrabusCars. Tous droits réservés.`,
     tagline:
       "Votre concession de véhicules d'occasion : annonces vérifiées, photos de qualité et toutes les caractéristiques en un coup d'œil.",
     ctaTitle: "Prêt à trouver votre prochain véhicule ?",
@@ -42,8 +42,7 @@ export const fr = {
   },
   home: {
     title: "Trouvez le véhicule qu'il vous faut",
-    subtitle:
-      "Des annonces vérifiées, des photos de qualité et toutes les caractéristiques d'un coup d'œil.",
+    heroAlt: "Illustration d'une voiture",
     cta: "Voir les annonces",
     recentTitle: "Dernières annonces",
     seeAll: "Tout voir",
@@ -179,6 +178,17 @@ export const fr = {
       confirmSaved: "J'ai conservé mes codes de secours",
       continue: "Continuer",
     },
+    google: {
+      continue: "Continuer avec Google",
+      or: "ou",
+      errors: {
+        cancelled: "Connexion avec Google annulée.",
+        expired: "La connexion avec Google a expiré, veuillez réessayer.",
+        unverified: "Votre adresse Google n'est pas vérifiée.",
+        conflict: "Cette adresse e-mail est déjà liée à un autre compte Google.",
+        failed: "La connexion avec Google a échoué, veuillez réessayer.",
+      },
+    },
     register: {
       title: "Créer un compte",
       firstName: "Prénom",
@@ -256,7 +266,7 @@ export const en: Dictionary = {
     listings: "Listings",
     contact: "Contact",
     manageCookies: "Manage cookies",
-    rights: (year: number) => `© ${year} CHCars. All rights reserved.`,
+    rights: (year: number) => `© ${year} BrabusCars. All rights reserved.`,
     tagline:
       "Your used-vehicle dealership: verified listings, quality photos and every specification at a glance.",
     ctaTitle: "Ready to find your next vehicle?",
@@ -279,8 +289,7 @@ export const en: Dictionary = {
   },
   home: {
     title: "Find the vehicle that's right for you",
-    subtitle:
-      "Verified listings, quality photos and every specification at a glance.",
+    heroAlt: "Illustration of a car",
     cta: "Browse listings",
     recentTitle: "Latest listings",
     seeAll: "See all",
@@ -414,6 +423,17 @@ export const en: Dictionary = {
       confirmSaved: "I have saved my recovery codes",
       continue: "Continue",
     },
+    google: {
+      continue: "Continue with Google",
+      or: "or",
+      errors: {
+        cancelled: "Google sign-in was cancelled.",
+        expired: "Google sign-in expired, please try again.",
+        unverified: "Your Google e-mail address is not verified.",
+        conflict: "This e-mail address is already linked to another Google account.",
+        failed: "Google sign-in failed, please try again.",
+      },
+    },
     register: {
       title: "Create an account",
       firstName: "First name",
@@ -488,7 +508,7 @@ export const nl: Dictionary = {
     listings: "Advertenties",
     contact: "Contact",
     manageCookies: "Cookies beheren",
-    rights: (year: number) => `© ${year} CHCars. Alle rechten voorbehouden.`,
+    rights: (year: number) => `© ${year} BrabusCars. Alle rechten voorbehouden.`,
     tagline:
       "Uw dealer in tweedehandsvoertuigen: gecontroleerde advertenties, kwaliteitsfoto's en alle specificaties in één oogopslag.",
     ctaTitle: "Klaar om uw volgende voertuig te vinden?",
@@ -512,8 +532,7 @@ export const nl: Dictionary = {
   },
   home: {
     title: "Vind het voertuig dat bij u past",
-    subtitle:
-      "Gecontroleerde advertenties, kwaliteitsfoto's en alle specificaties in één oogopslag.",
+    heroAlt: "Illustratie van een auto",
     cta: "Advertenties bekijken",
     recentTitle: "Nieuwste advertenties",
     seeAll: "Alles bekijken",
@@ -647,6 +666,17 @@ export const nl: Dictionary = {
       copied: "Codes gekopieerd",
       confirmSaved: "Ik heb mijn herstelcodes bewaard",
       continue: "Doorgaan",
+    },
+    google: {
+      continue: "Doorgaan met Google",
+      or: "of",
+      errors: {
+        cancelled: "Aanmelden met Google is geannuleerd.",
+        expired: "Aanmelden met Google is verlopen, probeer het opnieuw.",
+        unverified: "Uw Google-e-mailadres is niet geverifieerd.",
+        conflict: "Dit e-mailadres is al gekoppeld aan een ander Google-account.",
+        failed: "Aanmelden met Google is mislukt, probeer het opnieuw.",
+      },
     },
     register: {
       title: "Account aanmaken",

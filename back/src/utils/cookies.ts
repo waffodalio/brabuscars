@@ -2,12 +2,14 @@ import { randomBytes } from "node:crypto";
 import ms from "ms";
 import type { CookieOptions, Response } from "express";
 import { env, isProduction } from "../config/env";
-import { MFA_PENDING_TTL_SECONDS } from "./jwt";
+import { MFA_PENDING_TTL_SECONDS, OAUTH_STATE_TTL_SECONDS } from "./jwt";
 
 export const AUTH_COOKIE = "chcars_token";
 export const CSRF_COOKIE = "chcars_csrf";
 /** httpOnly cookie carrying the "password OK, 2FA pending" token. */
 export const MFA_COOKIE = "chcars_mfa";
+/** httpOnly cookie binding a "Sign in with Google" attempt to this browser. */
+export const OAUTH_COOKIE = "chcars_oauth";
 /** Header the frontend echoes the CSRF cookie value into. */
 export const CSRF_HEADER = "x-csrf-token";
 
@@ -64,6 +66,28 @@ export function clearMfaPendingCookie(res: Response): void {
     secure: isProduction,
     httpOnly: true,
   });
+}
+
+/**
+ * `SameSite=Lax` (not Strict): the cookie must come back on the top-level
+ * redirect from Google to the callback.
+ */
+const oauthCookieOptions: CookieOptions = {
+  path: "/",
+  sameSite: "lax",
+  secure: isProduction,
+  httpOnly: true,
+};
+
+export function setOAuthStateCookie(res: Response, token: string): void {
+  res.cookie(OAUTH_COOKIE, token, {
+    ...oauthCookieOptions,
+    maxAge: OAUTH_STATE_TTL_SECONDS * 1000,
+  });
+}
+
+export function clearOAuthStateCookie(res: Response): void {
+  res.clearCookie(OAUTH_COOKIE, oauthCookieOptions);
 }
 
 export function clearAuthCookies(res: Response): void {

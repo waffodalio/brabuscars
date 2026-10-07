@@ -8,6 +8,7 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { errorMessage } from "@/utils/errors";
@@ -107,6 +108,8 @@ export default function RegisterPage() {
           {submitting ? t.auth.register.submitting : t.auth.register.submit}
         </Button>
       </Form>
+
+      <GoogleSignInButton />
 
       <p className="mt-3 mb-0 small text-secondary">
         {t.auth.register.hasAccount}{" "}

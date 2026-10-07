@@ -132,11 +132,15 @@ DB_DATABASE=chcars_dev
 JWT_SECRET=chcars_dev_only_not_a_real_secret_change_in_prod
 JWT_EXPIRES_IN=1d
 MFA_ENCRYPTION_KEY=<64 caractères hex : openssl rand -hex 32>
+# Connexion Google (optionnelle — bouton masqué si vide) : secrets dans .env.development.local
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost:4000/api/auth/google/callback
 UPLOAD_DIR=uploads
 PUBLIC_UPLOADS_URL=http://localhost:4000/uploads
 MAX_UPLOAD_BYTES=15728640
 MAX_IMAGES_PER_LISTING=20
-COMPANY_NAME=CHCars
+COMPANY_NAME=BrabusCars
 COMPANY_ADDRESS=12 avenue de l'Automobile
 COMPANY_POSTAL_CODE=69003
 COMPANY_CITY=Lyon
@@ -167,7 +171,8 @@ et vivre dans `back/.env.production.local`.
 | `TRUST_PROXY` | nombre de reverse proxies devant l'API (0 en local) |
 | `DB_HOST` / `DB_PORT` / `DB_USERNAME` / `DB_PASSWORD` / `DB_DATABASE` | connexion MariaDB |
 | `JWT_SECRET` (≥ 32 car.) / `JWT_EXPIRES_IN` | signature et durée de validité des sessions |
-| `MFA_ENCRYPTION_KEY` (64 hex, **obligatoire**) / `MFA_ISSUER` | clé AES-256 qui chiffre les secrets 2FA des admins (`openssl rand -hex 32`, différente par environnement, **à ne jamais changer** une fois des admins enrôlés) ; nom affiché dans l'application d'authentification (défaut `CHCars`) |
+| `MFA_ENCRYPTION_KEY` (64 hex, **obligatoire**) / `MFA_ISSUER` | clé AES-256 qui chiffre les secrets 2FA des admins (`openssl rand -hex 32`, différente par environnement, **à ne jamais changer** une fois des admins enrôlés) ; nom affiché dans l'application d'authentification (défaut `BrabusCars`) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | « Continuer avec Google » (optionnel : les deux identifiants ensemble, ou aucun — le bouton est alors masqué). Client OAuth « Application Web » de la Google Cloud Console ; l'URI de redirection autorisée doit être exactement `GOOGLE_REDIRECT_URI` (`<origine de l'API>/api/auth/google/callback`) |
 | `UPLOAD_DIR` | dossier où sont écrits les fichiers image (hors dépôt ; hors dossier de déploiement en prod) |
 | `PUBLIC_UPLOADS_URL` | préfixe d'URL publique des images (`…/uploads`) |
 | `MAX_UPLOAD_BYTES` / `MAX_IMAGES_PER_LISTING` | limites d'upload (défaut 15 Mo / 20 images) |
@@ -345,7 +350,10 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
    DB_ROOT_PASSWORD=<aléatoire>
    JWT_SECRET=<≥ 32 caractères, différent par environnement>
    MFA_ENCRYPTION_KEY=<openssl rand -hex 32, différent par environnement, ne jamais le changer>
-   # Optionnels : JWT_EXPIRES_IN, COMPANY_*, COMPANY_INSTAGRAM_URL, COMPANY_FACEBOOK_URL
+   # Optionnels : JWT_EXPIRES_IN, COMPANY_*, COMPANY_INSTAGRAM_URL, COMPANY_FACEBOOK_URL,
+   #              GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (connexion Google ; l'URI de
+   #              redirection https://<SITE_DOMAIN>/api/auth/google/callback est déduite),
+   #              BACKUP_KEEP (sauvegardes conservées avant migration, défaut 10)
    ```
 
    Au premier démarrage, l'image MariaDB crée la base et l'utilisateur à
@@ -398,6 +406,38 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
 Actions → **Deploy** → *Run workflow* : choisir l'environnement et un tag déjà
 publié (`sha-<commit>`). Sur le serveur, `.previous_tag` garde la version
 précédente.
+
+Un rollback ne défait pas le schéma : les migrations restent appliquées (elles
+doivent donc rester compatibles avec la version précédente). Pour revenir aussi
+sur les données, restaurer la sauvegarde prise avant la migration (ci-dessous).
+
+### Sauvegardes de la base
+
+À chaque déploiement, `deploy.sh` exporte la base de l'environnement **juste
+avant les migrations** dans `<dossier de déploiement>/backups/<date UTC>_<tag>.sql.gz`
+(`mariadb-dump --single-transaction`, sans interruption du site ; dossier en
+`700`, fichiers en `600`). Si l'export échoue ou est incomplet, le déploiement
+s'arrête **avant** de toucher au schéma. Les `BACKUP_KEEP` plus récents sont
+conservés (défaut `10`, réglable dans le `.env` du serveur).
+
+Ces fichiers restent **sur le serveur** (préprod et prod comprises) : ils
+protègent d'une migration ratée, pas d'une perte du serveur. Pour cela, copier
+régulièrement `backups/` ailleurs (autre machine, stockage objet).
+
+Restauration (dans le dossier de déploiement ; **écrase** les tables de la base
+par celles du dump) :
+
+```bash
+docker compose stop back front        # plus d'écritures pendant la restauration
+gunzip -c backups/<fichier>.sql.gz | docker compose exec -T mariadb \
+  sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" exec mariadb -uroot'
+# puis redéployer la version qui correspond à ce schéma (tag dans le nom du fichier) :
+IMAGE_BACK=… IMAGE_FRONT=… IMAGE_TAG=<tag> sh deploy.sh   # ou Actions → Deploy
+```
+
+Le dump contient la table `schema_migrations` : après restauration, le prochain
+déploiement réapplique les migrations manquantes. Les photos (volume `uploads`)
+ne sont pas dans le dump.
 
 ### E2E en local
 

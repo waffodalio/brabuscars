@@ -105,7 +105,7 @@ export function AdminFooter() {
         <div className="chc-admin-footer-main">
           <div className="d-flex flex-column gap-2">
             <div className="d-flex align-items-center gap-2">
-              <span className="chc-brand fs-5">CHCars</span>
+              <span className="chc-brand fs-5">BrabusCars</span>
               <span className="chc-admin-footer-tag">Back-office</span>
             </div>
             <div
@@ -151,7 +151,7 @@ export function AdminFooter() {
         </div>
 
         <div className="chc-admin-footer-bottom">
-          <span>© {new Date().getFullYear()} CHCars · Espace d&apos;administration</span>
+          <span>© {new Date().getFullYear()} BrabusCars · Espace d&apos;administration</span>
           <button
             type="button"
             className="chc-footer-top"

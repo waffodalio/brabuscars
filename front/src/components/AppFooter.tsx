@@ -92,7 +92,7 @@ export function AppFooter() {
   const { user, initializing } = useAuth();
   const { reopen } = useCookieConsent();
   const { t, withLocale } = useLanguage();
-  const name = company?.name ?? "CHCars";
+  const name = company?.name ?? "BrabusCars";
   // First segment after the locale: "" (home), "annonces", "contact", …
   const section = usePathname().split("/")[2] ?? "";
   const showCta = !CTA_HIDDEN_SECTIONS.has(section);

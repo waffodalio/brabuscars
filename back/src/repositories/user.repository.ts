@@ -13,6 +13,10 @@ export const userRepository = AppDataSource.getRepository(User).extend({
     return this.findOneBy({ email });
   },
 
+  findByGoogleSub(googleSub: string): Promise<User | null> {
+    return this.findOneBy({ googleSub });
+  },
+
   findById(id: number): Promise<User | null> {
     return this.findOneBy({ id });
   },

@@ -27,6 +27,12 @@ const optionalHttpsUrl = z.preprocess(
     .optional(),
 );
 
+/** Optional secret/identifier: empty means "not set". */
+const optionalString = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 /**
  * Centralised, validated access to environment variables.
  * The process exits immediately if the configuration is invalid or incomplete,
@@ -65,7 +71,20 @@ const envSchema = z.object({
     .string()
     .regex(/^[0-9a-fA-F]{64}$/, "must be 64 hexadecimal characters"),
   /** Issuer name shown in authenticator apps. */
-  MFA_ISSUER: z.string().min(1).default("CHCars"),
+  MFA_ISSUER: z.string().min(1).default("BrabusCars"),
+
+  // --- "Sign in with Google" (OpenID Connect) — disabled when unset ---
+  /** OAuth client id / secret from the Google Cloud console (both or neither). */
+  GOOGLE_CLIENT_ID: optionalString,
+  GOOGLE_CLIENT_SECRET: optionalString,
+  /**
+   * Callback URL registered on the Google client, pointing at this API's
+   * `/auth/google/callback` (e.g. `https://example.com/api/auth/google/callback`).
+   */
+  GOOGLE_REDIRECT_URI: z
+    .string()
+    .url()
+    .default("http://localhost:4000/api/auth/google/callback"),
 
   // --- Uploads (image files stored on the local disk) ---
   /** Directory where image files are written. Keep it outside the repo and,
@@ -86,7 +105,7 @@ const envSchema = z.object({
   MAX_IMAGES_PER_LISTING: z.coerce.number().int().positive().default(20),
 
   // --- Company (single dealership: all vehicles are at this address) ---
-  COMPANY_NAME: z.string().min(1).default("CHCars"),
+  COMPANY_NAME: z.string().min(1).default("BrabusCars"),
   COMPANY_ADDRESS: z.string().min(1).default("12 avenue de l'Automobile"),
   COMPANY_POSTAL_CODE: z.string().min(1).default("69003"),
   COMPANY_CITY: z.string().min(1).default("Lyon"),
@@ -100,7 +119,13 @@ const envSchema = z.object({
   /** Social pages shown in the site footer — optional, hidden when empty. */
   COMPANY_INSTAGRAM_URL: optionalHttpsUrl,
   COMPANY_FACEBOOK_URL: optionalHttpsUrl,
-});
+}).refine(
+  (value) => Boolean(value.GOOGLE_CLIENT_ID) === Boolean(value.GOOGLE_CLIENT_SECRET),
+  {
+    message: "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set together",
+    path: ["GOOGLE_CLIENT_SECRET"],
+  },
+);
 
 const parsed = envSchema.safeParse(process.env);
 
@@ -114,3 +139,7 @@ export const env = parsed.data;
 export const isProduction = env.NODE_ENV === "production";
 export const isTest = env.NODE_ENV === "test";
 export const isDevelopment = env.NODE_ENV === "development";
+/** "Sign in with Google" is offered only when its credentials are configured. */
+export const isGoogleAuthEnabled = Boolean(
+  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET,
+);

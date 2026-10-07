@@ -1,25 +1,35 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
+import Spinner from "react-bootstrap/Spinner";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { MfaCodeForm } from "@/components/auth/MfaCodeForm";
 import { MfaEnrollment } from "@/components/auth/MfaEnrollment";
 import { RecoveryCodes } from "@/components/auth/RecoveryCodes";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import type { MfaEnrollment as MfaEnrollmentData } from "@/types/auth";
+import {
+  GOOGLE_ERRORS,
+  type GoogleError,
+  type MfaEnrollment as MfaEnrollmentData,
+} from "@/types/auth";
 import { errorMessage } from "@/utils/errors";
 
 /**
- * Login steps: password → (admins) 2FA code, preceded on the first login by
- * the enrollment QR code and followed by the one-time recovery codes.
+ * Login steps: password (or Google) → (admins) 2FA code, preceded on the
+ * first login by the enrollment QR code and followed by the one-time recovery
+ * codes. After a Google round trip the API lands here with `?mfa=enroll|code`
+ * (2FA still due) or `?google=<reason>` (failure).
  */
 type Step =
   | { kind: "credentials" }
+  /** Back from Google, 2FA enrollment due: loading the QR code. */
+  | { kind: "resuming" }
   | { kind: "enroll"; enrollment: MfaEnrollmentData }
   | { kind: "code" }
   | { kind: "recovery"; codes: string[] };
@@ -28,13 +38,43 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, startMfaEnrollment, verifyMfa } = useAuth();
   const { t, withLocale } = useLanguage();
-  const [step, setStep] = useState<Step>({ kind: "credentials" });
+  const searchParams = useSearchParams();
+  const mfaParam = searchParams.get("mfa");
+  const googleParam = searchParams.get("google");
+  const [step, setStep] = useState<Step>(() =>
+    mfaParam === "code"
+      ? { kind: "code" }
+      : mfaParam === "enroll"
+        ? { kind: "resuming" }
+        : { kind: "credentials" },
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() =>
+    googleParam && (GOOGLE_ERRORS as readonly string[]).includes(googleParam)
+      ? t.auth.google.errors[googleParam as GoogleError]
+      : "",
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const goHome = () => router.push(withLocale("/"));
+
+  // Coming back from Google (state above was seeded from the query): drop
+  // the parameters from the URL, and fetch the QR code if enrollment is due.
+  useEffect(() => {
+    if (!mfaParam && !googleParam) return;
+    router.replace(withLocale("/connexion"));
+    if (mfaParam === "enroll") {
+      startMfaEnrollment()
+        .then((enrollment) => setStep({ kind: "enroll", enrollment }))
+        .catch(() => {
+          setStep({ kind: "credentials" });
+          setError(t.auth.mfa.expired);
+        });
+    }
+    // Run once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -74,6 +114,7 @@ export default function LoginPage() {
 
   const title = {
     credentials: t.auth.login.title,
+    resuming: t.auth.mfa.enrollTitle,
     enroll: t.auth.mfa.enrollTitle,
     code: t.auth.mfa.codeTitle,
     recovery: t.auth.mfa.recoveryTitle,
@@ -119,6 +160,8 @@ export default function LoginPage() {
             </Button>
           </Form>
 
+          <GoogleSignInButton />
+
           <p className="mt-3 mb-0 small text-secondary">
             {t.auth.login.noAccount}{" "}
             <a href={withLocale("/inscription")}>
@@ -126,6 +169,14 @@ export default function LoginPage() {
             </a>
           </p>
         </>
+      )}
+
+      {step.kind === "resuming" && (
+        <div className="text-center py-4">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">{t.home.loading}</span>
+          </Spinner>
+        </div>
       )}
 
       {step.kind === "enroll" && (

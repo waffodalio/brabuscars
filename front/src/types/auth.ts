@@ -60,3 +60,18 @@ export interface RoleChange {
   newRole: UserRole;
   createdAt: string;
 }
+
+/** `GET /auth/providers` — sign-in methods available besides the password. */
+export interface AuthProviders {
+  google: boolean;
+}
+
+/** Reason codes the API appends to `/connexion?google=…` after a failure. */
+export const GOOGLE_ERRORS = [
+  "cancelled",
+  "expired",
+  "unverified",
+  "conflict",
+  "failed",
+] as const;
+export type GoogleError = (typeof GOOGLE_ERRORS)[number];

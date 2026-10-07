@@ -23,5 +23,26 @@ export const mfaVerifySchema = z
   })
   .strict();
 
+/** Front-end locales the Google flow can return to. */
+export const FRONT_LOCALES = ["fr", "en", "nl"] as const;
+
+/** `GET /auth/google?locale=…` */
+export const googleStartQuerySchema = z
+  .object({
+    locale: z.enum(FRONT_LOCALES).default("fr"),
+  })
+  .strict();
+
+/**
+ * `GET /auth/google/callback` — sent by Google, which appends its own extra
+ * parameters (`scope`, `authuser`, `prompt`, `hd`, `iss`…): not `.strict()`,
+ * unknown keys are simply dropped.
+ */
+export const googleCallbackQuerySchema = z.object({
+  code: z.string().min(1).max(2048).optional(),
+  state: z.string().min(1).max(512).optional(),
+  error: z.string().max(200).optional(),
+});
+
 export type RegisterDto = z.infer<typeof registerSchema>;
 export type LoginDto = z.infer<typeof loginSchema>;

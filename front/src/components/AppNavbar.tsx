@@ -44,7 +44,7 @@ export function AppNavbar() {
     >
       <Container style={{ maxWidth: 1140 }}>
         <Navbar.Brand href={withLocale("/")} className="chc-brand">
-          CHCars
+          BrabusCars
         </Navbar.Brand>
         <Navbar.Collapse id="main-navbar">
           <Nav className="me-auto">

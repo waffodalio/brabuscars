@@ -1,6 +1,7 @@
-import { apiClient, setCsrfToken } from "./apiClient";
+import { API_BASE_URL, apiClient, setCsrfToken } from "./apiClient";
 import type { ApiSuccess } from "@/types/api";
 import type {
+  AuthProviders,
   AuthResult,
   AuthUser,
   Credentials,
@@ -62,6 +63,20 @@ export const authService = {
     } finally {
       setCsrfToken(null);
     }
+  },
+
+  async providers(): Promise<AuthProviders> {
+    const response =
+      await apiClient.get<ApiSuccess<AuthProviders>>("/auth/providers");
+    return response.data;
+  },
+
+  /**
+   * Where the browser navigates (full page, not fetch) to sign in with
+   * Google; the API redirects back to the front once done.
+   */
+  googleSignInUrl(locale: string): string {
+    return `${API_BASE_URL}/auth/google?locale=${encodeURIComponent(locale)}`;
   },
 
   async me(): Promise<AuthUser> {

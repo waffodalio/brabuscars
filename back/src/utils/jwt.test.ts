@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   signAuthToken,
   signMfaPendingToken,
+  signOAuthStateToken,
   verifyAuthToken,
   verifyMfaPendingToken,
+  verifyOAuthStateToken,
 } from "./jwt";
 
 describe("signAuthToken / verifyAuthToken", () => {
@@ -67,5 +69,29 @@ describe("signMfaPendingToken / verifyMfaPendingToken", () => {
   it("rejects a session token", () => {
     const session = signAuthToken({ sub: 7, role: "admin" });
     expect(() => verifyMfaPendingToken(session)).toThrow();
+  });
+});
+
+describe("signOAuthStateToken / verifyOAuthStateToken", () => {
+  const payload = {
+    state: "state-1",
+    nonce: "nonce-1",
+    codeVerifier: "verifier-1",
+    locale: "en",
+  };
+
+  it("round-trips the attempt", () => {
+    expect(verifyOAuthStateToken(signOAuthStateToken(payload))).toEqual(payload);
+  });
+
+  it("never grants a session, and is not a 2FA-pending token", () => {
+    const token = signOAuthStateToken(payload);
+    expect(() => verifyAuthToken(token)).toThrow();
+    expect(() => verifyMfaPendingToken(token)).toThrow();
+  });
+
+  it("rejects a session token", () => {
+    const session = signAuthToken({ sub: 7, role: "user" });
+    expect(() => verifyOAuthStateToken(session)).toThrow();
   });
 });

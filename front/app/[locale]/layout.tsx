@@ -38,15 +38,15 @@ export async function generateMetadata({
 
 const METADATA: Record<Locale, Metadata> = {
   fr: {
-    title: "CHCars — véhicules d'occasion",
+    title: "BrabusCars — véhicules d'occasion",
     description: "Plateforme de consultation et de vente de véhicules",
   },
   en: {
-    title: "CHCars — used vehicles",
+    title: "BrabusCars — used vehicles",
     description: "Platform to browse and buy vehicles",
   },
   nl: {
-    title: "CHCars — tweedehandsvoertuigen",
+    title: "BrabusCars — tweedehandsvoertuigen",
     description: "Platform om voertuigen te bekijken en te kopen",
   },
 };

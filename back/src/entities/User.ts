@@ -28,7 +28,9 @@ export type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
  *  - `admin`       — manage the catalogue and the listings
  *  - `super_admin` — everything, plus manage other users' roles
  *
- * Passwords are only ever stored hashed.
+ * Passwords are only ever stored hashed. An account created through "Sign in
+ * with Google" has no password (`passwordHash` null) and is identified by its
+ * Google `sub` claim.
  */
 @Entity("user")
 export class User {
@@ -38,8 +40,12 @@ export class User {
   @Column({ type: "varchar", length: 255, unique: true })
   email!: string;
 
-  @Column({ name: "password_hash", type: "varchar", length: 255 })
-  passwordHash!: string;
+  @Column({ name: "password_hash", type: "varchar", length: 255, nullable: true })
+  passwordHash!: string | null;
+
+  /** Stable Google account id (OpenID `sub`), set once linked to Google. */
+  @Column({ name: "google_sub", type: "varchar", length: 255, nullable: true, unique: true })
+  googleSub!: string | null;
 
   @Column({ name: "first_name", type: "varchar", length: 100 })
   firstName!: string;

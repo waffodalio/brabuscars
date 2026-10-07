@@ -80,3 +80,58 @@ export function verifyMfaPendingToken(token: string): number {
   }
   return Number(decoded.sub);
 }
+
+/** `typ` claim of the "Sign in with Google" round-trip token. */
+const OAUTH_STATE_TYPE = "oauth_state";
+/** Time allowed to pick a Google account before the attempt expires. */
+export const OAUTH_STATE_TTL_SECONDS = 10 * 60;
+
+export interface OAuthStatePayload {
+  state: string;
+  nonce: string;
+  codeVerifier: string;
+  /** Front-end locale to return to (`fr`, `en`, `nl`). */
+  locale: string;
+}
+
+/**
+ * Signed (tamper-proof) carrier for the OAuth `state`, `nonce` and PKCE
+ * verifier between `/auth/google` and its callback; lives in an httpOnly
+ * cookie, never grants a session.
+ */
+export function signOAuthStateToken(payload: OAuthStatePayload): string {
+  return jwt.sign(
+    {
+      typ: OAUTH_STATE_TYPE,
+      st: payload.state,
+      nn: payload.nonce,
+      cv: payload.codeVerifier,
+      lc: payload.locale,
+    },
+    env.JWT_SECRET,
+    { algorithm: ALGORITHM, expiresIn: OAUTH_STATE_TTL_SECONDS },
+  );
+}
+
+/** Returns the payload of a valid OAuth round-trip token, or throws. */
+export function verifyOAuthStateToken(token: string): OAuthStatePayload {
+  const decoded = jwt.verify(token, env.JWT_SECRET, {
+    algorithms: [ALGORITHM],
+  });
+  if (
+    typeof decoded === "string" ||
+    decoded.typ !== OAUTH_STATE_TYPE ||
+    typeof decoded.st !== "string" ||
+    typeof decoded.nn !== "string" ||
+    typeof decoded.cv !== "string" ||
+    typeof decoded.lc !== "string"
+  ) {
+    throw new jwt.JsonWebTokenError("Malformed token payload");
+  }
+  return {
+    state: decoded.st,
+    nonce: decoded.nn,
+    codeVerifier: decoded.cv,
+    locale: decoded.lc,
+  };
+}

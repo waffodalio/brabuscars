@@ -56,7 +56,7 @@ export default function ContactPage() {
         <Col lg={5}>
           <Card className="h-100">
             <Card.Body>
-              <h2 className="h6">{company?.name ?? "CHCars"}</h2>
+              <h2 className="h6">{company?.name ?? "BrabusCars"}</h2>
               {company && (
                 <address className="mb-3 text-body-secondary">
                   {company.address}

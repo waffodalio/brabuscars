@@ -43,6 +43,19 @@ export const mfaRateLimiter = rateLimit({
   message: error("Too many attempts, please try again later"),
 });
 
+/**
+ * "Sign in with Google" (start + callback), per IP. Separate from the
+ * password limiter so a Google round trip doesn't eat the login budget.
+ */
+export const oauthRateLimiter = rateLimit({
+  windowMs: FIFTEEN_MINUTES,
+  limit: 30,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skip: () => isTest,
+  message: error("Too many sign-in attempts, please try again later"),
+});
+
 /** Slows down spam through the public contact form. */
 export const contactRateLimiter = rateLimit({
   windowMs: FIFTEEN_MINUTES,
