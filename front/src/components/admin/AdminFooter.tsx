@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { healthService } from "@/services/healthService";
+import { ADMIN_ICONS as ICONS, AdminIcon as Icon } from "./AdminIcon";
 
 /** How often the system status is refreshed. */
 const HEALTH_POLL_MS = 60_000;
@@ -51,32 +52,6 @@ function useSystemState() {
 
   return { state, checkedAt };
 }
-
-function Icon({ d }: { d: string }) {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={d} />
-    </svg>
-  );
-}
-
-const ICONS = {
-  external: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
-  plus: "M12 5v14M5 12h14",
-  mail: "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm17 2-9 6-9-6",
-  shield: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3zm-3 9 2 2 4-4",
-  up: "M12 19V5M5 12l7-7 7 7",
-};
 
 /**
  * Footer of the back-office: live system status (API + database), shortcuts,

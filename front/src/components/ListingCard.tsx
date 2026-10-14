@@ -13,7 +13,7 @@ import { vehicleTitle } from "@/utils/vehicleLabels";
 
 /** Listing summary used in the listings and favourites grids. */
 export function ListingCard({ listing }: { listing: Listing }) {
-  const { t, withLocale } = useLanguage();
+  const { t, locale, withLocale } = useLanguage();
   const images = listing.images;
   const [index, setIndex] = useState(0);
   const cover = images[index];
@@ -94,7 +94,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       </div>
 
       <Card.Body className="d-flex flex-column">
-        <div className="chc-price mb-1">{formatPrice(listing.price)}</div>
+        <div className="chc-price mb-1">{formatPrice(listing.price, locale)}</div>
         <Card.Title className="h6 fw-semibold mb-1">
           <Link
             href={withLocale(`/annonces/${listing.id}`)}

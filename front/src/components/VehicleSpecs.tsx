@@ -1,4 +1,5 @@
 import { useLanguage } from "@/context/LanguageContext";
+import { formatMileage } from "@/utils/listingLabels";
 import type { Listing } from "@/types/listing";
 
 type Specs = Pick<
@@ -14,10 +15,10 @@ export function VehicleSpecs({
   listing: Specs;
   className?: string;
 }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const chips = [
     String(listing.year),
-    `${listing.mileage.toLocaleString("fr-FR")} km`,
+    formatMileage(listing.mileage, locale),
     t.vehicle.fuelType[listing.fuelType],
     t.vehicle.transmission[listing.transmission],
   ];

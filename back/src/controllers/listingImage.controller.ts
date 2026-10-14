@@ -5,17 +5,21 @@ import {
   updateListingImageSchema,
 } from "../dto/listingImage.dto";
 import { listingImageService } from "../services/listingImage.service";
+import { hasRole } from "../middlewares/authenticate";
 import { ApiError } from "../utils/ApiError";
 import { success } from "../utils/apiResponse";
 
 /**
- * HTTP layer for `/api/listings/:listingId/images`. `list` is public; the
- * write operations are admin-only (route middleware).
+ * HTTP layer for `/api/listings/:listingId/images`. `list` is public but, as
+ * for the listing itself, non-admins only see the gallery of a `published`
+ * advert; the write operations are admin-only (route middleware).
  */
 export const listingImageController = {
   async list(req: Request, res: Response): Promise<void> {
     const { listingId } = listingImageCollectionParamsSchema.parse(req.params);
-    const images = await listingImageService.list(listingId);
+    const images = await listingImageService.list(listingId, {
+      publishedOnly: !hasRole(req.user?.role, "admin"),
+    });
     res.status(200).json(success(images));
   },
 

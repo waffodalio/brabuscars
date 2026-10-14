@@ -3,7 +3,6 @@ import { Favorite } from "../entities/Favorite";
 
 const LISTING_RELATIONS = {
   listing: {
-    seller: true,
     model: { brand: true },
     category: true,
     images: true,
@@ -15,9 +14,14 @@ const LISTING_RELATIONS = {
  * user; the favourited listing is loaded with the relations the API returns.
  */
 export const favoriteRepository = AppDataSource.getRepository(Favorite).extend({
+  /**
+   * Only favourites whose listing is still `published`: an advert taken
+   * offline (draft, sold, archived) is hidden but the row is kept, so it
+   * reappears if the advert is published again.
+   */
   findByUser(userId: number): Promise<Favorite[]> {
     return this.find({
-      where: { userId },
+      where: { userId, listing: { status: "published" } },
       relations: LISTING_RELATIONS,
       order: { createdAt: "DESC" },
     });

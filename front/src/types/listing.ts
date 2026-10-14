@@ -1,4 +1,3 @@
-import type { AuthUser } from "./auth";
 import type { CarModel } from "./carModel";
 import type { Category } from "./category";
 import type { FuelType, Transmission } from "./vehicle";
@@ -37,8 +36,6 @@ export interface ListingImage {
 export interface Listing {
   id: number;
   sellerId: number;
-  /** Present when the API loads the relation (public user shape). */
-  seller?: AuthUser;
   modelId: number;
   /** Present when the API loads the relation (with its brand). */
   model?: CarModel;

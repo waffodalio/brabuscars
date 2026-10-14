@@ -11,12 +11,13 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { useCompany } from "@/context/CompanyContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { contactService } from "@/services/contactService";
-import { errorMessage } from "@/utils/errors";
+import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 import { googleMapsDirectionsUrl, googleMapsEmbedUrl } from "@/utils/mapLinks";
 
 export default function ContactPage() {
   const company = useCompany();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const toMessage = usePublicErrorMessage();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -43,7 +44,7 @@ export default function ContactPage() {
       setStatus("sent");
       setForm({ name: "", email: "", message: "", website: "" });
     } catch (err) {
-      setError(errorMessage(err, t.contact.error));
+      setError(toMessage(err, t.contact.error));
       setStatus("error");
     }
   }
@@ -92,7 +93,7 @@ export default function ContactPage() {
                 <dt className="col-4 text-secondary fw-normal">
                   {t.contact.hours}
                 </dt>
-                <dd className="col-8">{company?.hours ?? "—"}</dd>
+                <dd className="col-8">{company?.hours[locale] ?? "—"}</dd>
               </dl>
 
               {company && (

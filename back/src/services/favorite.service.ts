@@ -1,6 +1,7 @@
 import { favoriteRepository } from "../repositories/favorite.repository";
 import { listingRepository } from "../repositories/listing.repository";
 import { ApiError } from "../utils/ApiError";
+import { isPublished } from "../utils/listingVisibility";
 import {
   toFavoriteResponse,
   type FavoriteResponse,
@@ -17,7 +18,9 @@ export const favoriteService = {
   },
 
   async add(userId: number, listingId: number): Promise<FavoriteResponse> {
-    if (!(await listingRepository.findById(listingId))) {
+    const listing = await listingRepository.findOneBy({ id: listingId });
+    // Same 404 as for a missing listing: a draft's existence is not revealed.
+    if (!listing || !isPublished(listing)) {
       throw ApiError.notFound(`Listing ${listingId} not found`);
     }
     if (await favoriteRepository.existsForUserAndListing(userId, listingId)) {

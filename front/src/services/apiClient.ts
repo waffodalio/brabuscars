@@ -36,6 +36,9 @@ function readCsrfCookie(): string | null {
   return match ? decodeURIComponent(match.slice(CSRF_COOKIE.length + 1)) : null;
 }
 
+/** `ApiClientError.status` when the request never got an HTTP response. */
+export const NETWORK_ERROR_STATUS = 0;
+
 export class ApiClientError extends Error {
   constructor(
     message: string,
@@ -63,17 +66,26 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     if (token) headers[CSRF_HEADER] = token;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    method,
-    credentials: "include",
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      method,
+      credentials: "include",
+      headers,
+    });
+  } catch {
+    // Offline, DNS failure, API down, CORS refusal…: no HTTP status at all.
+    throw new ApiClientError("Network error", NETWORK_ERROR_STATUS);
+  }
 
   const hasJson = response.headers
     .get("content-type")
     ?.includes("application/json");
-  const body: unknown = hasJson ? await response.json() : undefined;
+  // A proxy error page or truncated body must not surface as a SyntaxError.
+  const body: unknown = hasJson
+    ? await response.json().catch(() => undefined)
+    : undefined;
 
   if (!response.ok) {
     const errorBody = body as ApiErrorBody | undefined;

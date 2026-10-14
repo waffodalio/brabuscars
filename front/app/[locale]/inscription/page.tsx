@@ -11,12 +11,13 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { errorMessage } from "@/utils/errors";
+import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
   const { t, withLocale } = useLanguage();
+  const toMessage = usePublicErrorMessage();
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -39,7 +40,9 @@ export default function RegisterPage() {
       await register(form);
       router.push(withLocale("/"));
     } catch (err) {
-      setError(errorMessage(err, t.auth.register.error));
+      setError(toMessage(err, t.auth.register.error, {
+          409: t.auth.register.emailTaken,
+        }));
       setSubmitting(false);
     }
   }

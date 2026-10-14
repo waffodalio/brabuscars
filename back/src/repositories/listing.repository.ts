@@ -13,7 +13,6 @@ import type { ListingSort, ListListingQuery } from "../dto/listing.dto";
 import { escapeLike } from "../utils/escapeLike";
 
 const RELATIONS = {
-  seller: true,
   model: { brand: true },
   category: true,
   images: true,
@@ -63,7 +62,7 @@ function buildWhere(query: ListListingQuery): FindOptionsWhere<Listing> {
 }
 
 /**
- * Data-access layer for {@link Listing}. Queries load the seller, the model
+ * Data-access layer for {@link Listing}. Queries load the model
  * (with its brand), the category and the image gallery.
  */
 export const listingRepository = AppDataSource.getRepository(Listing).extend({
@@ -77,5 +76,13 @@ export const listingRepository = AppDataSource.getRepository(Listing).extend({
 
   findById(id: number): Promise<Listing | null> {
     return this.findOne({ where: { id }, relations: RELATIONS });
+  },
+
+  countByModel(modelId: number): Promise<number> {
+    return this.countBy({ modelId });
+  },
+
+  countByBrand(brandId: number): Promise<number> {
+    return this.countBy({ model: { brandId } });
   },
 });

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
@@ -18,25 +19,68 @@ import type { CarModel } from "@/types/carModel";
 import type { Category } from "@/types/category";
 import type { Listing, ListingSort } from "@/types/listing";
 import { FUEL_TYPES, TRANSMISSIONS } from "@/types/vehicle";
-import { errorMessage } from "@/utils/errors";
+import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 import {
   EMPTY_FILTERS,
+  filtersFromSearchParams,
+  filtersToSearchParams,
   hasInvalidRange,
   toQuery,
   type FilterForm,
 } from "@/utils/listingFilters";
 
+/**
+ * `useSearchParams` needs a Suspense boundary on a prerendered page: the
+ * filter-dependent part renders on the client, the skeleton stands in.
+ */
 export default function ListingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <Row xs={1} sm={2} lg={3} className="g-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Col key={i}>
+              <ListingCardSkeleton />
+            </Col>
+          ))}
+        </Row>
+      }
+    >
+      <ListingsBrowser />
+    </Suspense>
+  );
+}
+
+/**
+ * The applied filters live in the URL (`?brandId=3&sort=price_asc`): a search
+ * survives a reload, a shared link, the back button and a language switch.
+ * The form holds the edits not applied yet.
+ */
+function ListingsBrowser() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isAdmin } = useAuth();
   const { t, withLocale } = useLanguage();
+  const toMessage = usePublicErrorMessage();
 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [models, setModels] = useState<CarModel[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  const [form, setForm] = useState<FilterForm>({ ...EMPTY_FILTERS });
-  const [applied, setApplied] = useState<FilterForm>({ ...EMPTY_FILTERS });
+  const queryString = searchParams.toString();
+  const applied = useMemo(
+    () => filtersFromSearchParams(new URLSearchParams(queryString)),
+    [queryString],
+  );
+  const [form, setForm] = useState<FilterForm>(applied);
   const [rangeError, setRangeError] = useState(false);
+  // URL changed from outside the form (back / forward): show what is applied.
+  const [syncedQuery, setSyncedQuery] = useState(queryString);
+  if (queryString !== syncedQuery) {
+    setSyncedQuery(queryString);
+    setForm(applied);
+  }
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
@@ -86,7 +130,7 @@ export default function ListingsPage() {
       })
       .catch((err: unknown) => {
         if (!active) return;
-        setError(errorMessage(err, t.common.unknownError));
+        setError(toMessage(err, t.common.unknownError));
         setStatus("error");
       });
     return () => {
@@ -115,17 +159,22 @@ export default function ListingsPage() {
   const hasFilters =
     JSON.stringify(applied) !== JSON.stringify(EMPTY_FILTERS);
 
+  function navigate(next: FilterForm) {
+    const query = filtersToSearchParams(next);
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
+
   function apply() {
     const invalid = hasInvalidRange(toQuery(form));
     setRangeError(invalid);
     if (invalid) return;
-    setApplied({ ...form });
+    navigate(form);
   }
 
   function reset() {
     setRangeError(false);
     setForm({ ...EMPTY_FILTERS });
-    setApplied({ ...EMPTY_FILTERS });
+    navigate(EMPTY_FILTERS);
   }
 
   return (

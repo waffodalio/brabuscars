@@ -6,6 +6,7 @@ import Form from "react-bootstrap/Form";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { useLanguage } from "@/context/LanguageContext";
 import { ApiClientError } from "@/services/apiClient";
+import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 
 interface MfaCodeFormProps {
   /** Offer the "use a recovery code" switch (not during enrollment). */
@@ -22,6 +23,7 @@ export function MfaCodeForm({
   onExpired,
 }: MfaCodeFormProps) {
   const { t } = useLanguage();
+  const toMessage = usePublicErrorMessage();
   const [useRecovery, setUseRecovery] = useState(false);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -38,10 +40,14 @@ export function MfaCodeForm({
       setCode("");
       if (err instanceof ApiClientError && err.status === 401) {
         onExpired();
-      } else if (err instanceof ApiClientError && err.status === 429) {
-        setError(t.auth.mfa.locked);
       } else {
-        setError(t.auth.mfa.invalid);
+        // Network / server failures get their own message, not « invalid code ».
+        setError(
+          toMessage(err, t.auth.mfa.invalid, {
+            400: t.auth.mfa.invalid,
+            429: t.auth.mfa.locked,
+          }),
+        );
       }
     }
   }

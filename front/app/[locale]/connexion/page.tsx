@@ -18,7 +18,7 @@ import {
   type GoogleError,
   type MfaEnrollment as MfaEnrollmentData,
 } from "@/types/auth";
-import { errorMessage } from "@/utils/errors";
+import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 
 /**
  * Login steps: password (or Google) → (admins) 2FA code, preceded on the
@@ -38,6 +38,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, startMfaEnrollment, verifyMfa } = useAuth();
   const { t, withLocale } = useLanguage();
+  const toMessage = usePublicErrorMessage();
   const searchParams = useSearchParams();
   const mfaParam = searchParams.get("mfa");
   const googleParam = searchParams.get("google");
@@ -94,7 +95,9 @@ export default function LoginPage() {
           : { kind: "code" },
       );
     } catch (err) {
-      setError(errorMessage(err, t.auth.login.error));
+      setError(toMessage(err, t.auth.login.error, {
+          401: t.auth.login.invalidCredentials,
+        }));
       setSubmitting(false);
     }
   }

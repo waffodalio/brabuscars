@@ -2,6 +2,7 @@ import type { ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
 import { ApiError } from "../utils/ApiError";
 import { error } from "../utils/apiResponse";
+import { dbClientErrorOf } from "../utils/dbError";
 import { isProduction } from "../config/env";
 
 /** Reads a numeric HTTP status set by Express / body-parser on an error. */
@@ -39,6 +40,12 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
         ? { ...fieldErrors, _errors: formErrors }
         : fieldErrors;
     res.status(400).json(error("Validation failed", details));
+    return;
+  }
+
+  const dbError = dbClientErrorOf(err);
+  if (dbError) {
+    res.status(dbError.status).json(error(dbError.message));
     return;
   }
 

@@ -11,11 +11,12 @@ import { useFavorites } from "@/context/FavoritesContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingCardSkeleton } from "@/components/ListingCardSkeleton";
+import { ErrorAlert } from "@/components/ErrorAlert";
 
 export default function FavoritesPage() {
   const router = useRouter();
   const { user, initializing } = useAuth();
-  const { favorites, loading } = useFavorites();
+  const { favorites, loading, loadFailed } = useFavorites();
   const { t, locale } = useLanguage();
 
   useEffect(() => {
@@ -44,7 +45,11 @@ export default function FavoritesPage() {
         </Row>
       )}
 
-      {!loading && favorites.length === 0 && (
+      {!loading && loadFailed && (
+        <ErrorAlert message={t.favorites.loadError} />
+      )}
+
+      {!loading && !loadFailed && favorites.length === 0 && (
         <Alert variant="light" className="border text-center py-5">
           {t.favorites.empty}
         </Alert>

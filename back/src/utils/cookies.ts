@@ -10,6 +10,11 @@ export const CSRF_COOKIE = "chcars_csrf";
 export const MFA_COOKIE = "chcars_mfa";
 /** httpOnly cookie binding a "Sign in with Google" attempt to this browser. */
 export const OAUTH_COOKIE = "chcars_oauth";
+/**
+ * Audience-measurement cookie, set by the front end only after the visitor
+ * consented (random UUID). Read by `POST /analytics/pageview`.
+ */
+export const VISITOR_COOKIE = "chcars_visitor_id";
 /** Header the frontend echoes the CSRF cookie value into. */
 export const CSRF_HEADER = "x-csrf-token";
 

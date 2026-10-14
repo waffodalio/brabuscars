@@ -4,6 +4,7 @@ import type { UpdateListingImageDto } from "../dto/listingImage.dto";
 import { listingImageRepository } from "../repositories/listingImage.repository";
 import { listingRepository } from "../repositories/listing.repository";
 import { ApiError } from "../utils/ApiError";
+import { isPublished } from "../utils/listingVisibility";
 import {
   thumbnailKey,
   toListingImageResponse,
@@ -45,8 +46,15 @@ function deleteFiles(storageKey: string): Promise<unknown> {
  * disk; the database only keeps the storage key and metadata.
  */
 export const listingImageService = {
-  async list(listingId: number): Promise<ListingImageResponse[]> {
-    await assertListingExists(listingId);
+  /** `publishedOnly`: answer 404 unless the listing is published. */
+  async list(
+    listingId: number,
+    { publishedOnly }: { publishedOnly: boolean },
+  ): Promise<ListingImageResponse[]> {
+    const listing = await listingRepository.findOneBy({ id: listingId });
+    if (!listing || (publishedOnly && !isPublished(listing))) {
+      throw ApiError.notFound(`Listing ${listingId} not found`);
+    }
     const images = await listingImageRepository.findByListing(listingId);
     return images.map(toListingImageResponse);
   },

@@ -18,6 +18,12 @@ loadEnvFile({ path: ".env" });
  * Optional public link: empty means "not set"; only `https://` is accepted so
  * the value can be rendered as an `href` safely (no `javascript:` URL).
  */
+/** Optional free text: an empty value (e.g. `${VAR:-}` in compose) means unset. */
+const optionalText = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z.string().trim().optional(),
+);
+
 const optionalHttpsUrl = z.preprocess(
   (value) => (value === "" ? undefined : value),
   z
@@ -116,6 +122,9 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default("Du lundi au samedi, 9h–19h"),
+  /** Opening hours in English / Dutch — optional, fall back to COMPANY_HOURS. */
+  COMPANY_HOURS_EN: optionalText,
+  COMPANY_HOURS_NL: optionalText,
   /** Social pages shown in the site footer — optional, hidden when empty. */
   COMPANY_INSTAGRAM_URL: optionalHttpsUrl,
   COMPANY_FACEBOOK_URL: optionalHttpsUrl,

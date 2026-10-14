@@ -148,6 +148,8 @@ COMPANY_COUNTRY=France
 COMPANY_PHONE=+33 4 78 00 00 00
 COMPANY_EMAIL=contact@chcars.fr
 COMPANY_HOURS=Du lundi au samedi, 9h–19h
+COMPANY_HOURS_EN=Monday to Saturday, 9 am–7 pm
+COMPANY_HOURS_NL=Maandag tot zaterdag, 9u–19u
 COMPANY_INSTAGRAM_URL=https://www.instagram.com/<compte>
 COMPANY_FACEBOOK_URL=https://www.facebook.com/<page>
 ```
@@ -177,6 +179,7 @@ et vivre dans `back/.env.production.local`.
 | `PUBLIC_UPLOADS_URL` | préfixe d'URL publique des images (`…/uploads`) |
 | `MAX_UPLOAD_BYTES` / `MAX_IMAGES_PER_LISTING` | limites d'upload (défaut 15 Mo / 20 images) |
 | `COMPANY_*` | coordonnées de la concession (nom, adresse, CP, ville, pays, téléphone, e-mail, horaires) — l'adresse suffit, la carte (Google Maps) géolocalise automatiquement |
+| `COMPANY_HOURS_EN` / `COMPANY_HOURS_NL` | horaires affichés sur le site en anglais / néerlandais (optionnels ; à défaut, `COMPANY_HOURS` en français) |
 | `COMPANY_INSTAGRAM_URL` / `COMPANY_FACEBOOK_URL` | pages Instagram / Facebook affichées dans le pied de page (optionnelles, `https://` uniquement ; icône masquée si vide) |
 
 ### Frontend

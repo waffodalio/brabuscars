@@ -6,6 +6,7 @@ import type {
 } from "../dto/carModel.dto";
 import { carModelRepository } from "../repositories/carModel.repository";
 import { brandRepository } from "../repositories/brand.repository";
+import { listingRepository } from "../repositories/listing.repository";
 import { ApiError } from "../utils/ApiError";
 
 async function assertBrandExists(brandId: number): Promise<void> {
@@ -76,6 +77,14 @@ export const carModelService = {
   },
 
   async remove(id: number): Promise<void> {
+    // listing.model_id has no ON DELETE: refuse with a clear 409 instead of
+    // letting the foreign key fail as a 500.
+    const listings = await listingRepository.countByModel(id);
+    if (listings > 0) {
+      throw ApiError.conflict(
+        `Ce modèle est utilisé par ${listings} annonce(s) : supprimez-les ou changez leur modèle d'abord`,
+      );
+    }
     const result = await carModelRepository.delete({ id });
     if (!result.affected) {
       throw ApiError.notFound(`Car model ${id} not found`);

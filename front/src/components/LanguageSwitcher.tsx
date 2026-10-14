@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Dropdown from "react-bootstrap/Dropdown";
 import { useLanguage } from "@/context/LanguageContext";
 import { LOCALES } from "@/i18n/locales";
 
 /** Navbar language picker: globe pill showing the current locale, opening a
  * menu that links to the same page under another locale
- * (`/fr/annonces` ⇄ `/en/annonces` ⇄ `/nl/annonces`). */
+ * (`/fr/annonces` ⇄ `/en/annonces` ⇄ `/nl/annonces`), query string included. */
 export function LanguageSwitcher() {
   const { locale, pathFor, t } = useLanguage();
+  const router = useRouter();
 
   return (
     <Dropdown align="end">
@@ -31,6 +33,13 @@ export function LanguageSwitcher() {
             key={value}
             as={Link}
             href={pathFor(value)}
+            onClick={(event: React.MouseEvent) => {
+              // Keep the query string (e.g. the /annonces filters).
+              const search = window.location.search;
+              if (!search) return;
+              event.preventDefault();
+              router.push(pathFor(value) + search);
+            }}
             active={value === locale}
             aria-current={value === locale ? "true" : undefined}
             className="chc-lang-item"

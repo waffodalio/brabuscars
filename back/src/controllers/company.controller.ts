@@ -17,7 +17,12 @@ export const companyController = {
         country: env.COMPANY_COUNTRY,
         phone: env.COMPANY_PHONE,
         email: env.COMPANY_EMAIL,
-        hours: env.COMPANY_HOURS,
+        // One entry per site language; untranslated ones fall back to French.
+        hours: {
+          fr: env.COMPANY_HOURS,
+          en: env.COMPANY_HOURS_EN ?? env.COMPANY_HOURS,
+          nl: env.COMPANY_HOURS_NL ?? env.COMPANY_HOURS,
+        },
         instagramUrl: env.COMPANY_INSTAGRAM_URL ?? null,
         facebookUrl: env.COMPANY_FACEBOOK_URL ?? null,
       }),

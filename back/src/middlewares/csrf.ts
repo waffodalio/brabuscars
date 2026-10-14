@@ -9,9 +9,15 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 /**
  * Paths (relative to the API prefix) exempt from the CSRF check: no session is
  * involved, so there is nothing to forge. `/contact` is a public form (rate
- * limited + honeypot).
+ * limited + honeypot); `/analytics/pageview` only records an anonymous view
+ * and may fire before the first response has set the CSRF cookie.
  */
-const EXEMPT_PATHS = new Set(["/auth/login", "/auth/register", "/contact"]);
+const EXEMPT_PATHS = new Set([
+  "/auth/login",
+  "/auth/register",
+  "/contact",
+  "/analytics/pageview",
+]);
 
 function safeEqual(a: string, b: string): boolean {
   const bufferA = Buffer.from(a);

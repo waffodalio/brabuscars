@@ -1,6 +1,7 @@
 import type { Brand } from "../entities/Brand";
 import type { CreateBrandDto, UpdateBrandDto } from "../dto/brand.dto";
 import { brandRepository } from "../repositories/brand.repository";
+import { listingRepository } from "../repositories/listing.repository";
 import { ApiError } from "../utils/ApiError";
 import { slugify } from "../utils/slugify";
 
@@ -58,6 +59,14 @@ export const brandService = {
   },
 
   async remove(id: number): Promise<void> {
+    // Deleting a brand cascades to its models, which listings reference
+    // without ON DELETE: refuse with a clear 409 instead of a FK error (500).
+    const listings = await listingRepository.countByBrand(id);
+    if (listings > 0) {
+      throw ApiError.conflict(
+        `Cette marque est utilisée par ${listings} annonce(s) : supprimez-les ou changez leur modèle d'abord`,
+      );
+    }
     const result = await brandRepository.delete({ id });
     if (!result.affected) {
       throw ApiError.notFound(`Brand ${id} not found`);

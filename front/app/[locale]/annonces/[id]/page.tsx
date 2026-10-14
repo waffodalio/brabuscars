@@ -20,9 +20,11 @@ import { VehicleSpecs } from "@/components/VehicleSpecs";
 import { listingService } from "@/services/listingService";
 import type { Listing, ListingImage, ListingStatus } from "@/types/listing";
 import { errorMessage } from "@/utils/errors";
+import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 import {
   LISTING_STATUS_LABELS,
   LISTING_STATUS_VARIANTS,
+  formatMileage,
   formatPrice,
 } from "@/utils/listingLabels";
 import { vehicleTitle } from "@/utils/vehicleLabels";
@@ -35,7 +37,8 @@ export default function ListingDetailPage() {
   const router = useRouter();
   const { isAdmin } = useAuth();
   const company = useCompany();
-  const { t, withLocale } = useLanguage();
+  const { t, locale, withLocale } = useLanguage();
+  const toMessage = usePublicErrorMessage();
 
   const [listing, setListing] = useState<Listing | null>(null);
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
@@ -53,9 +56,9 @@ export default function ListingDetailPage() {
         setActiveUrl(data.images[0]?.url ?? null);
       })
       .catch((err: unknown) =>
-        setError(errorMessage(err, t.common.unknownError)),
+        setError(toMessage(err, t.common.unknownError)),
       );
-  }, [id, t]);
+  }, [id, t, toMessage]);
 
   useEffect(() => {
     load();
@@ -229,7 +232,7 @@ export default function ListingDetailPage() {
             <Card.Body>
               <div className="d-flex justify-content-between align-items-start gap-2">
                 <span className="chc-price chc-price--lg">
-                  {formatPrice(listing.price)}
+                  {formatPrice(listing.price, locale)}
                 </span>
                 {listing.status !== "published" && (
                   <Badge bg={LISTING_STATUS_VARIANTS[listing.status]}>
@@ -290,7 +293,7 @@ export default function ListingDetailPage() {
                 [t.listingDetail.year, listing.year],
                 [
                   t.listingDetail.mileage,
-                  `${listing.mileage.toLocaleString("fr-FR")} km`,
+                  formatMileage(listing.mileage, locale),
                 ],
                 [t.listingDetail.fuel, t.vehicle.fuelType[listing.fuelType]],
                 [

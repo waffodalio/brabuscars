@@ -71,7 +71,8 @@ Vérification : `npm run typecheck` puis `npm run build`.
 ### Sécurité (à préserver)
 
 - `app.ts` : `helmet` (CSP `default-src 'none'`, HSTS en prod, CORP `same-site`), CORS restreint à `env.CORS_ORIGIN` (méthodes/headers explicites), corps JSON limité à 32 kB, `hpp`, `x-powered-by` désactivé, `trust proxy` = `env.TRUST_PROXY`.
-- Rate limiting (`middlewares/rateLimit.ts`) : général 300/15 min sur toute l'API, strict 10/15 min sur `/auth/register` et `/auth/login`.
+- Rate limiting (`middlewares/rateLimit.ts`) : général 1000/15 min sur toute l'API (sauf `POST /analytics/pageview`, limiteur propre 200/15 min), strict 10/15 min sur `/auth/register` et `/auth/login`.
+- Mesure d'audience interne (table `page_view`, migration 003) : le front (`PageViewTracker`) n'envoie `POST /api/analytics/pageview` qu'après consentement, et le back n'enregistre que si la requête porte le cookie `chcars_visitor_id` (UUID aléatoire) ; jamais l'admin, ni IP, ni user-agent, ni query string ; purge > 13 mois au démarrage puis chaque jour. Stats : `GET /api/analytics/summary?days=7|30|90` (admin) → page `/admin/statistiques`.
 - JWT : algorithme épinglé à `HS256` (signature **et** vérification) ; `JWT_SECRET` ≥ 32 caractères imposé par `env.ts`.
 - **Authentification par cookie** : `auth.controller` pose le JWT dans un cookie `chcars_token` **httpOnly** (jamais dans le corps de réponse) + un cookie lisible `chcars_csrf` (`utils/cookies.ts`). `authenticate` lit le cookie (repli sur `Authorization: Bearer` pour l'outillage). `POST /auth/logout` efface les cookies.
 - **CSRF** : double-submit (`middlewares/csrf.ts`) — `ensureCsrfCookie` garantit le cookie, `verifyCsrf` exige l'en-tête `X-CSRF-Token` = cookie sur toute requête non-GET, sauf `/auth/login` et `/auth/register`. CORS avec `credentials: true` et origine unique.

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_FILTERS, hasInvalidRange, toQuery } from "./listingFilters";
+import {
+  EMPTY_FILTERS,
+  filtersFromSearchParams,
+  filtersToSearchParams,
+  hasInvalidRange,
+  toQuery,
+} from "./listingFilters";
 
 describe("toQuery", () => {
   it("turns blank fields into undefined instead of NaN or empty strings", () => {
@@ -72,5 +78,23 @@ describe("hasInvalidRange", () => {
         }),
       ),
     ).toBe(true);
+  });
+});
+
+describe("filters in the URL", () => {
+  it("round-trips a filter form through the query string", () => {
+    const form = { ...EMPTY_FILTERS, brandId: "3", maxPrice: "20000", search: "clio", sort: "price_asc" as const };
+    const qs = filtersToSearchParams(form);
+    expect(filtersFromSearchParams(new URLSearchParams(qs))).toEqual(form);
+  });
+
+  it("leaves empty fields and the default sort out of the URL", () => {
+    expect(filtersToSearchParams(EMPTY_FILTERS)).toBe("");
+    expect(filtersToSearchParams({ ...EMPTY_FILTERS, fuelType: "diesel" })).toBe("fuelType=diesel");
+  });
+
+  it("ignores unknown keys and an unknown sort", () => {
+    const form = filtersFromSearchParams(new URLSearchParams("sort=hack&foo=1&modelId=7"));
+    expect(form).toEqual({ ...EMPTY_FILTERS, modelId: "7" });
   });
 });

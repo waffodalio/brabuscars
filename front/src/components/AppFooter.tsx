@@ -91,7 +91,7 @@ export function AppFooter() {
   const company = useCompany();
   const { user, initializing } = useAuth();
   const { reopen } = useCookieConsent();
-  const { t, withLocale } = useLanguage();
+  const { t, locale, withLocale } = useLanguage();
   const name = company?.name ?? "BrabusCars";
   // First segment after the locale: "" (home), "annonces", "contact", …
   const section = usePathname().split("/")[2] ?? "";
@@ -216,7 +216,7 @@ export function AppFooter() {
                 </li>
                 <li>
                   {icons.clock}
-                  <span>{company.hours}</span>
+                  <span>{company.hours[locale]}</span>
                 </li>
               </ul>
             )}
