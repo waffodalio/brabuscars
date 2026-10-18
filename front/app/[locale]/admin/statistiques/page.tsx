@@ -33,7 +33,7 @@ export default function AdminStatisticsPage() {
     <section>
       <div className="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-2">
         <div>
-          <h2 className="h4 mb-1">Statistiques</h2>
+          <h1 className="h3 mb-1">Statistiques</h1>
           <p className="text-secondary small mb-0">
             Audience du site, intérêt pour les annonces et état du catalogue.
           </p>

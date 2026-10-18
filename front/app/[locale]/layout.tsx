@@ -12,6 +12,7 @@ import { ThemeProvider, type Theme } from "@/context/ThemeContext";
 import { MainLayout } from "@/layouts/MainLayout";
 import { LOCALES, isLocale, type Locale } from "@/i18n/locales";
 import { cookies } from "next/headers";
+import { INTL_LOCALES } from "@/i18n/locales";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -73,7 +74,7 @@ export default async function LocaleLayout({
     // Reader, Grammarly…) rewrite <html> attributes before React hydrates.
     // It only covers this element's own attributes, not its children.
     <html
-      lang={locale}
+      lang={INTL_LOCALES[locale]}
       className={manrope.variable}
       data-bs-theme={theme}
       data-scroll-behavior="smooth"

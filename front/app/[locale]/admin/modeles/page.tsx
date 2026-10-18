@@ -105,7 +105,7 @@ export default function AdminCarModelsPage() {
           {models.length === 0 ? (
             <Alert variant="info">Aucun modèle enregistré.</Alert>
           ) : (
-            <Table striped hover responsive>
+            <Table striped hover responsive className="chc-table-cards">
               <thead>
                 <tr>
                   <th>#</th>
@@ -117,10 +117,10 @@ export default function AdminCarModelsPage() {
               <tbody>
                 {models.map((model) => (
                   <tr key={model.id}>
-                    <td>{model.id}</td>
-                    <td>{model.brand?.name ?? model.brandId}</td>
-                    <td>{model.name}</td>
-                    <td className="text-end text-nowrap">
+                    <td data-label="#">{model.id}</td>
+                    <td data-label="Marque">{model.brand?.name ?? model.brandId}</td>
+                    <td data-label="Modèle">{model.name}</td>
+                    <td data-label="" className="text-end text-nowrap">
                       <Button
                         size="sm"
                         variant="outline-secondary"

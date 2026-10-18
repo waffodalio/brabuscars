@@ -21,11 +21,12 @@ test.describe("Authentification", () => {
     await page.getByLabel("Mot de passe", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Créer le compte" }).click();
 
-    const logout = page.getByRole("button", { name: "Déconnexion" });
-    await expect(logout).toBeVisible();
+    const account = page.getByRole("button", { name: /^Mon compte/ });
+    await expect(account).toBeVisible();
     await expect(page).toHaveURL(/\/fr\/?$/);
 
-    await logout.click();
+    await account.click();
+    await page.getByRole("button", { name: "Déconnexion" }).click();
     await expect(
       page.locator("#main-navbar").getByRole("link", { name: "Connexion" }),
     ).toBeVisible();
@@ -34,7 +35,7 @@ test.describe("Authentification", () => {
     await page.getByLabel("Adresse e-mail", { exact: true }).fill(email);
     await page.getByLabel("Mot de passe", { exact: true }).fill(password);
     await page.getByRole("button", { name: "Se connecter" }).click();
-    await expect(page.getByRole("button", { name: "Déconnexion" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Mon compte/ })).toBeVisible();
   });
 
   test("un mauvais mot de passe est refusé", async ({ page }) => {

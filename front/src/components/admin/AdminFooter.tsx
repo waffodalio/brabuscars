@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { healthService } from "@/services/healthService";
 import { ADMIN_ICONS as ICONS, AdminIcon as Icon } from "./AdminIcon";
+import { INTL_LOCALES } from "@/i18n/locales";
 
 /** How often the system status is refreshed. */
 const HEALTH_POLL_MS = 60_000;
@@ -86,7 +87,7 @@ export function AdminFooter() {
             <div
               className={`chc-admin-status chc-admin-status--${state}`}
               role="status"
-              title={checkedAt ? `Vérifié à ${checkedAt.toLocaleTimeString("fr-FR")}` : undefined}
+              title={checkedAt ? `Vérifié à ${checkedAt.toLocaleTimeString(INTL_LOCALES.fr)}` : undefined}
             >
               <span className="chc-admin-status-dot" aria-hidden="true" />
               {SYSTEM_LABELS[state]}

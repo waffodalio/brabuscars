@@ -19,6 +19,7 @@ import { Delta, StatTile } from "./StatTile";
 import { TopListingsTable } from "./TopListingsTable";
 import { WeekHourHeatmap } from "./WeekHourHeatmap";
 import { formatNumber, formatPercent } from "./format";
+import { INTL_LOCALES } from "@/i18n/locales";
 
 const PAGE_LABELS: Record<string, string> = {
   "/": "Accueil",
@@ -150,7 +151,7 @@ function AudienceSection({ data }: { data: AnalyticsSummary }) {
         <Col>
           <StatTile
             label="Pages par visiteur"
-            value={perVisitor.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}
+            value={perVisitor.toLocaleString(INTL_LOCALES.fr, { maximumFractionDigits: 1 })}
             current={perVisitor}
             previous={previousPerVisitor}
             hint="Profondeur moyenne de visite"

@@ -6,9 +6,10 @@ export function isLocale(value: string): value is Locale {
   return (LOCALES as readonly string[]).includes(value);
 }
 
-/** BCP 47 tag used to format numbers, prices and dates for each site language. */
+/** BCP 47 tag (Belgian concession) used for `<html lang>` and to format numbers,
+ * prices and dates for each site language. */
 export const INTL_LOCALES: Record<Locale, string> = {
-  fr: "fr-FR",
+  fr: "fr-BE",
   en: "en-GB",
-  nl: "nl-NL",
+  nl: "nl-BE",
 };

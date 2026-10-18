@@ -93,7 +93,9 @@ export default function ContactPage() {
                 <dt className="col-4 text-secondary fw-normal">
                   {t.contact.hours}
                 </dt>
-                <dd className="col-8">{company?.hours[locale] ?? "—"}</dd>
+                <dd className="col-8" style={{ whiteSpace: "pre-line" }}>
+                  {company?.hours[locale] ?? "—"}
+                </dd>
               </dl>
 
               {company && (

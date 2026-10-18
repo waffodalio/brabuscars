@@ -11,6 +11,7 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { contactService } from "@/services/contactService";
 import type { ContactMessage } from "@/types/contact";
 import { errorMessage } from "@/utils/errors";
+import { INTL_LOCALES } from "@/i18n/locales";
 
 export default function AdminMessagesPage() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -84,13 +85,13 @@ export default function AdminMessagesPage() {
             >
               <Card.Body>
                 <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                  <div>
+                  <div className="text-break" style={{ minWidth: 0 }}>
                     <span className="fw-semibold">{message.name}</span>{" "}
                     <a href={`mailto:${message.email}`} className="small">
                       {message.email}
                     </a>
                     <div className="text-secondary small">
-                      {new Date(message.createdAt).toLocaleString("fr-FR")}
+                      {new Date(message.createdAt).toLocaleString(INTL_LOCALES.fr)}
                     </div>
                   </div>
                   {message.handled ? (

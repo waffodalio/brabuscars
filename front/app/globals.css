@@ -367,6 +367,11 @@ a:hover {
   .chc-table-cards td[data-label=""]::before {
     content: none;
   }
+  /* The card is the row: drop Bootstrap's striped / hover cell tint. */
+  .chc-table-cards > :not(caption) > * > * {
+    box-shadow: none !important;
+    background-color: transparent;
+  }
 }
 
 /* ---------------------------------------------------------------- utilities */
@@ -382,6 +387,25 @@ a:hover {
 .chc-navbar--scrolled {
   box-shadow: var(--chc-shadow-sm);
 }
+.chc-navbar a:hover {
+  text-decoration: none;
+}
+/* Nav links: slight zoom on hover instead of an underline */
+.chc-navbar .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 500;
+  transition: transform 0.2s ease;
+}
+.chc-navbar .nav-link:hover,
+.chc-navbar .nav-link:focus-visible {
+  transform: scale(1.06);
+}
+.chc-nav-icon {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
 .chc-brand {
   font-weight: 800;
   font-size: 1.15rem;
@@ -391,6 +415,81 @@ a:hover {
   -webkit-background-clip: text;
   color: transparent !important;
 }
+
+/* Navbar logo: slanted badge + italic wordmark + tag */
+.chc-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.chc-logo-badge {
+  display: grid;
+  place-items: center;
+  height: 2rem;
+  padding: 0 0.6rem;
+  border-radius: 0.35rem;
+  transform: skewX(-14deg);
+  background-image: var(--chc-primary-gradient);
+  box-shadow: 0 6px 14px -6px var(--chc-primary-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: transform 0.25s ease;
+}
+.chc-logo-badge span {
+  transform: skewX(14deg);
+  color: #fff;
+  font-weight: 900;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+a:hover .chc-logo-badge {
+  transform: skewX(-14deg) translateX(2px);
+}
+.chc-logo-word {
+  position: relative;
+  padding-bottom: 0.15rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background-image: var(--chc-primary-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.chc-logo-word::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2.4rem;
+  height: 3px;
+  border-radius: 3px;
+  background-image: var(--chc-primary-gradient);
+  transition: width 0.3s ease;
+}
+a:hover .chc-logo-word::after {
+  width: 100%;
+}
+/* Phones: compact brand, language pill and menu toggler so the whole
+   navbar stays on one row down to 320px. */
+@media (max-width: 575.98px) {
+  .chc-logo-badge {
+    display: none;
+  }
+  .chc-logo-word {
+    font-size: 1.05rem;
+  }
+  .chc-lang-toggle {
+    padding: 0 0.5rem;
+    gap: 0.2rem;
+  }
+  .chc-lang-toggle svg {
+    display: none;
+  }
+  .chc-navbar .navbar-toggler {
+    padding: 0.2rem 0.4rem;
+    font-size: 1.05rem;
+  }
+}
+
 
 /* Media box for listing images (keeps a stable 4:3 frame) */
 .chc-media {
@@ -888,7 +987,7 @@ a:hover {
   transform: rotate(180deg);
 }
 .chc-lang-menu {
-  --bs-dropdown-min-width: 11rem;
+  --bs-dropdown-min-width: 5.5rem;
   --bs-dropdown-padding-x: 0.35rem;
   --bs-dropdown-padding-y: 0.35rem;
   --bs-dropdown-border-color: var(--bs-border-color);
@@ -1791,4 +1890,139 @@ a:hover {
 }
 .chc-engagement li:last-child {
   border-bottom: 0 !important;
+}
+
+/* --- Account menu (navbar) ---------------------------------------------- */
+.chc-account {
+  --chc-acc-grad: var(--chc-primary-gradient);
+  --chc-acc-color: var(--bs-primary);
+}
+
+.chc-account-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
+  padding: 0.15rem 0.75rem 0.15rem 0.15rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.chc-account-toggle::after {
+  display: none;
+}
+.chc-account-toggle:hover,
+.chc-account-toggle[aria-expanded="true"] {
+  background: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color-translucent);
+}
+.chc-account-ring {
+  position: relative;
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: 50%;
+  background-image: var(--chc-acc-grad);
+}
+.chc-account-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--chc-acc-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 11rem;
+}
+/* Small screens: first name only, then avatar only (full name stays in the menu). */
+@media (max-width: 767.98px) {
+  .chc-account-last {
+    display: none;
+  }
+}
+@media (max-width: 575.98px) {
+  .chc-account-toggle {
+    padding-right: 0.5rem;
+  }
+  .chc-account-name {
+    max-width: 5.5rem;
+  }
+}
+/* Phones: anchor the menu to the right edge of the navbar controls (not the
+   avatar) so it never overflows the left of the screen. */
+@media (max-width: 575.98px) {
+  .chc-account {
+    position: static;
+  }
+}
+@media (max-width: 399.98px) {
+  .chc-account-toggle {
+    padding: 0.15rem;
+  }
+  .chc-account-name {
+    display: none;
+  }
+}
+.chc-account-avatar {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 2px solid var(--bs-body-bg);
+  background-image: var(--chc-acc-grad);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.chc-account-crown {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.3rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #f59e0b;
+  transform: rotate(20deg);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+.chc-account-crown svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.chc-account-menu {
+  --bs-dropdown-min-width: 14rem;
+  --bs-dropdown-padding-x: 0.35rem;
+  --bs-dropdown-padding-y: 0.35rem;
+  --bs-dropdown-border-color: var(--bs-border-color);
+  --bs-dropdown-border-radius: var(--bs-border-radius-lg);
+  --bs-dropdown-link-active-bg: var(--bs-tertiary-bg);
+  --bs-dropdown-link-active-color: var(--bs-body-color);
+  max-width: calc(100vw - 2rem);
+  box-shadow: var(--chc-shadow-md);
+  animation: chc-lang-pop 0.16s ease-out;
+}
+.chc-account-head {
+  padding: 0.4rem 0.65rem 0.2rem;
+  max-width: 16rem;
+}
+.chc-account-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--chc-acc-color);
+}
+.chc-account-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: var(--bs-border-radius);
+  font-size: 0.9rem;
+}
+.chc-account-item svg {
+  opacity: 0.7;
 }

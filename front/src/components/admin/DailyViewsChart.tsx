@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { INTL_LOCALES } from "@/i18n/locales";
 
 const HEIGHT = 220;
 const MARGIN = { top: 12, right: 8, bottom: 26, left: 40 };
@@ -31,7 +32,7 @@ function barPath(x: number, y: number, width: number, height: number): string {
   return `M${x},${y + height}V${y + r}Q${x},${y} ${x + r},${y}H${x + width - r}Q${x + width},${y} ${x + width},${y + r}V${y + height}Z`;
 }
 
-const dayFormat = new Intl.DateTimeFormat("fr-FR", {
+const dayFormat = new Intl.DateTimeFormat(INTL_LOCALES.fr, {
   day: "numeric",
   month: "short",
   timeZone: "UTC",
@@ -77,7 +78,7 @@ export function DailyViewsChart({ data, unit }: { data: DailyPoint[]; unit: stri
   const labelIndexes = [...new Set([0, Math.floor((data.length - 1) / 2), data.length - 1])];
   const active = hovered !== null ? data[hovered] : null;
   const average = data.length > 0 ? data.reduce((sum, d) => sum + d.value, 0) / data.length : 0;
-  const formatAverage = average.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+  const formatAverage = average.toLocaleString(INTL_LOCALES.fr, { maximumFractionDigits: 1 });
 
   return (
     <div ref={containerRef} className="chc-chart position-relative">
@@ -105,7 +106,7 @@ export function DailyViewsChart({ data, unit }: { data: DailyPoint[]; unit: stri
                 className={tick === 0 ? "chc-chart-baseline" : "chc-chart-grid"}
               />
               <text x={MARGIN.left - 8} y={y(tick)} dy="0.32em" textAnchor="end" className="chc-chart-label">
-                {tick.toLocaleString("fr-FR")}
+                {tick.toLocaleString(INTL_LOCALES.fr)}
               </text>
             </g>
           ))}
@@ -171,7 +172,7 @@ export function DailyViewsChart({ data, unit }: { data: DailyPoint[]; unit: stri
         >
           <div className="fw-semibold">{formatDay(active.day)}</div>
           <div>
-            {active.value.toLocaleString("fr-FR")} {unit}
+            {active.value.toLocaleString(INTL_LOCALES.fr)} {unit}
           </div>
         </div>
       )}

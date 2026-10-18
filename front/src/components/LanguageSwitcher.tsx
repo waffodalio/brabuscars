@@ -42,12 +42,13 @@ export function LanguageSwitcher() {
             }}
             active={value === locale}
             aria-current={value === locale ? "true" : undefined}
+            aria-label={t.language[value]}
+            title={t.language[value]}
             className="chc-lang-item"
           >
             <span className="chc-lang-code">{value.toUpperCase()}</span>
-            <span className="flex-grow-1">{t.language[value]}</span>
             {value === locale && (
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg className="ms-auto" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M3 8.5l3.2 3L13 4.5" />
               </svg>
             )}

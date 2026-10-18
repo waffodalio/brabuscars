@@ -15,6 +15,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { userService } from "@/services/userService";
 import type { AuthUser, RoleChange, UserRole } from "@/types/auth";
 import { errorMessage } from "@/utils/errors";
+import { INTL_LOCALES } from "@/i18n/locales";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   user: "Utilisateur",
@@ -286,7 +287,7 @@ export default function AdminUsersPage() {
             {history.map((entry) => (
               <tr key={entry.id}>
                 <td data-label="Date">
-                  {new Date(entry.createdAt).toLocaleString("fr-FR")}
+                  {new Date(entry.createdAt).toLocaleString(INTL_LOCALES.fr)}
                 </td>
                 <td data-label="Compte">{entry.targetEmail}</td>
                 <td data-label="Changement">

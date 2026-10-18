@@ -74,6 +74,8 @@ function ListingsBrowser() {
     [queryString],
   );
   const [form, setForm] = useState<FilterForm>(applied);
+  /** Phones only: the filter panel is folded behind a toggle (always open from `md`). */
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [rangeError, setRangeError] = useState(false);
   // URL changed from outside the form (back / forward): show what is applied.
   const [syncedQuery, setSyncedQuery] = useState(queryString);
@@ -205,6 +207,45 @@ function ListingsBrowser() {
           apply();
         }}
       >
+        <Button
+          type="button"
+          variant="outline-secondary"
+          className="d-md-none w-100 d-flex align-items-center justify-content-between"
+          aria-expanded={filtersOpen}
+          aria-controls="listing-filters"
+          onClick={() => setFiltersOpen((open) => !open)}
+        >
+          <span className="d-inline-flex align-items-center gap-2">
+            {t.listings.filtersToggle}
+            {hasFilters && (
+              <span className="badge rounded-pill text-bg-primary">
+                {t.listings.filtersActive}
+              </span>
+            )}
+          </span>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            style={{
+              transform: filtersOpen ? "rotate(180deg)" : undefined,
+              transition: "transform 0.2s ease",
+            }}
+          >
+            <path d="M3 6l5 5 5-5" />
+          </svg>
+        </Button>
+
+        <div
+          id="listing-filters"
+          className={filtersOpen ? "mt-3 mt-md-0" : "d-none d-md-block"}
+        >
         <Row className="g-3">
           <Col xs={12} md={6} lg={4}>
             <Form.Label className="small mb-1">{t.listings.search}</Form.Label>
@@ -377,6 +418,7 @@ function ListingsBrowser() {
               {t.listings.reset}
             </Button>
           )}
+        </div>
         </div>
       </Form>
 

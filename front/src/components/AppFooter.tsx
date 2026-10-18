@@ -216,7 +216,7 @@ export function AppFooter() {
                 </li>
                 <li>
                   {icons.clock}
-                  <span>{company.hours[locale]}</span>
+                  <span style={{ whiteSpace: "pre-line" }}>{company.hours[locale]}</span>
                 </li>
               </ul>
             )}

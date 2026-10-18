@@ -105,7 +105,7 @@ export default function EditListingPage() {
 
   return (
     <section style={{ maxWidth: 720 }}>
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <h1 className="h4 mb-0">Modifier l&apos;annonce</h1>
         <div className="d-flex gap-2">
           <Link
