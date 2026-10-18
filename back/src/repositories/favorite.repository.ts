@@ -1,3 +1,4 @@
+import { And, In, LessThan, MoreThanOrEqual } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { Favorite } from "../entities/Favorite";
 
@@ -42,5 +43,21 @@ export const favoriteRepository = AppDataSource.getRepository(Favorite).extend({
     listingId: number,
   ): Promise<boolean> {
     return this.existsBy({ userId, listingId });
+  },
+
+  countCreatedBetween(since: Date, until: Date): Promise<number> {
+    return this.countBy({ createdAt: And(MoreThanOrEqual(since), LessThan(until)) });
+  },
+
+  /** Number of users who bookmarked each listing, keyed by listing id. */
+  async countByListings(listingIds: number[]): Promise<Map<number, number>> {
+    if (listingIds.length === 0) return new Map();
+    const rows = await this.createQueryBuilder("favorite")
+      .select("favorite.listing_id", "listingId")
+      .addSelect("COUNT(*)", "count")
+      .where({ listingId: In(listingIds) })
+      .groupBy("favorite.listing_id")
+      .getRawMany<{ listingId: number; count: string }>();
+    return new Map(rows.map((row) => [Number(row.listingId), Number(row.count)]));
   },
 });

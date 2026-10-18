@@ -1,5 +1,6 @@
 import {
   Between,
+  In,
   LessThanOrEqual,
   Like,
   MoreThanOrEqual,
@@ -8,7 +9,8 @@ import {
   type FindOptionsWhere,
 } from "typeorm";
 import { AppDataSource } from "../config/data-source";
-import { Listing } from "../entities/Listing";
+import { Listing, type ListingStatus } from "../entities/Listing";
+import { PageView } from "../entities/PageView";
 import type { ListingSort, ListListingQuery } from "../dto/listing.dto";
 import { escapeLike } from "../utils/escapeLike";
 
@@ -84,5 +86,41 @@ export const listingRepository = AppDataSource.getRepository(Listing).extend({
 
   countByBrand(brandId: number): Promise<number> {
     return this.countBy({ model: { brandId } });
+  },
+
+  findByIds(ids: number[]): Promise<Listing[]> {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.find({ where: { id: In(ids) }, relations: RELATIONS });
+  },
+
+  async countByStatus(): Promise<Partial<Record<ListingStatus, number>>> {
+    const rows = await this.createQueryBuilder("listing")
+      .select("listing.status", "status")
+      .addSelect("COUNT(*)", "count")
+      .groupBy("listing.status")
+      .getRawMany<{ status: ListingStatus; count: string }>();
+    return Object.fromEntries(rows.map((row) => [row.status, Number(row.count)]));
+  },
+
+  /** Published listings nobody opened since `since`, oldest first, and their total. */
+  findPublishedWithoutViews(since: Date, limit: number): Promise<[Listing[], number]> {
+    return this.createQueryBuilder("listing")
+      .leftJoinAndSelect("listing.model", "model")
+      .leftJoinAndSelect("model.brand", "brand")
+      .where("listing.status = :status", { status: "published" })
+      .andWhere((qb) => {
+        const viewed = qb
+          .subQuery()
+          .select("1")
+          .from(PageView, "pv")
+          .where("pv.listing_id = listing.id")
+          .andWhere("pv.created_at >= :since")
+          .getQuery();
+        return `NOT EXISTS ${viewed}`;
+      })
+      .setParameter("since", since)
+      .orderBy("listing.createdAt", "ASC")
+      .take(limit)
+      .getManyAndCount();
   },
 });

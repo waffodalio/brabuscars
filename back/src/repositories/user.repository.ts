@@ -1,4 +1,4 @@
-import { Like, type FindOptionsWhere } from "typeorm";
+import { And, LessThan, Like, MoreThanOrEqual, type FindOptionsWhere } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
 import type { ListUsersQuery } from "../dto/user.dto";
@@ -43,5 +43,13 @@ export const userRepository = AppDataSource.getRepository(User).extend({
     }
 
     return this.find({ where: roleFilter, order: { createdAt: "DESC" } });
+  },
+
+  /** Customer accounts (`user` role) created in the window. */
+  countRegisteredBetween(since: Date, until: Date): Promise<number> {
+    return this.countBy({
+      role: "user",
+      createdAt: And(MoreThanOrEqual(since), LessThan(until)),
+    });
   },
 });

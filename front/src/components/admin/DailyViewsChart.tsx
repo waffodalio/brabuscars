@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { DailyViews } from "@/types/analytics";
 
 const HEIGHT = 220;
 const MARGIN = { top: 12, right: 8, bottom: 26, left: 40 };
@@ -53,33 +52,47 @@ function useWidth<T extends HTMLElement>() {
   return [ref, width] as const;
 }
 
+export interface DailyPoint {
+  /** `YYYY-MM-DD` (UTC). */
+  day: string;
+  value: number;
+}
+
 /**
- * Page views per day — single series, so no legend (the card title names it).
- * Hovering a day shows its exact figures; a visually hidden table carries the
- * same data for screen readers.
+ * One measure per day — single series, so no legend (the card names it). A
+ * hairline marks the period's daily average. Hovering a day shows its exact
+ * figure; a visually hidden table carries the same data for screen readers.
  */
-export function DailyViewsChart({ data }: { data: DailyViews[] }) {
+export function DailyViewsChart({ data, unit }: { data: DailyPoint[]; unit: string }) {
   const [containerRef, width] = useWidth<HTMLDivElement>();
   const [hovered, setHovered] = useState<number | null>(null);
 
   const innerWidth = Math.max(0, width - MARGIN.left - MARGIN.right);
   const innerHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
-  const ticks = yTicks(Math.max(0, ...data.map((d) => d.pageViews)));
+  const ticks = yTicks(Math.max(0, ...data.map((d) => d.value)));
   const top = ticks[ticks.length - 1];
   const band = data.length > 0 ? innerWidth / data.length : 0;
   const barWidth = Math.max(1, Math.min(MAX_BAR_WIDTH, band - GAP));
   const y = (value: number) => MARGIN.top + innerHeight - (value / top) * innerHeight;
   const labelIndexes = [...new Set([0, Math.floor((data.length - 1) / 2), data.length - 1])];
   const active = hovered !== null ? data[hovered] : null;
+  const average = data.length > 0 ? data.reduce((sum, d) => sum + d.value, 0) / data.length : 0;
+  const formatAverage = average.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
 
   return (
     <div ref={containerRef} className="chc-chart position-relative">
+      {average > 0 && (
+        <div className="d-flex align-items-center gap-2 small text-secondary mb-2">
+          <span className="chc-chart-average-key" aria-hidden="true" />
+          Moyenne : {formatAverage} {unit} par jour
+        </div>
+      )}
       {width > 0 && (
         <svg
           width={width}
           height={HEIGHT}
           role="img"
-          aria-label="Histogramme des pages vues par jour"
+          aria-label={`Histogramme : ${unit} par jour`}
           onMouseLeave={() => setHovered(null)}
         >
           {ticks.map((tick) => (
@@ -99,12 +112,12 @@ export function DailyViewsChart({ data }: { data: DailyViews[] }) {
 
           {data.map((d, i) => {
             const x = MARGIN.left + i * band + (band - barWidth) / 2;
-            const height = y(0) - y(d.pageViews);
+            const height = y(0) - y(d.value);
             return (
               <g key={d.day}>
                 {height > 0 && (
                   <path
-                    d={barPath(x, y(d.pageViews), barWidth, height)}
+                    d={barPath(x, y(d.value), barWidth, height)}
                     className="chc-chart-bar"
                     opacity={hovered === null || hovered === i ? 1 : 0.45}
                   />
@@ -121,6 +134,17 @@ export function DailyViewsChart({ data }: { data: DailyViews[] }) {
               </g>
             );
           })}
+
+          {average > 0 && (
+            <line
+              x1={MARGIN.left}
+              x2={width - MARGIN.right}
+              y1={y(average)}
+              y2={y(average)}
+              className="chc-chart-average"
+              pointerEvents="none"
+            />
+          )}
 
           {labelIndexes.map((i) => (
             <text
@@ -141,35 +165,36 @@ export function DailyViewsChart({ data }: { data: DailyViews[] }) {
           className="chc-chart-tooltip"
           style={{
             left: Math.min(Math.max(MARGIN.left + hovered * band + band / 2, 70), width - 70),
-            top: y(active.pageViews) - 8,
+            top: y(active.value) - 8,
           }}
           aria-hidden="true"
         >
           <div className="fw-semibold">{formatDay(active.day)}</div>
-          <div>{active.pageViews.toLocaleString("fr-FR")} pages vues</div>
-          <div className="text-secondary">{active.visitors.toLocaleString("fr-FR")} visiteurs</div>
+          <div>
+            {active.value.toLocaleString("fr-FR")} {unit}
+          </div>
         </div>
       )}
 
-      <table className="visually-hidden">
-        <caption>Pages vues et visiteurs par jour</caption>
-        <thead>
-          <tr>
-            <th scope="col">Jour</th>
-            <th scope="col">Pages vues</th>
-            <th scope="col">Visiteurs</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.day}>
-              <th scope="row">{formatDay(d.day)}</th>
-              <td>{d.pageViews}</td>
-              <td>{d.visitors}</td>
+      <div className="visually-hidden">
+        <table>
+          <caption>{unit} par jour</caption>
+          <thead>
+            <tr>
+              <th scope="col">Jour</th>
+              <th scope="col">{unit}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.day}>
+                <th scope="row">{formatDay(d.day)}</th>
+                <td>{d.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

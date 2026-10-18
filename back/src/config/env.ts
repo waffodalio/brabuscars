@@ -40,6 +40,19 @@ const optionalString = z.preprocess(
 );
 
 /**
+ * Google OAuth credential: surrounding whitespace / quotes (stray `\r` from a
+ * CRLF `.env`, copy-paste) are stripped so Google does not reject the client.
+ */
+const googleCredential = (schema: z.ZodString) =>
+  z.preprocess(
+    (value) =>
+      typeof value === "string"
+        ? value.trim().replace(/^(['"])(.*)\1$/, "$2").trim() || undefined
+        : value,
+    schema.optional(),
+  );
+
+/**
  * Centralised, validated access to environment variables.
  * The process exits immediately if the configuration is invalid or incomplete,
  * so the rest of the codebase can rely on `env` being well-formed.
@@ -81,8 +94,15 @@ const envSchema = z.object({
 
   // --- "Sign in with Google" (OpenID Connect) — disabled when unset ---
   /** OAuth client id / secret from the Google Cloud console (both or neither). */
-  GOOGLE_CLIENT_ID: optionalString,
-  GOOGLE_CLIENT_SECRET: optionalString,
+  GOOGLE_CLIENT_ID: googleCredential(
+    z
+      .string()
+      .regex(
+        /^[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com$/,
+        "must look like <numbers>-<id>.apps.googleusercontent.com",
+      ),
+  ),
+  GOOGLE_CLIENT_SECRET: googleCredential(z.string().min(1)),
   /**
    * Callback URL registered on the Google client, pointing at this API's
    * `/auth/google/callback` (e.g. `https://example.com/api/auth/google/callback`).

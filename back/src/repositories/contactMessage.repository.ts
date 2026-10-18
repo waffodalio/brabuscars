@@ -1,3 +1,4 @@
+import { And, LessThan, MoreThanOrEqual } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { ContactMessage } from "../entities/ContactMessage";
 
@@ -14,5 +15,13 @@ export const contactMessageRepository = AppDataSource.getRepository(
 
   findById(id: number): Promise<ContactMessage | null> {
     return this.findOneBy({ id });
+  },
+
+  countCreatedBetween(since: Date, until: Date): Promise<number> {
+    return this.countBy({ createdAt: And(MoreThanOrEqual(since), LessThan(until)) });
+  },
+
+  countUnhandled(): Promise<number> {
+    return this.countBy({ handled: false });
   },
 });

@@ -7,7 +7,7 @@ import { analyticsRateLimiter } from "../middlewares/rateLimit";
  * `/api/analytics`
  *   POST /pageview   record a page view (public; kept only with the consent
  *                    cookie `chcars_visitor_id`; own rate limit, CSRF-exempt)
- *   GET  /summary    ?days=7|30|90 — totals, daily series, top pages — admin
+ *   GET  /summary    ?days=7|30|90 — audience, engagement and catalogue report — admin
  */
 export const analyticsRouter = Router();
 

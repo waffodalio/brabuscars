@@ -131,7 +131,7 @@ export function AppFooter() {
           </section>
         )}
 
-        <div className="row g-4 g-lg-5 py-5">
+        <div className="row g-4 gy-lg-5 py-5">
           <div className="col-12 col-lg-4">
             <Link href={withLocale("/")} className="chc-brand fs-4 text-decoration-none">
               {name}

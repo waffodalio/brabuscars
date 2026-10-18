@@ -55,3 +55,53 @@ export function fillDays<T extends { day: string }>(
   }
   return days;
 }
+
+/** Bounds of a report period and of the one it is compared with. */
+export interface PeriodBounds {
+  /** UTC midnight, `days - 1` days ago: the period includes today. */
+  since: Date;
+  /** Same length, just before `since`. */
+  previousSince: Date;
+  /**
+   * `now` minus the period length, so the comparison covers the same elapsed
+   * time (today is only partly over).
+   */
+  previousUntil: Date;
+}
+
+export function periodBounds(days: number, now: Date): PeriodBounds {
+  const since = new Date(now);
+  since.setUTCHours(0, 0, 0, 0);
+  since.setUTCDate(since.getUTCDate() - (days - 1));
+  const previousSince = new Date(since);
+  previousSince.setUTCDate(previousSince.getUTCDate() - days);
+  const previousUntil = new Date(now);
+  previousUntil.setUTCDate(previousUntil.getUTCDate() - days);
+  return { since, previousSince, previousUntil };
+}
+
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/**
+ * Folds hourly buckets (hours since the Unix epoch) into a 7 × 24 grid —
+ * Monday first, hours 0–23 — in `timeZone`, daylight-saving time included.
+ */
+export function weekHourGrid(
+  rows: { epochHour: number; views: number }[],
+  timeZone: string,
+): number[][] {
+  const format = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    weekday: "short",
+    hour: "2-digit",
+    hourCycle: "h23",
+  });
+  const grid = Array.from({ length: 7 }, () => new Array<number>(24).fill(0));
+  for (const row of rows) {
+    const parts = format.formatToParts(new Date(row.epochHour * 3_600_000));
+    const weekday = WEEKDAYS.indexOf(parts.find((p) => p.type === "weekday")?.value ?? "");
+    const hour = Number(parts.find((p) => p.type === "hour")?.value);
+    if (weekday >= 0 && hour >= 0 && hour < 24) grid[weekday][hour] += row.views;
+  }
+  return grid;
+}
