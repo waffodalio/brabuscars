@@ -296,7 +296,8 @@ doit renvoyer la valeur du cookie `chcars_csrf` dans l'en‑tête `X-CSRF-Token`
 ## CI/CD et déploiement
 
 ```
-GitHub ─► GitHub Actions ─► Tests ─► Docker build ─► GHCR ─► Préprod ─► Playwright E2E ─► Production
+GitHub ─► GitHub Actions ─► Tests ─► Docker build ─► GHCR ─► Préprod ─► Playwright E2E
+                                   ─► approbation manuelle (e-mail) ─► Production ─► Release vX.Y.Z
 ```
 
 | Étape | Où | Détail |
@@ -305,7 +306,14 @@ GitHub ─► GitHub Actions ─► Tests ─► Docker build ─► GHCR ─►
 | Docker build → GHCR | job `docker` | `back/Dockerfile`, `front/Dockerfile` → `ghcr.io/<owner>/chcars-back` / `chcars-front`, tag `sha-<commit>` (+ `latest`). Sur une PR : build sans push |
 | Préprod | `.github/workflows/deploy.yml` | SSH vers le serveur, `deploy/deploy.sh` : pull, `migrate`, `docker compose up --wait`, contrôle `/api/health` |
 | Playwright E2E | `e2e/` | tests contre l'URL de préprod (rapport en artefact) |
-| Production | `deploy.yml` | **même image** que la préprod, promue après les E2E |
+| Approbation | environnement `production` | la prod attend qu'un reviewer clique **Approve** (notifié par e-mail, voir étape 4 ci-dessous) |
+| Production | `deploy.yml` | **même image** que la préprod, promue après les E2E et l'approbation |
+| Release | job `release` | après une prod réussie : tag annoté `vX.Y.Z` + GitHub Release (liste des commits, images `sha-<commit>`) |
+
+**Numéro de version** : dernier tag `v*` + 1 en *patch* par défaut. Un message de
+commit contenant `#minor` (ou `#major`) depuis la dernière release choisit une
+version mineure (ou majeure). Ex. : `git commit -m "Refonte navigation #minor"`.
+Un commit déjà tagué (relance du pipeline) n'est pas republié.
 
 Seuls les push sur `main` déploient ; une PR s'arrête après le build Docker.
 
@@ -395,9 +403,13 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
      | `DEPLOY_PATH_PROD` | `/opt/chcars-prod` |
      | `DEPLOY_PORT` | port SSH du serveur (**obligatoire**) |
 
-   Facultatif (**Settings → Environments**, si votre offre GitHub le permet) :
-   sur `production`, **Required reviewers** pour valider manuellement la mise
-   en prod, et restreindre aux déploiements depuis `main`.
+   **Validation manuelle de la prod** (**Settings → Environments → production**,
+   gratuit pour un dépôt public) : cocher **Required reviewers** et s'ajouter ;
+   dans *Deployment branches and tags*, restreindre à `main`. À chaque push, le
+   pipeline s'arrête avant la prod et GitHub envoie un e-mail « Review pending
+   deployments » (activer *Settings → Notifications → Actions* sur le compte du
+   reviewer) : *Review deployments* → **Approve** ou **Reject**. Sans réponse
+   sous 30 jours, le déploiement est annulé.
 5. **Premier administrateur** de chaque environnement, depuis son dossier
    (`cd /opt/chcars-prod` ou `/opt/chcars-preprod`) :
    `docker compose run --rm back node dist/scripts/createAdmin.js --email=… --password=… --super`

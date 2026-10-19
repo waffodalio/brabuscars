@@ -3,11 +3,12 @@
 #   push / PR ─► Tests (back + front) ─► Docker build ─► GHCR
 #                                                         │  (main uniquement)
 #                                                         ▼
-#                       Production ◄─ Playwright E2E ◄─ Préprod
+#   Release ◄─ Production ◄─ (approbation) ◄─ Playwright E2E ◄─ Préprod
 #
 # Une même image (taguée sha-<commit>) est déployée en préprod, validée par
-# les tests E2E, puis promue telle quelle en production. L'approbation
-# manuelle avant la prod se règle dans Settings → Environments → production.
+# les tests E2E, puis promue telle quelle en production après approbation
+# manuelle (Settings → Environments → production → Required reviewers ; les
+# reviewers sont prévenus par e-mail). Une prod réussie publie la release vX.Y.Z.
 name: CI/CD
 
 on:
@@ -174,6 +175,8 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------- Production
+  # Attend l'approbation manuelle (reviewers requis sur l'environnement
+  # `production`, notifiés par e-mail) avant de démarrer.
   deploy-production:
     name: Déploiement · production
     needs: e2e
@@ -185,3 +188,64 @@ jobs:
       environment: production
       image_tag: sha-${{ github.sha }}
     secrets: inherit
+
+  # ------------------------------------------------------------- Release
+  # Après une mise en production réussie : tag vX.Y.Z + GitHub Release.
+  # Version = dernier tag v* + patch par défaut ; un message de commit
+  # contenant `#minor` ou `#major` depuis ce tag choisit le niveau supérieur.
+  release:
+    name: Release
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: version
+        name: Calcul de la version
+        run: |
+          if existing=$(git tag --points-at "$GITHUB_SHA" --list 'v[0-9]*' | head -n 1) && [ -n "$existing" ]; then
+            echo "::notice::$GITHUB_SHA est déjà publié en $existing"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          last=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' "$GITHUB_SHA" 2>/dev/null || true)
+          range="${last:+$last..}$GITHUB_SHA"
+          IFS=. read -r major minor patch <<< "${last#v}"
+          major=${major:-0}; minor=${minor:-0}; patch=${patch:-0}
+          messages=$(git log --format=%B "$range")
+          if grep -q '#major' <<< "$messages"; then
+            major=$((major + 1)); minor=0; patch=0
+          elif grep -q '#minor' <<< "$messages"; then
+            minor=$((minor + 1)); patch=0
+          else
+            patch=$((patch + 1))
+          fi
+          next="v$major.$minor.$patch"
+          {
+            echo "## Changements"
+            echo
+            git log --no-merges --format='- %s (%h)' "$range"
+            echo
+            echo "Images : \`chcars-back:sha-$GITHUB_SHA\`, \`chcars-front:sha-$GITHUB_SHA\`"
+            if [ -n "$last" ]; then
+              echo
+              echo "**Comparaison** : https://github.com/$GITHUB_REPOSITORY/compare/$last...$next"
+            fi
+          } > release-notes.md
+          echo "Version : ${last:-aucune} → $next"
+          echo "tag=$next" >> "$GITHUB_OUTPUT"
+
+      - name: Tag et GitHub Release
+        if: steps.version.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file release-notes.md
