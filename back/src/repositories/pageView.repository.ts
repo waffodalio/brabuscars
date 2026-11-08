@@ -1,11 +1,23 @@
 import { LessThan, type SelectQueryBuilder } from "typeorm";
 import { AppDataSource } from "../config/data-source";
+import { Brand } from "../entities/Brand";
+import { CarModel } from "../entities/CarModel";
+import { Category } from "../entities/Category";
+import { Listing } from "../entities/Listing";
 import { PageView } from "../entities/PageView";
+import {
+  PRICE_BANDS,
+  VISIT_DURATION_BUCKETS,
+  VISIT_GAP_SECONDS,
+  VISIT_PAGES_BUCKETS,
+} from "../utils/pageView";
 
 export interface DailyRow {
   day: string;
   pageViews: number;
   visitors: number;
+  /** Visits started that day (see `dailyVisits`). */
+  visits: number;
   /** Views of a listing page (`/annonces/:id`). */
   listingViews: number;
 }
@@ -50,6 +62,103 @@ const SECTION_SQL = `CASE
   WHEN pv.path = '/contact' THEN 'contact'
   WHEN pv.path IN ('/connexion', '/inscription', '/favoris') THEN 'account'
   ELSE 'other' END`;
+
+/** Visits (sessions) of a window, measured from the stored page views. */
+export interface VisitStats {
+  visits: number;
+  /** Visits of a single page. */
+  bounces: number;
+  /** Sum of the visit durations (first → last page), in seconds. */
+  seconds: number;
+  /** Visits per number of pages, in {@link VISIT_PAGES_BUCKETS} order. */
+  byPages: number[];
+  /** Visits per duration, in {@link VISIT_DURATION_BUCKETS} order. */
+  byDuration: number[];
+}
+
+/** Distinct visitors reaching each step of the buying path. */
+export interface FunnelRow {
+  visitors: number;
+  /** Saw the listings page or a listing. */
+  browsed: number;
+  /** Opened at least one listing. */
+  viewedListing: number;
+  /** Opened the contact page. */
+  contact: number;
+}
+
+/** Views of listing pages, grouped by a property of the listing. */
+export interface InterestRow {
+  bucket: string;
+  views: number;
+  visitors: number;
+}
+
+export interface ListingInterest {
+  brands: InterestRow[];
+  categories: InterestRow[];
+  fuels: InterestRow[];
+  /** Keys of {@link PRICE_BANDS}. */
+  priceBands: InterestRow[];
+}
+
+/**
+ * Splits the window's page views into visits: a new visit starts after
+ * {@link VISIT_GAP_SECONDS} without any page (the usual 30-minute rule).
+ * `numbered` has one row per view with its visit number and whether it
+ * opened the visit. Static SQL — only the two dates are parameters.
+ */
+const VISITS_CTE = `
+  WITH marked AS (
+    SELECT pv.id, pv.visitor_id, pv.path, pv.created_at,
+      CASE WHEN TIMESTAMPDIFF(SECOND,
+          LAG(pv.created_at) OVER (PARTITION BY pv.visitor_id ORDER BY pv.created_at, pv.id),
+          pv.created_at) < ${VISIT_GAP_SECONDS}
+        THEN 0 ELSE 1 END AS starts
+    FROM page_view pv
+    WHERE pv.created_at >= ? AND pv.created_at < ?
+  ),
+  numbered AS (
+    SELECT visitor_id, path, created_at, starts,
+      SUM(starts) OVER (PARTITION BY visitor_id ORDER BY created_at, id
+        ROWS UNBOUNDED PRECEDING) AS visit_no
+    FROM marked
+  ),
+  visits AS (
+    SELECT COUNT(*) AS pages, MIN(created_at) AS started_at,
+      TIMESTAMPDIFF(SECOND, MIN(created_at), MAX(created_at)) AS seconds
+    FROM numbered
+    GROUP BY visitor_id, visit_no
+  )`;
+
+/** `SUM(<condition>)` columns for each bucket, from its bounds. */
+function bucketColumns(
+  column: string,
+  prefix: string,
+  buckets: readonly { min: number; max: number | null }[],
+): string {
+  return buckets
+    .map(({ min, max }, i) => {
+      const upper = max === null ? "" : ` AND ${column} < ${max}`;
+      return `SUM(${column} >= ${min}${upper}) AS ${prefix}${i}`;
+    })
+    .join(",\n    ");
+}
+
+/** Price band of a listing (static SQL from {@link PRICE_BANDS}). */
+const PRICE_BAND_SQL = `CASE ${PRICE_BANDS.map(({ key, max }) =>
+  max === null ? `ELSE '${key}'` : `WHEN l.price < ${max} THEN '${key}'`,
+).join(" ")} END`;
+
+function toInterestRows(
+  rows: { bucket: string | null; views: string; visitors: string }[],
+): InterestRow[] {
+  return rows.map((row) => ({
+    bucket: row.bucket ?? "",
+    views: Number(row.views),
+    visitors: Number(row.visitors),
+  }));
+}
 
 /** Data-access layer for {@link PageView}: aggregates over a time window. */
 export const pageViewRepository = AppDataSource.getRepository(PageView).extend({
@@ -107,6 +216,7 @@ export const pageViewRepository = AppDataSource.getRepository(PageView).extend({
       day: row.day,
       pageViews: Number(row.pageViews),
       visitors: Number(row.visitors),
+      visits: 0,
       listingViews: Number(row.listingViews),
     }));
   },
@@ -168,6 +278,92 @@ export const pageViewRepository = AppDataSource.getRepository(PageView).extend({
       .limit(limit)
       .getRawMany<{ path: string; views: string }>();
     return rows.map((row) => ({ path: row.path, views: Number(row.views) }));
+  },
+
+  async visitStats(since: Date, until: Date): Promise<VisitStats> {
+    const sql = `${VISITS_CTE}
+      SELECT COUNT(*) AS visits,
+        COALESCE(SUM(pages = 1), 0) AS bounces,
+        COALESCE(SUM(seconds), 0) AS seconds,
+        ${bucketColumns("pages", "p", VISIT_PAGES_BUCKETS)},
+        ${bucketColumns("seconds", "d", VISIT_DURATION_BUCKETS)}
+      FROM visits`;
+    const [raw] = (await this.manager.query(sql, [since, until])) as Record<string, string | null>[];
+    const read = (key: string) => Number(raw?.[key] ?? 0);
+    return {
+      visits: read("visits"),
+      bounces: read("bounces"),
+      seconds: read("seconds"),
+      byPages: VISIT_PAGES_BUCKETS.map((_, i) => read(`p${i}`)),
+      byDuration: VISIT_DURATION_BUCKETS.map((_, i) => read(`d${i}`)),
+    };
+  },
+
+  /** Visits per day (by the day they started). Days without visits are absent. */
+  async dailyVisits(since: Date, until: Date): Promise<{ day: string; visits: number }[]> {
+    const sql = `${VISITS_CTE}
+      SELECT DATE_FORMAT(started_at, '%Y-%m-%d') AS day, COUNT(*) AS visits
+      FROM visits
+      GROUP BY day
+      ORDER BY day`;
+    const rows = (await this.manager.query(sql, [since, until])) as { day: string; visits: string }[];
+    return rows.map((row) => ({ day: row.day, visits: Number(row.visits) }));
+  },
+
+  /** Pages the visits started on (landing pages), most frequent first. */
+  async entryPages(since: Date, until: Date, limit: number): Promise<TopPageRow[]> {
+    const sql = `${VISITS_CTE}
+      SELECT path, COUNT(*) AS views
+      FROM numbered
+      WHERE starts = 1
+      GROUP BY path
+      ORDER BY views DESC
+      LIMIT ${Math.trunc(limit)}`;
+    const rows = (await this.manager.query(sql, [since, until])) as { path: string; views: string }[];
+    return rows.map((row) => ({ path: row.path, views: Number(row.views) }));
+  },
+
+  async funnel(since: Date): Promise<FunnelRow> {
+    const raw = await this.inWindow(since)
+      .select("COUNT(DISTINCT pv.visitor_id)", "visitors")
+      .addSelect(
+        "COUNT(DISTINCT CASE WHEN pv.path = '/annonces' OR pv.listing_id IS NOT NULL THEN pv.visitor_id END)",
+        "browsed",
+      )
+      .addSelect("COUNT(DISTINCT CASE WHEN pv.listing_id IS NOT NULL THEN pv.visitor_id END)", "viewedListing")
+      .addSelect("COUNT(DISTINCT CASE WHEN pv.path = '/contact' THEN pv.visitor_id END)", "contact")
+      .getRawOne<Record<keyof FunnelRow, string>>();
+    return {
+      visitors: Number(raw?.visitors ?? 0),
+      browsed: Number(raw?.browsed ?? 0),
+      viewedListing: Number(raw?.viewedListing ?? 0),
+      contact: Number(raw?.contact ?? 0),
+    };
+  },
+
+  /** What the visitors look at: listing views by brand, category, fuel and price band. */
+  async listingInterest(since: Date): Promise<ListingInterest> {
+    const grouped = (bucket: string) =>
+      this.inWindow(since)
+        .innerJoin(Listing, "l", "l.id = pv.listing_id")
+        .innerJoin(CarModel, "m", "m.id = l.model_id")
+        .innerJoin(Brand, "b", "b.id = m.brand_id")
+        .leftJoin(Category, "c", "c.id = l.category_id")
+        .select(bucket, "bucket")
+        .addSelect("COUNT(*)", "views")
+        .addSelect("COUNT(DISTINCT pv.visitor_id)", "visitors")
+        .groupBy("bucket")
+        .orderBy("views", "DESC")
+        .getRawMany<{ bucket: string | null; views: string; visitors: string }>()
+        .then(toInterestRows);
+
+    const [brands, categories, fuels, priceBands] = await Promise.all([
+      grouped("b.name"),
+      grouped("c.name"),
+      grouped("l.fuel_type"),
+      grouped(PRICE_BAND_SQL),
+    ]);
+    return { brands, categories, fuels, priceBands };
   },
 
   async purgeBefore(date: Date): Promise<number> {

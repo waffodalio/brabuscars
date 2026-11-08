@@ -11,6 +11,15 @@ import { ApiError } from "../utils/ApiError";
 import type { Actor } from "../utils/actor";
 import { toListingResponse, type ListingResponse } from "../utils/listingResponse";
 import { listingImageService } from "./listingImage.service";
+import { reservationService } from "./reservation.service";
+
+/** A listing plus whether it is currently held for a customer. */
+export type PublicListing = ListingResponse & { reserved: boolean };
+
+async function withReservedFlag(listings: Listing[]): Promise<PublicListing[]> {
+  const held = await reservationService.heldListingIds(listings.map((l) => l.id));
+  return listings.map((listing) => ({ ...toListingResponse(listing), reserved: held.has(listing.id) }));
+}
 
 async function loadOrFail(id: number): Promise<Listing> {
   const listing = await listingRepository.findById(id);
@@ -39,13 +48,13 @@ async function assertCategoryExists(categoryId: number): Promise<void> {
  * middleware).
  */
 export const listingService = {
-  async list(query: ListListingQuery): Promise<ListingResponse[]> {
-    const rows = await listingRepository.findAllFiltered(query);
-    return rows.map(toListingResponse);
+  async list(query: ListListingQuery): Promise<PublicListing[]> {
+    return withReservedFlag(await listingRepository.findAllFiltered(query));
   },
 
-  async getById(id: number): Promise<ListingResponse> {
-    return toListingResponse(await loadOrFail(id));
+  async getById(id: number): Promise<PublicListing> {
+    const [listing] = await withReservedFlag([await loadOrFail(id)]);
+    return listing;
   },
 
   async create(actor: Actor, dto: CreateListingDto): Promise<ListingResponse> {

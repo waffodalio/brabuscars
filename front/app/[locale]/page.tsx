@@ -23,13 +23,11 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="chc-hero chc-hero--photo chc-animate-in mb-5">
+      <section className="chc-hero chc-animate-in mb-5">
         <HeroCarPhoto label={t.home.heroAlt} />
         <div className="chc-hero-content">
-          <h1 className="h2 fw-bold mb-3">
-            {company?.name ?? "BrabusCars"}
-            <span className="visually-hidden"> — {t.home.title}</span>
-          </h1>
+          <h1 className="chc-hero-title">{company?.name ?? "BrabusCars"}</h1>
+          <p className="chc-hero-lead">{t.home.title}</p>
           <Link
             href={withLocale("/annonces")}
             className="btn chc-hero-cta"

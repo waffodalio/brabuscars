@@ -7,7 +7,7 @@ type Props = {
  * Full-bleed background photo of the home banner: a Lamborghini Huracán on a
  * sunlit country road — a still taken from Andi Dautaj's footage. The car sits
  * left of centre; the text and the "See listings" button are on the right
- * (`.chc-hero-bg` / `.chc-hero-veil`). Served from `public/images` (no
+ * (`.chc-hero-bg` / `.chc-hero-veil`, dark scrim). Served from `public/images` (no
  * third-party request) as WebP at two widths, number plate blurred.
  *
  * Source: Andi Dautaj on Pexels (Pexels License — free commercial use,

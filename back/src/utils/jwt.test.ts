@@ -13,7 +13,19 @@ describe("signAuthToken / verifyAuthToken", () => {
   it("round-trips the user id and role", () => {
     const token = signAuthToken({ sub: 42, role: "admin" });
     const payload = verifyAuthToken(token);
-    expect(payload).toEqual({ sub: 42, role: "admin", mfa: false });
+    expect(payload).toEqual({
+      sub: 42,
+      role: "admin",
+      mfa: false,
+      iat: expect.any(Number),
+    });
+  });
+
+  it("exposes the issued-at time (seconds) used to revoke old sessions", () => {
+    const before = Math.floor(Date.now() / 1000);
+    const { iat } = verifyAuthToken(signAuthToken({ sub: 1, role: "user" }));
+    expect(iat).toBeGreaterThanOrEqual(before);
+    expect(iat).toBeLessThanOrEqual(Math.floor(Date.now() / 1000));
   });
 
   it("carries the second-factor flag when set", () => {

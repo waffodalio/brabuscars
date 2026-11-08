@@ -37,7 +37,29 @@ const dayFormat = new Intl.DateTimeFormat(INTL_LOCALES.fr, {
   month: "short",
   timeZone: "UTC",
 });
-export const formatDay = (day: string) => dayFormat.format(new Date(`${day}T00:00:00Z`));
+const longDayFormat = new Intl.DateTimeFormat(INTL_LOCALES.fr, {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  timeZone: "UTC",
+});
+const toDate = (day: string) => new Date(`${day}T00:00:00Z`);
+export const formatDay = (day: string) => dayFormat.format(toDate(day));
+const formatLongDay = (day: string) => longDayFormat.format(toDate(day));
+const isWeekend = (day: string) => [0, 6].includes(toDate(day).getUTCDay());
+
+/**
+ * Days that get an axis label: every day for a week, Mondays for a month,
+ * every other Monday beyond — always the first and last day.
+ */
+function labelIndexes(data: DailyPoint[]): number[] {
+  if (data.length <= 10) return data.map((_, i) => i);
+  const mondays = data.flatMap((d, i) => (toDate(d.day).getUTCDay() === 1 ? [i] : []));
+  const picked = data.length > 45 ? mondays.filter((_, n) => n % 2 === 0) : mondays;
+  // Keep clear of the first/last labels (anchored start/end).
+  const spacing = Math.max(2, Math.round(data.length / 12));
+  return picked.filter((i) => i >= spacing && i <= data.length - 1 - spacing);
+}
 
 /** Width of the wrapping element, kept up to date. */
 function useWidth<T extends HTMLElement>() {
@@ -57,6 +79,8 @@ export interface DailyPoint {
   /** `YYYY-MM-DD` (UTC). */
   day: string;
   value: number;
+  /** More figures of that day, shown in the tooltip (e.g. `120 visiteurs`). */
+  details?: string[];
 }
 
 /**
@@ -75,7 +99,8 @@ export function DailyViewsChart({ data, unit }: { data: DailyPoint[]; unit: stri
   const band = data.length > 0 ? innerWidth / data.length : 0;
   const barWidth = Math.max(1, Math.min(MAX_BAR_WIDTH, band - GAP));
   const y = (value: number) => MARGIN.top + innerHeight - (value / top) * innerHeight;
-  const labelIndexes = [...new Set([0, Math.floor((data.length - 1) / 2), data.length - 1])];
+  const labels = labelIndexes(data);
+  const edgeLabels = data.length > 10 ? [0, data.length - 1] : [];
   const active = hovered !== null ? data[hovered] : null;
   const average = data.length > 0 ? data.reduce((sum, d) => sum + d.value, 0) / data.length : 0;
   const formatAverage = average.toLocaleString(INTL_LOCALES.fr, { maximumFractionDigits: 1 });
@@ -96,6 +121,20 @@ export function DailyViewsChart({ data, unit }: { data: DailyPoint[]; unit: stri
           aria-label={`Histogramme : ${unit} par jour`}
           onMouseLeave={() => setHovered(null)}
         >
+          {/* Weekends shaded behind the bars: the weekly rhythm at a glance. */}
+          {data.map((d, i) =>
+            isWeekend(d.day) ? (
+              <rect
+                key={`we-${d.day}`}
+                x={MARGIN.left + i * band}
+                y={MARGIN.top}
+                width={band}
+                height={innerHeight}
+                className="chc-chart-weekend"
+              />
+            ) : null,
+          )}
+
           {ticks.map((tick) => (
             <g key={tick}>
               <line
@@ -147,15 +186,21 @@ export function DailyViewsChart({ data, unit }: { data: DailyPoint[]; unit: stri
             />
           )}
 
-          {labelIndexes.map((i) => (
+          {[...edgeLabels, ...labels].map((i) => (
             <text
               key={i}
-              x={MARGIN.left + i * band + band / 2}
+              x={
+                edgeLabels.includes(i)
+                  ? i === 0
+                    ? MARGIN.left
+                    : width - MARGIN.right
+                  : MARGIN.left + i * band + band / 2
+              }
               y={HEIGHT - 6}
-              textAnchor={i === 0 ? "start" : i === data.length - 1 ? "end" : "middle"}
+              textAnchor={edgeLabels.includes(i) ? (i === 0 ? "start" : "end") : "middle"}
               className="chc-chart-label"
             >
-              {formatDay(data[i].day)}
+              {data.length <= 10 ? formatDay(data[i].day).replace(/\.$/, "") : formatDay(data[i].day)}
             </text>
           ))}
         </svg>
@@ -165,15 +210,18 @@ export function DailyViewsChart({ data, unit }: { data: DailyPoint[]; unit: stri
         <div
           className="chc-chart-tooltip"
           style={{
-            left: Math.min(Math.max(MARGIN.left + hovered * band + band / 2, 70), width - 70),
+            left: Math.min(Math.max(MARGIN.left + hovered * band + band / 2, 90), width - 90),
             top: y(active.value) - 8,
           }}
           aria-hidden="true"
         >
-          <div className="fw-semibold">{formatDay(active.day)}</div>
-          <div>
+          <div className="chc-chart-tooltip-day">{formatLongDay(active.day)}</div>
+          <div className="fw-semibold">
             {active.value.toLocaleString(INTL_LOCALES.fr)} {unit}
           </div>
+          {active.details?.map((line) => (
+            <div key={line} className="text-secondary">{line}</div>
+          ))}
         </div>
       )}
 

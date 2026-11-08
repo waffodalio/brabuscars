@@ -37,10 +37,16 @@ export function ListingCard({ listing }: { listing: Listing }) {
           <span className="chc-fav">
             <FavoriteButton listingId={listing.id} />
           </span>
-          {listing.status !== "published" && (
+          {listing.status !== "published" ? (
             <Badge bg={LISTING_STATUS_VARIANTS[listing.status]}>
               {t.listingStatus[listing.status]}
             </Badge>
+          ) : (
+            listing.reserved && (
+              <Badge bg="warning" text="dark">
+                {t.reservation.reservedBadge}
+              </Badge>
+            )
           )}
         </div>
         {images.length > 1 && (

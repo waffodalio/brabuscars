@@ -79,6 +79,35 @@ export const authService = {
     return `${API_BASE_URL}/auth/google?locale=${encodeURIComponent(locale)}`;
   },
 
+  /**
+   * E-mails a reset link (in `locale`). The API answers the same way whether
+   * or not an account exists for `email`.
+   */
+  async forgotPassword(email: string, locale: string): Promise<void> {
+    await apiClient.post<ApiSuccess<{ sent: true }>>("/auth/forgot-password", {
+      email,
+      locale,
+    });
+  },
+
+  /** New password from the e-mailed link; opens no session. */
+  async resetPassword(
+    token: string,
+    password: string,
+    locale: string,
+  ): Promise<void> {
+    try {
+      await apiClient.post<ApiSuccess<{ reset: true }>>("/auth/reset-password", {
+        token,
+        password,
+        locale,
+      });
+    } finally {
+      // Any session in this browser has been revoked / cleared by the API.
+      setCsrfToken(null);
+    }
+  },
+
   async me(): Promise<AuthUser> {
     const response = await apiClient.get<ApiSuccess<AuthUser>>("/auth/me");
     return response.data;

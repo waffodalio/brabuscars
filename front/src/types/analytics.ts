@@ -8,6 +8,8 @@ export interface DailyViews {
   day: string;
   pageViews: number;
   visitors: number;
+  /** Visits started that day. */
+  visits: number;
   /** Views of a listing page. */
   listingViews: number;
 }
@@ -33,6 +35,64 @@ export interface TopListing {
   visitors: number;
   /** All-time number of users who bookmarked it. */
   favorites: number;
+  /** ISO date it went online, `null` if never published. */
+  publishedAt: string | null;
+}
+
+/**
+ * Visits of a period. A visit ends after 30 minutes without a page; its
+ * duration runs from the first to the last page (0 s for a single page).
+ */
+export interface VisitSummary {
+  visits: number;
+  /** Single-page visits. */
+  bounces: number;
+  averageSeconds: number;
+  /** Buckets `1`, `2`, `3-5`, `6+` (pages per visit). */
+  byPages: { bucket: string; visits: number }[];
+  /** Buckets `<10s`, `10s-1m`, `1-3m`, `3-10m`, `10m+`. */
+  byDuration: { bucket: string; visits: number }[];
+}
+
+/** Distinct visitors reaching each step of the buying path. */
+export interface Funnel {
+  visitors: number;
+  browsed: number;
+  viewedListing: number;
+  contact: number;
+}
+
+/** Listing views grouped by one property of the listing. */
+export interface InterestRow {
+  /** Brand / category name, fuel type or price band; `""` = none. */
+  bucket: string;
+  views: number;
+  visitors: number;
+}
+
+export interface ListingInterest {
+  brands: InterestRow[];
+  categories: InterestRow[];
+  fuels: InterestRow[];
+  /** Buckets `<15k`, `15-30k`, `30-50k`, `50-100k`, `100k+`. */
+  priceBands: InterestRow[];
+}
+
+export interface DailyActivity {
+  day: string;
+  favorites: number;
+  messages: number;
+  registrations: number;
+}
+
+/** Published stock right now. */
+export interface PublishedStock {
+  count: number;
+  averagePrice: number;
+  totalValue: number;
+  averageDaysOnline: number;
+  maxDaysOnline: number;
+  withoutPhoto: number;
 }
 
 export interface AnalyticsSummary {
@@ -48,6 +108,13 @@ export interface AnalyticsSummary {
   /** 7 × 24 page views, Monday first, in `timeZone`. */
   heatmap: number[][];
   timeZone: string;
+  visits: VisitSummary;
+  /** Same figures for the previous period (same elapsed time). */
+  previousVisits: VisitSummary;
+  /** Pages the visits started on (paths without locale). */
+  entryPages: { path: string; views: number }[];
+  funnel: Funnel;
+  interest: ListingInterest;
   sections: { bucket: SiteSection; views: number }[];
   /** `bucket` is a site language, or `""` when unknown. */
   locales: { bucket: string; views: number }[];
@@ -55,7 +122,10 @@ export interface AnalyticsSummary {
   /** Paths without their locale prefix, e.g. `/annonces/12`. */
   topPages: { path: string; views: number }[];
   engagement: { favorites: Compared; messages: Compared; registrations: Compared };
+  /** One entry per day of the period, zeros included. */
+  activity: DailyActivity[];
   catalog: {
+    stock: PublishedStock;
     byStatus: Partial<Record<ListingStatus, number>>;
     unhandledMessages: number;
     /** Published listings with no view during the period. */

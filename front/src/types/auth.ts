@@ -6,6 +6,8 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   role: UserRole;
+  /** False for accounts created with Google (no password set yet). */
+  hasPassword: boolean;
   createdAt: string;
 }
 
@@ -75,3 +77,4 @@ export const GOOGLE_ERRORS = [
   "failed",
 ] as const;
 export type GoogleError = (typeof GOOGLE_ERRORS)[number];
+

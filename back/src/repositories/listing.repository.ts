@@ -67,6 +67,16 @@ function buildWhere(query: ListListingQuery): FindOptionsWhere<Listing> {
  * Data-access layer for {@link Listing}. Queries load the model
  * (with its brand), the category and the image gallery.
  */
+export interface PublishedStock {
+  count: number;
+  averagePrice: number;
+  totalValue: number;
+  /** Days since publication (creation when unknown), averaged. */
+  averageDaysOnline: number;
+  maxDaysOnline: number;
+  withoutPhoto: number;
+}
+
 export const listingRepository = AppDataSource.getRepository(Listing).extend({
   findAllFiltered(query: ListListingQuery): Promise<Listing[]> {
     return this.find({
@@ -100,6 +110,39 @@ export const listingRepository = AppDataSource.getRepository(Listing).extend({
       .groupBy("listing.status")
       .getRawMany<{ status: ListingStatus; count: string }>();
     return Object.fromEntries(rows.map((row) => [row.status, Number(row.count)]));
+  },
+
+  /**
+   * Figures on the published stock: count, average / total price, how long
+   * the listings have been online, and how many have no photo.
+   */
+  async publishedStock(): Promise<PublishedStock> {
+    const raw = await this.createQueryBuilder("listing")
+      .select("COUNT(*)", "count")
+      .addSelect("COALESCE(AVG(listing.price), 0)", "averagePrice")
+      .addSelect("COALESCE(SUM(listing.price), 0)", "totalValue")
+      .addSelect(
+        "COALESCE(AVG(TIMESTAMPDIFF(DAY, COALESCE(listing.published_at, listing.created_at), NOW())), 0)",
+        "averageDaysOnline",
+      )
+      .addSelect(
+        "COALESCE(MAX(TIMESTAMPDIFF(DAY, COALESCE(listing.published_at, listing.created_at), NOW())), 0)",
+        "maxDaysOnline",
+      )
+      .addSelect(
+        "SUM(NOT EXISTS (SELECT 1 FROM listing_image image WHERE image.listing_id = listing.id))",
+        "withoutPhoto",
+      )
+      .where("listing.status = :status", { status: "published" })
+      .getRawOne<Record<keyof PublishedStock, string | null>>();
+    return {
+      count: Number(raw?.count ?? 0),
+      averagePrice: Math.round(Number(raw?.averagePrice ?? 0)),
+      totalValue: Number(raw?.totalValue ?? 0),
+      averageDaysOnline: Math.round(Number(raw?.averageDaysOnline ?? 0)),
+      maxDaysOnline: Number(raw?.maxDaysOnline ?? 0),
+      withoutPhoto: Number(raw?.withoutPhoto ?? 0),
+    };
   },
 
   /** Published listings nobody opened since `since`, oldest first, and their total. */

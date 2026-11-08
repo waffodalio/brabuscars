@@ -47,6 +47,13 @@ export class User {
   @Column({ name: "google_sub", type: "varchar", length: 255, nullable: true, unique: true })
   googleSub!: string | null;
 
+  /**
+   * Last password change (reset or change), to the second. Sessions issued
+   * before it are rejected by `authenticate`.
+   */
+  @Column({ name: "password_changed_at", type: "datetime", nullable: true })
+  passwordChangedAt!: Date | null;
+
   @Column({ name: "first_name", type: "varchar", length: 100 })
   firstName!: string;
 

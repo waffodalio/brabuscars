@@ -14,6 +14,7 @@ export const ADMIN_ICONS = {
   mail: "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm17 2-9 6-9-6",
   shield: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3zm-3 9 2 2 4-4",
   up: "M12 19V5M5 12l7-7 7 7",
+  calendar: "M8 2v4M16 2v4M3 9h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
 };
 
 export function AdminIcon({ d, size = 15 }: { d: string; size?: number }) {

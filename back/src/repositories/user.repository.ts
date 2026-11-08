@@ -1,6 +1,7 @@
 import { And, LessThan, Like, MoreThanOrEqual, type FindOptionsWhere } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
+import { countPerDay, type DayCount } from "./countPerDay";
 import type { ListUsersQuery } from "../dto/user.dto";
 import { escapeLike } from "../utils/escapeLike";
 
@@ -51,5 +52,13 @@ export const userRepository = AppDataSource.getRepository(User).extend({
       role: "user",
       createdAt: And(MoreThanOrEqual(since), LessThan(until)),
     });
+  },
+
+  /** Customer accounts created per day since `since`. */
+  dailyRegistered(since: Date): Promise<DayCount[]> {
+    const query = this.createQueryBuilder("account")
+      .where("account.role = :role", { role: "user" })
+      .andWhere("account.created_at >= :since", { since });
+    return countPerDay(query, "account.created_at");
   },
 });

@@ -34,6 +34,10 @@ export class ApiError extends Error {
     return new ApiError(409, message, details);
   }
 
+  static unprocessable(message = "Unprocessable entity", details?: unknown) {
+    return new ApiError(422, message, details);
+  }
+
   static tooManyRequests(message = "Too many requests") {
     return new ApiError(429, message);
   }

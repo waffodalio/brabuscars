@@ -105,3 +105,45 @@ export function weekHourGrid(
   }
   return grid;
 }
+
+/**
+ * A visit ends after 30 minutes without any page view (the usual rule of
+ * audience tools); the next view opens a new visit.
+ */
+export const VISIT_GAP_SECONDS = 30 * 60;
+
+/** Bucket bounds: `min` inclusive, `max` exclusive (`null` = open-ended). */
+export interface Bucket {
+  key: string;
+  min: number;
+  max: number | null;
+}
+
+/** Visits by number of pages seen. */
+export const VISIT_PAGES_BUCKETS: readonly Bucket[] = [
+  { key: "1", min: 1, max: 2 },
+  { key: "2", min: 2, max: 3 },
+  { key: "3-5", min: 3, max: 6 },
+  { key: "6+", min: 6, max: null },
+];
+
+/**
+ * Visits by duration (first → last page, in seconds). A single-page visit
+ * lasts 0 s: without a later page there is nothing to time it with.
+ */
+export const VISIT_DURATION_BUCKETS: readonly Bucket[] = [
+  { key: "<10s", min: 0, max: 10 },
+  { key: "10s-1m", min: 10, max: 60 },
+  { key: "1-3m", min: 60, max: 180 },
+  { key: "3-10m", min: 180, max: 600 },
+  { key: "10m+", min: 600, max: null },
+];
+
+/** Price bands (euros) used to group listing views; last one open-ended. */
+export const PRICE_BANDS: readonly { key: string; max: number | null }[] = [
+  { key: "<15k", max: 15_000 },
+  { key: "15-30k", max: 30_000 },
+  { key: "30-50k", max: 50_000 },
+  { key: "50-100k", max: 100_000 },
+  { key: "100k+", max: null },
+];

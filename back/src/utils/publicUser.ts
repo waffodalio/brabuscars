@@ -7,6 +7,8 @@ export interface PublicUser {
   firstName: string;
   lastName: string;
   role: User["role"];
+  /** False for accounts created with Google (no password set yet). */
+  hasPassword: boolean;
   createdAt: Date;
 }
 
@@ -17,6 +19,7 @@ export function toPublicUser(user: User): PublicUser {
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
+    hasPassword: Boolean(user.passwordHash),
     createdAt: user.createdAt,
   };
 }

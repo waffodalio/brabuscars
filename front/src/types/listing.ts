@@ -55,6 +55,8 @@ export interface Listing {
   publishedAt: string | null;
   /** Cover first, then by position. Empty until images are uploaded. */
   images: ListingImage[];
+  /** Put aside for a customer right now (confirmed hold). Sent by the list and detail endpoints. */
+  reserved?: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -5,6 +5,7 @@ import type { AuthUser } from "../types/express";
 import { ApiError } from "../utils/ApiError";
 import { verifyAuthToken, type AuthTokenPayload } from "../utils/jwt";
 import { AUTH_COOKIE } from "../utils/cookies";
+import { isSessionRevoked } from "../utils/passwordReset";
 
 const BEARER_PREFIX = "Bearer ";
 
@@ -39,6 +40,8 @@ function readToken(req: Request): string | undefined {
  * token, an account that no longer exists, or an admin session opened
  * without the second factor (e.g. a token issued before the account was
  * promoted, or before 2FA became mandatory): the admin must sign in again.
+ * A session issued before the last password reset is rejected too:
+ * resetting the password signs out every device.
  */
 async function resolvePrincipal(token: string): Promise<AuthUser | null> {
   let payload: AuthTokenPayload;
@@ -49,6 +52,7 @@ async function resolvePrincipal(token: string): Promise<AuthUser | null> {
   }
   const user = await userRepository.findById(payload.sub);
   if (!user || (isAdminRole(user.role) && !payload.mfa)) return null;
+  if (isSessionRevoked(payload.iat, user.passwordChangedAt)) return null;
   return { id: user.id, role: user.role };
 }
 

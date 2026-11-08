@@ -52,6 +52,45 @@ export const authRateLimiter = rateLimit({
 });
 
 /**
+ * "Forgot password" form, per IP: each accepted request may send an e-mail.
+ * Complements the per-account cooldown of `passwordService`.
+ */
+export const forgotPasswordRateLimiter = rateLimit({
+  windowMs: FIFTEEN_MINUTES,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: logAndReject,
+  skip: () => isTest,
+  message: error("Too many password reset requests, please try again later"),
+});
+
+/** Setting a new password from a reset link, per IP. */
+export const passwordRateLimiter = rateLimit({
+  windowMs: FIFTEEN_MINUTES,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: logAndReject,
+  skip: () => isTest,
+  message: error("Too many attempts, please try again later"),
+});
+
+/**
+ * Reservation requests, per IP: each one e-mails the customer and the
+ * dealership.
+ */
+export const reservationRateLimiter = rateLimit({
+  windowMs: FIFTEEN_MINUTES,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: logAndReject,
+  skip: () => isTest,
+  message: error("Too many reservation requests, please try again later"),
+});
+
+/**
  * 2FA endpoints (setup / code verification), per IP. Complements the
  * per-account lockout of `mfaService` (5 wrong codes → 15 min).
  */

@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { AppDataSource } from "../config/data-source";
 import { User, type UserRole } from "../entities/User";
 import { hashPassword } from "../utils/password";
+import { passwordChangeTimestamp } from "../utils/passwordReset";
 
 /**
  * Bootstraps an administrator account (public registration only creates `user`
@@ -54,6 +55,8 @@ async function main(): Promise<void> {
     if (existing) {
       existing.role = role;
       existing.passwordHash = await hashPassword(password);
+      // New password: sessions opened with the old one are revoked.
+      existing.passwordChangedAt = passwordChangeTimestamp();
       await users.save(existing);
       console.log(`Utilisateur "${email}" promu ${label}.`);
     } else {

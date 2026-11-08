@@ -16,6 +16,7 @@ const ICONS = {
   users:
     "M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 20v-2a4 4 0 0 0-3-3.87M16 2.13a4 4 0 0 1 0 7.75",
   stats: "M4 20V10M10 20V4M16 20v-7M22 20H2",
+  account: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
   logout: "M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h10",
 };
 
@@ -59,6 +60,7 @@ export function UserMenu() {
   const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
 
   const links = [
+    { href: "/mon-compte", label: t.nav.account, icon: ICONS.account, show: true },
     { href: "/favoris", label: t.nav.favorites, icon: ICONS.heart, show: true },
     { href: "/admin", label: t.nav.admin, icon: ICONS.dashboard, show: isAdmin },
     { href: "/admin/statistiques", label: t.nav.stats, icon: ICONS.stats, show: isAdmin },

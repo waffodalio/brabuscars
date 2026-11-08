@@ -13,6 +13,12 @@ const PENCIL = "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z";
 const HEART =
   "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z";
 
+/** Whole days since `iso`, or `null`. */
+function daysSince(iso: string | null): number | null {
+  if (!iso) return null;
+  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
+}
+
 /** Most viewed listings with their audience, favourites and a link to edit them. */
 export function TopListingsTable({ rows }: { rows: TopListing[] }) {
   const { withLocale } = useLanguage();
@@ -36,7 +42,9 @@ export function TopListingsTable({ rows }: { rows: TopListing[] }) {
       <tbody>
         {rows.map((row, index) => (
           <tr key={row.listingId}>
-            <td className="text-secondary small chc-num d-none d-sm-table-cell">{index + 1}</td>
+            <td className="d-none d-sm-table-cell">
+              <span className={`chc-rank${index < 3 ? " chc-rank--top" : ""}`}>{index + 1}</span>
+            </td>
             <td className="chc-col-title">
               <div className="d-flex align-items-center gap-3">
                 <div className="chc-stats-thumb d-none d-sm-block">
@@ -51,6 +59,9 @@ export function TopListingsTable({ rows }: { rows: TopListing[] }) {
                   </Link>
                   <div className="small text-secondary text-truncate">
                     {row.brand} {row.model} · {formatPrice(row.price)}
+                    {daysSince(row.publishedAt) !== null && (
+                      <span className="d-none d-lg-inline"> · en ligne depuis {formatNumber(daysSince(row.publishedAt) ?? 0)} j</span>
+                    )}
                     {row.status !== "published" && (
                       <Badge bg={LISTING_STATUS_VARIANTS[row.status]} className="ms-2">
                         {LISTING_STATUS_LABELS[row.status]}

@@ -97,8 +97,8 @@ export function AppFooter() {
   const section = usePathname().split("/")[2] ?? "";
   const showCta = !CTA_HIDDEN_SECTIONS.has(section);
   const ctaLinks = [
-    { section: "annonces", label: t.footer.ctaListings, variant: "btn-light" },
-    { section: "contact", label: t.footer.ctaContact, variant: "btn-outline-light" },
+    { section: "annonces", label: t.footer.ctaListings, variant: "btn-primary" },
+    { section: "contact", label: t.footer.ctaContact, variant: "btn-outline-secondary" },
   ].filter((link) => link.section !== section);
 
   const socials = [
@@ -114,15 +114,15 @@ export function AppFooter() {
         {showCta && (
           <section className="chc-footer-cta">
             <div className="chc-footer-cta-text">
-              <h2 className="h4 fw-bold mb-2">{t.footer.ctaTitle}</h2>
-              <p className="mb-0 opacity-75">{t.footer.ctaText}</p>
+              <h2 className="chc-footer-cta-title">{t.footer.ctaTitle}</h2>
+              <p className="mb-0">{t.footer.ctaText}</p>
             </div>
             <div className="chc-footer-cta-actions">
               {ctaLinks.map((link) => (
                 <Link
                   key={link.section}
                   href={withLocale(`/${link.section}`)}
-                  className={`btn btn-lg ${link.variant} fw-semibold`}
+                  className={`btn ${link.variant} fw-semibold`}
                 >
                   {link.label}
                 </Link>
@@ -136,7 +136,7 @@ export function AppFooter() {
             <Link href={withLocale("/")} className="chc-brand fs-4 text-decoration-none">
               {name}
             </Link>
-            <p className="text-secondary small mt-3 mb-4">{t.footer.tagline}</p>
+            <p className="chc-footer-tagline">{t.footer.tagline}</p>
             {socials.length > 0 && (
               <>
                 <FooterHeading>{t.footer.followUs}</FooterHeading>
@@ -190,7 +190,7 @@ export function AppFooter() {
             {company && (
               <ul className="chc-footer-contact">
                 <li>
-                  {icons.pin}
+                  <span className="chc-footer-contact-icon">{icons.pin}</span>
                   <span>
                     {company.address}
                     <br />
@@ -200,27 +200,32 @@ export function AppFooter() {
                       href={googleMapsDirectionsUrl(company)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="small fw-semibold"
+                      className="chc-footer-directions"
                     >
                       {t.footer.directions} →
                     </a>
                   </span>
                 </li>
                 <li>
-                  {icons.phone}
+                  <span className="chc-footer-contact-icon">{icons.phone}</span>
                   <a href={`tel:${company.phone.replace(/\s/g, "")}`}>{company.phone}</a>
                 </li>
                 <li>
-                  {icons.mail}
+                  <span className="chc-footer-contact-icon">{icons.mail}</span>
                   <a href={`mailto:${company.email}`}>{company.email}</a>
                 </li>
                 <li>
-                  {icons.clock}
+                  <span className="chc-footer-contact-icon">{icons.clock}</span>
                   <span style={{ whiteSpace: "pre-line" }}>{company.hours[locale]}</span>
                 </li>
               </ul>
             )}
           </div>
+        </div>
+
+        {/* Oversized wordmark fading into the bottom bar — decorative. */}
+        <div className="chc-footer-wordmark" aria-hidden="true">
+          {name}
         </div>
 
         <div className="chc-footer-bottom">

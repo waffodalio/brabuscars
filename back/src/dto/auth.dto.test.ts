@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema, registerSchema } from "./auth.dto";
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+  resetPasswordSchema,
+} from "./auth.dto";
 
 describe("registerSchema", () => {
   const valid = {
@@ -45,4 +50,37 @@ describe("loginSchema", () => {
       loginSchema.parse({ email: "a@b.com", password: "" }),
     ).toThrow();
   });
+});
+
+describe("password reset / change schemas", () => {
+  const token = "A".repeat(43);
+
+  it("accepts a forgot-password request and defaults the locale", () => {
+    expect(forgotPasswordSchema.parse({ email: " A@B.com " })).toEqual({
+      email: "a@b.com",
+      locale: "fr",
+    });
+  });
+
+  it("rejects an unknown locale and extra keys", () => {
+    expect(() =>
+      forgotPasswordSchema.parse({ email: "a@b.com", locale: "de" }),
+    ).toThrow();
+    expect(() =>
+      forgotPasswordSchema.parse({ email: "a@b.com", role: "admin" }),
+    ).toThrow();
+  });
+
+  it("requires a well-formed token and a strong enough password", () => {
+    expect(
+      resetPasswordSchema.parse({ token, password: "longenough" }).token,
+    ).toBe(token);
+    expect(() =>
+      resetPasswordSchema.parse({ token: "short", password: "longenough" }),
+    ).toThrow();
+    expect(() =>
+      resetPasswordSchema.parse({ token, password: "short1" }),
+    ).toThrow();
+  });
+
 });

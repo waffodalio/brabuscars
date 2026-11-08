@@ -136,6 +136,12 @@ MFA_ENCRYPTION_KEY=<64 caractères hex : openssl rand -hex 32>
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_REDIRECT_URI=http://localhost:4000/api/auth/google/callback
+# E-mails (Brevo) — optionnel en dev : sans SMTP_HOST, l'e-mail (et le lien) s'affiche dans la console
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+MAIL_FROM=BrabusCars <no-reply@chcars.fr>
 UPLOAD_DIR=uploads
 PUBLIC_UPLOADS_URL=http://localhost:4000/uploads
 MAX_UPLOAD_BYTES=15728640
@@ -175,6 +181,7 @@ et vivre dans `back/.env.production.local`.
 | `JWT_SECRET` (≥ 32 car.) / `JWT_EXPIRES_IN` | signature et durée de validité des sessions |
 | `MFA_ENCRYPTION_KEY` (64 hex, **obligatoire**) / `MFA_ISSUER` | clé AES-256 qui chiffre les secrets 2FA des admins (`openssl rand -hex 32`, différente par environnement, **à ne jamais changer** une fois des admins enrôlés) ; nom affiché dans l'application d'authentification (défaut `BrabusCars`) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | « Continuer avec Google » (optionnel : les deux identifiants ensemble, ou aucun — le bouton est alors masqué). Client OAuth « Application Web » de la Google Cloud Console ; l'URI de redirection autorisée doit être exactement `GOOGLE_REDIRECT_URI` (`<origine de l'API>/api/auth/google/callback`) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `MAIL_FROM` | envoi des e-mails (lien « mot de passe oublié », avis de changement de mot de passe) via **Brevo** : `smtp-relay.brevo.com`, port `587` (STARTTLS ; `465` = TLS direct), identifiant et **clé SMTP** de Brevo (*Paramètres → SMTP & API → Clés SMTP*, pas la clé API). `MAIL_FROM` = expéditeur affiché, dont l'adresse doit être un expéditeur ou un domaine **vérifié** dans Brevo (SPF/DKIM). Sans `SMTP_HOST` : e-mails affichés dans la console en dev/test, **non envoyés** en production (avertissement dans les logs, lien jamais journalisé) |
 | `UPLOAD_DIR` | dossier où sont écrits les fichiers image (hors dépôt ; hors dossier de déploiement en prod) |
 | `PUBLIC_UPLOADS_URL` | préfixe d'URL publique des images (`…/uploads`) |
 | `MAX_UPLOAD_BYTES` / `MAX_IMAGES_PER_LISTING` | limites d'upload (défaut 15 Mo / 20 images) |
@@ -239,6 +246,45 @@ unique (affichés une seule fois). Un `user` promu admin passe par cet enrôleme
 - Téléphone **et** codes de secours perdus : `npm run reset-mfa -- --email=…`
   (`reset-mfa:prod` pour la production) — l'admin refait l'enrôlement.
 
+### Mot de passe oublié
+
+- Sur la page de connexion, « Mot de passe oublié ? » : l'utilisateur saisit son
+  e-mail et reçoit un lien `…/<langue>/reinitialiser-mot-de-passe?token=…`,
+  **valable 30 minutes, à usage unique** (seule l'empreinte SHA-256 du jeton est
+  en base, table `password_reset_token`). La réponse est identique que le compte
+  existe ou non ; un seul e-mail toutes les 2 minutes par compte, 5 demandes /
+  15 min par IP. Une nouvelle demande annule le lien précédent. Fonctionne aussi
+  pour un compte créé avec Google (il peut ainsi définir un mot de passe).
+- C'est le seul moyen de changer de mot de passe (pas de formulaire dans « Mon compte »).
+- `user.password_changed_at` est mis à jour et **toutes les sessions ouvertes
+  avant sont refusées** (tous les appareils sont déconnectés), et un e-mail
+  d'avis « votre mot de passe a été modifié » est envoyé. La réinitialisation
+  n'ouvre pas de session : un admin repasse par sa double authentification.
+
+### Réservations
+
+Sur une annonce publiée, un client **connecté** peut **réserver le véhicule**
+(mise de côté) ou **planifier un essai / une visite** (date + heure, de 8 h à
+20 h, au moins 1 h à l'avance, au plus 90 jours) :
+
+- **Compte obligatoire** : un visiteur qui clique sur « Réserver » ou « Planifier
+  un essai » se voit proposer « Se connecter » / « Créer un compte » ; une fois
+  connecté (mot de passe, inscription ou Google), il revient sur l'annonce avec
+  le formulaire ouvert (chemin de retour gardé en `sessionStorage`, chemins du
+  site uniquement).
+- Le client donne son téléphone (nom et e-mail viennent du compte) ; la demande
+  part directement à la concession. Il la suit et peut l'annuler dans « Mon compte ».
+- **Admin** (`/admin/reservations`) : confirme (mise de côté de 3 à 30 jours,
+  7 par défaut ; rendez-vous éventuellement déplacé), refuse ou annule, avec un
+  message facultatif. Le client est prévenu par e-mail à chaque étape, la
+  concession (`COMPANY_EMAIL`) à chaque nouvelle demande ou annulation client.
+- Une seule **mise de côté active** par véhicule (vérifiée sous verrou) : tant
+  qu'elle court, l'annonce affiche « Réservé » et n'accepte plus de mise de
+  côté, mais toujours des visites.
+
+Réserver ne dépend pas de l'envoi d'e-mails ; sans SMTP, seuls les avis
+(client et concession) ne partent pas.
+
 ## API REST
 
 Base : `http://localhost:4000/api`. Réponses :
@@ -249,6 +295,7 @@ Base : `http://localhost:4000/api`. Réponses :
 | Santé | `GET /health` | public |
 | Entreprise | `GET /company` | public |
 | Auth | `POST /auth/register` · `POST /auth/login` · `POST /auth/mfa/setup` · `POST /auth/mfa/verify` · `POST /auth/logout` · `GET /auth/me` | public / cookie « 2FA en attente » pour `/mfa/*` / session pour `/me` |
+| | `POST /auth/forgot-password` (`{ email, locale }`) · `POST /auth/reset-password` (`{ token, password, locale }`) | public (rate-limités) |
 | Utilisateurs | `GET /users` (`?role=` `?search=`) · `PATCH /users/:id/role` · `GET /users/role-changes` (`?userId=` `?limit=`) · `DELETE /users/:id` (comptes `user` uniquement) | **super_admin** |
 | Marques | `GET /brands` · `GET /brands/:id` · `POST /brands` · `PUT /brands/:id` · `DELETE /brands/:id` | **admin** |
 | Catégories | `GET /categories` · `GET /categories/:id` · `POST` · `PUT` · `DELETE /categories/:id` | **admin** |
@@ -270,6 +317,8 @@ crée tout dans le même formulaire, avec les photos.
 | Photos | `GET /listings/:listingId/images` | public |
 | | `POST /…` (multipart, champ `file`) · `PATCH /…/:imageId` · `DELETE /…/:imageId` | **admin** |
 | Favoris | `GET /favorites` · `POST /favorites` · `DELETE /favorites/:listingId` | session (tout `user`) |
+| Réservations | `POST /reservations` (`{ listingId, type: hold\|visit, phone, visitAt?, message?, locale }`, rate-limité) · `GET /reservations/mine` · `POST /reservations/:id/cancel` | session |
+| | `GET /reservations` (`?status=` `?type=`) · `PATCH /reservations/:id` (`{ status: confirmed\|declined\|cancelled, holdDays?, visitAt?, adminNote? }`) · `DELETE /reservations/:id` | **admin** |
 | Contact | `POST /contact` (formulaire public) | public |
 | | `GET /contact` · `PATCH /contact/:id` · `DELETE /contact/:id` | **admin** |
 
@@ -277,7 +326,8 @@ crée tout dans le même formulaire, avec les photos.
 un cookie `chcars_token` **httpOnly** (le JWT n'est jamais dans le corps de la
 réponse) et un cookie lisible `chcars_csrf`. Les requêtes doivent être envoyées
 avec les cookies (`credentials: "include"` côté navigateur, `-c/-b` avec curl).
-Toute requête **non‑GET** (hors `/auth/login`, `/auth/register` et `/contact`)
+Toute requête **non‑GET** (hors `/auth/login`, `/auth/register`,
+`/auth/forgot-password`, `/auth/reset-password` et `/contact`)
 doit renvoyer la valeur du cookie `chcars_csrf` dans l'en‑tête `X-CSRF-Token`.
 
 ## Scripts npm
@@ -365,6 +415,12 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
    #              GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (connexion Google ; l'URI de
    #              redirection https://<SITE_DOMAIN>/api/auth/google/callback est déduite),
    #              BACKUP_KEEP (sauvegardes conservées avant migration, défaut 10)
+   # E-mails (Brevo) — sans eux, aucun lien « mot de passe oublié » n'est envoyé :
+   SMTP_HOST=smtp-relay.brevo.com
+   SMTP_PORT=587
+   SMTP_USER=<identifiant SMTP Brevo, ex. xxxx@smtp-brevo.com>
+   SMTP_PASSWORD=<clé SMTP Brevo>
+   MAIL_FROM=BrabusCars <no-reply@chcars.fr>   # expéditeur vérifié dans Brevo
    ```
 
    Au premier démarrage, l'image MariaDB crée la base et l'utilisateur à

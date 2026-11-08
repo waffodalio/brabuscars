@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
@@ -18,6 +20,7 @@ import {
   type GoogleError,
   type MfaEnrollment as MfaEnrollmentData,
 } from "@/types/auth";
+import { takeReturnPath } from "@/utils/returnPath";
 import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 
 /**
@@ -42,6 +45,8 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const mfaParam = searchParams.get("mfa");
   const googleParam = searchParams.get("google");
+  /** Back from the reset-password page: the new password is set. */
+  const [resetDone] = useState(() => searchParams.get("reset") === "1");
   const [step, setStep] = useState<Step>(() =>
     mfaParam === "code"
       ? { kind: "code" }
@@ -58,12 +63,13 @@ export default function LoginPage() {
   );
   const [submitting, setSubmitting] = useState(false);
 
-  const goHome = () => router.push(withLocale("/"));
+  /** Home, or back where the visitor was sent here from (e.g. "reserve this car"). */
+  const goHome = () => router.push(takeReturnPath() ?? withLocale("/"));
 
   // Coming back from Google (state above was seeded from the query): drop
   // the parameters from the URL, and fetch the QR code if enrollment is due.
   useEffect(() => {
-    if (!mfaParam && !googleParam) return;
+    if (!mfaParam && !googleParam && !resetDone) return;
     router.replace(withLocale("/connexion"));
     if (mfaParam === "enroll") {
       startMfaEnrollment()
@@ -134,6 +140,11 @@ export default function LoginPage() {
       {step.kind === "credentials" && (
         <>
           <ErrorAlert message={error} />
+          {resetDone && !error && (
+            <Alert variant="success" role="status">
+              {t.auth.login.resetDone}
+            </Alert>
+          )}
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3" controlId="login-email">
@@ -156,6 +167,11 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
               />
+              <div className="text-end mt-1">
+                <Link href={withLocale("/mot-de-passe-oublie")} className="small">
+                  {t.auth.login.forgotPassword}
+                </Link>
+              </div>
             </Form.Group>
 
             <Button type="submit" disabled={submitting} className="w-100">

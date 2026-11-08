@@ -10,6 +10,7 @@ const TITLES: Record<string, string> = {
   modeles: "Modèles",
   categories: "Catégories",
   messages: "Messages",
+  reservations: "Réservations",
   utilisateurs: "Utilisateurs",
 };
 

@@ -112,6 +112,24 @@ const envSchema = z.object({
     .url()
     .default("http://localhost:4000/api/auth/google/callback"),
 
+  // --- Outgoing e-mail (SMTP, e.g. Brevo) — password reset links ---
+  /**
+   * SMTP relay (Brevo: `smtp-relay.brevo.com`). Unset: e-mails are printed
+   * to the console in development / test, and not sent at all in production.
+   */
+  SMTP_HOST: optionalString,
+  /** 587 = STARTTLS (Brevo default), 465 = implicit TLS. */
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  /** SMTP login (Brevo: the account's SMTP login, e.g. `xxxx@smtp-brevo.com`). */
+  SMTP_USER: optionalString,
+  /** SMTP key (Brevo: « Clés SMTP », not the API key). */
+  SMTP_PASSWORD: optionalString,
+  /**
+   * Sender shown to recipients, e.g. `BrabusCars <no-reply@chcars.fr>`. The
+   * address must be a verified sender / domain in Brevo.
+   */
+  MAIL_FROM: z.string().min(3).default("BrabusCars <no-reply@chcars.fr>"),
+
   // --- Uploads (image files stored on the local disk) ---
   /** Directory where image files are written. Keep it outside the repo and,
    *  in production, outside the deploy directory. */
@@ -154,6 +172,12 @@ const envSchema = z.object({
     message: "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set together",
     path: ["GOOGLE_CLIENT_SECRET"],
   },
+).refine(
+  (value) => !value.SMTP_HOST || Boolean(value.SMTP_USER && value.SMTP_PASSWORD),
+  {
+    message: "SMTP_USER and SMTP_PASSWORD are required when SMTP_HOST is set",
+    path: ["SMTP_PASSWORD"],
+  },
 );
 
 const parsed = envSchema.safeParse(process.env);
@@ -172,3 +196,5 @@ export const isDevelopment = env.NODE_ENV === "development";
 export const isGoogleAuthEnabled = Boolean(
   env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET,
 );
+/** Real e-mails are sent only when an SMTP relay is configured. */
+export const isSmtpEnabled = Boolean(env.SMTP_HOST);

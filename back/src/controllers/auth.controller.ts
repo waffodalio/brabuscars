@@ -2,14 +2,17 @@ import { timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
 import { env, isGoogleAuthEnabled } from "../config/env";
 import {
+  forgotPasswordSchema,
   googleCallbackQuerySchema,
   googleStartQuerySchema,
   loginSchema,
   mfaVerifySchema,
   registerSchema,
+  resetPasswordSchema,
 } from "../dto/auth.dto";
 import { authService, type LoginOutcome } from "../services/auth.service";
 import { mfaService } from "../services/mfa.service";
+import { passwordService } from "../services/password.service";
 import { ApiError } from "../utils/ApiError";
 import { success } from "../utils/apiResponse";
 import {
@@ -36,6 +39,7 @@ import {
   verifyOAuthStateToken,
   type OAuthStatePayload,
 } from "../utils/jwt";
+import { frontUrl } from "../utils/frontUrl";
 
 /** User id behind the 2FA-pending cookie, or 401 (missing / expired). */
 function pendingMfaUserId(req: Request): number {
@@ -64,15 +68,6 @@ function googleConfig(): GoogleClientConfig {
 
 /** Reason codes the login page turns into a message (`?google=…`). */
 type GoogleFailure = "cancelled" | "expired" | "failed" | "unverified" | "conflict";
-
-/** Front-end URL (the CORS origin is the front's origin) for a locale path. */
-function frontUrl(locale: string, path: string, query?: Record<string, string>): string {
-  const url = new URL(`/${locale}${path}`, env.CORS_ORIGIN);
-  for (const [key, value] of Object.entries(query ?? {})) {
-    url.searchParams.set(key, value);
-  }
-  return url.toString();
-}
 
 function safeEqual(a: string, b: string): boolean {
   const bufferA = Buffer.from(a);
@@ -222,6 +217,31 @@ export const authController = {
     }
     const user = await authService.getCurrentUser(req.user.id);
     res.status(200).json(success(user));
+  },
+
+  /**
+   * "Forgot password": always the same 202 answer, sent before any lookup,
+   * so neither the body nor the timing tells whether the account exists.
+   * The link is issued and e-mailed in the background.
+   */
+  forgotPassword(req: Request, res: Response): void {
+    const dto = forgotPasswordSchema.parse(req.body);
+    passwordService.requestReset(dto).catch((err) => {
+      console.error("Password reset request failed:", err);
+    });
+    res.status(202).json(success({ sent: true }));
+  },
+
+  /**
+   * New password from the e-mailed link. Opens no session (and drops any in
+   * this browser): the user signs in again with the new password.
+   */
+  async resetPassword(req: Request, res: Response): Promise<void> {
+    const dto = resetPasswordSchema.parse(req.body);
+    await passwordService.resetPassword(dto);
+    clearAuthCookies(res);
+    clearMfaPendingCookie(res);
+    res.status(200).json(success({ reset: true }));
   },
 
   logout(_req: Request, res: Response): void {

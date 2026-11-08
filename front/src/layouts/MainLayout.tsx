@@ -8,6 +8,7 @@ import { AdminFooter } from "@/components/admin/AdminFooter";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { PageViewTracker } from "@/components/PageViewTracker";
+import { ReturnAfterLogin } from "@/components/ReturnAfterLogin";
 
 /**
  * Application shell shared by every page: top navigation, centered content
@@ -36,18 +37,22 @@ export function MainLayout({ children }: { children: ReactNode }) {
       {isAdminSection ? (
         // The side menu sits outside the keyed container: it stays mounted
         // across admin navigations instead of replaying its slide-in.
+        // The footer sits in the content column too, so it lines up with
+        // the page and the side menu runs down the whole height.
         <div className="flex-grow-1 d-lg-flex">
           <AdminSidebar />
-          <main className="flex-grow-1 py-4 py-lg-5" style={{ minWidth: 0 }}>
-            {content}
-          </main>
+          <div className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0 }}>
+            <main className="flex-grow-1 py-4 py-lg-5">{content}</main>
+            <AdminFooter />
+          </div>
         </div>
       ) : (
         <main className="flex-grow-1 py-4 py-lg-5">{content}</main>
       )}
-      {isAdminSection ? <AdminFooter /> : <AppFooter />}
+      {!isAdminSection && <AppFooter />}
       <CookieConsentBanner />
       <PageViewTracker />
+      <ReturnAfterLogin />
     </>
   );
 }

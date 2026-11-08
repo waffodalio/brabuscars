@@ -3,8 +3,10 @@ import { authController } from "../controllers/auth.controller";
 import { authenticate } from "../middlewares/authenticate";
 import {
   authRateLimiter,
+  forgotPasswordRateLimiter,
   mfaRateLimiter,
   oauthRateLimiter,
+  passwordRateLimiter,
 } from "../middlewares/rateLimit";
 
 /**
@@ -17,12 +19,17 @@ import {
  *   POST /mfa/verify   TOTP or recovery code → sets the auth + CSRF cookies (2FA-pending)
  *   POST /logout       clears the auth, CSRF and 2FA-pending cookies
  *   GET  /me           current user (requires a valid session)
+ *   POST /forgot-password  e-mails a single-use reset link; same answer
+ *                      whether the account exists or not              (rate limited)
+ *   POST /reset-password   new password from the link's token; revokes
+ *                      every session, opens none                       (rate limited)
  *   GET  /providers    sign-in methods available besides the password ({ google })
  *   GET  /google       "Sign in with Google": redirects to Google        (rate limited)
  *   GET  /google/callback  Google's return: opens the session (or the 2FA
  *                      step) and redirects to the front                 (rate limited)
  *
- * `register` / `login` are exempt from the CSRF check (the visitor has no
+ * `register` / `login` / `forgot-password` / `reset-password` are exempt
+ * from the CSRF check (the visitor has no
  * session yet); they are protected by rate limiting, SameSite cookies and
  * strict CORS. `/mfa/*` are CSRF-checked and rate limited. The Google routes
  * are top-level GET navigations; login CSRF is prevented by the `state`
@@ -36,6 +43,8 @@ authRouter.post("/mfa/setup", mfaRateLimiter, authController.mfaSetup);
 authRouter.post("/mfa/verify", mfaRateLimiter, authController.mfaVerify);
 authRouter.post("/logout", authController.logout);
 authRouter.get("/me", authenticate, authController.me);
+authRouter.post("/forgot-password", forgotPasswordRateLimiter, authController.forgotPassword);
+authRouter.post("/reset-password", passwordRateLimiter, authController.resetPassword);
 authRouter.get("/providers", authController.providers);
 authRouter.get("/google", oauthRateLimiter, authController.googleStart);
 authRouter.get("/google/callback", oauthRateLimiter, authController.googleCallback);

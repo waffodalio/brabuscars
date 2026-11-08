@@ -1,6 +1,7 @@
 import { And, In, LessThan, MoreThanOrEqual } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { Favorite } from "../entities/Favorite";
+import { countPerDay, type DayCount } from "./countPerDay";
 
 const LISTING_RELATIONS = {
   listing: {
@@ -47,6 +48,12 @@ export const favoriteRepository = AppDataSource.getRepository(Favorite).extend({
 
   countCreatedBetween(since: Date, until: Date): Promise<number> {
     return this.countBy({ createdAt: And(MoreThanOrEqual(since), LessThan(until)) });
+  },
+
+  /** Bookmarks added per day since `since`. */
+  dailyCreated(since: Date): Promise<DayCount[]> {
+    const query = this.createQueryBuilder("favorite").where("favorite.created_at >= :since", { since });
+    return countPerDay(query, "favorite.created_at");
   },
 
   /** Number of users who bookmarked each listing, keyed by listing id. */

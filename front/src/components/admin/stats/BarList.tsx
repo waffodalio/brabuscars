@@ -5,6 +5,8 @@ export interface BarListItem {
   key: string;
   label: ReactNode;
   value: number;
+  /** Extra figure in muted ink, e.g. `120 visiteurs`. */
+  secondary?: string;
 }
 
 /**
@@ -20,18 +22,21 @@ export function BarList({
   total: number;
   empty?: string;
 }) {
-  if (items.length === 0) return <p className="text-secondary small mb-0">{empty}</p>;
+  if (items.length === 0 || items.every((item) => item.value === 0)) {
+    return <p className="text-secondary small mb-0">{empty}</p>;
+  }
   const max = Math.max(...items.map((item) => item.value));
   return (
-    <ul className="list-unstyled mb-0 d-flex flex-column gap-2">
+    <ul className="list-unstyled mb-0 d-flex flex-column gap-2 chc-barlist">
       {items.map((item) => (
         <li key={item.key}>
           <div className="d-flex justify-content-between gap-3 small">
             <span className="text-truncate">{item.label}</span>
             <span className="text-nowrap chc-num">
+              {item.secondary && <span className="text-secondary me-2">{item.secondary}</span>}
               <span className="fw-semibold">{formatNumber(item.value)}</span>
               {total > 0 && (
-                <span className="text-secondary ms-2">{formatPercent(item.value / total)}</span>
+                <span className="chc-barlist-share">{formatPercent(item.value / total)}</span>
               )}
             </span>
           </div>

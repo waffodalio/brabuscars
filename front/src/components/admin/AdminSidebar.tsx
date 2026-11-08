@@ -37,7 +37,10 @@ const GROUPS: NavGroup[] = [
   },
   {
     title: "Relation client",
-    items: [{ href: "/admin/messages", label: "Messages", icon: ADMIN_ICONS.mail }],
+    items: [
+      { href: "/admin/reservations", label: "Réservations", icon: ADMIN_ICONS.calendar },
+      { href: "/admin/messages", label: "Messages", icon: ADMIN_ICONS.mail },
+    ],
   },
 ];
 

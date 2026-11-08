@@ -16,6 +16,8 @@ export interface AuthTokenPayload {
   role: UserRole;
   /** True when the session was opened with a second factor. */
   mfa?: boolean;
+  /** Issued-at (seconds), set on verified tokens only. */
+  iat?: number;
 }
 
 /** Signs a short-lived authentication token for the given user. */
@@ -54,6 +56,7 @@ export function verifyAuthToken(token: string): AuthTokenPayload {
     sub: Number(decoded.sub),
     role: decoded.role as UserRole,
     mfa: decoded.mfa === true,
+    iat: typeof decoded.iat === "number" ? decoded.iat : undefined,
   };
 }
 

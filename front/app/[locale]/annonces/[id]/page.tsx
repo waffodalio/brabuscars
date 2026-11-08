@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
@@ -16,9 +16,11 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { ListingImagePanel } from "@/components/ListingImagePanel";
+import { RESERVE_PARAM, ReservationPanel } from "@/components/ReservationPanel";
 import { VehicleSpecs } from "@/components/VehicleSpecs";
 import { listingService } from "@/services/listingService";
 import type { Listing, ListingImage, ListingStatus } from "@/types/listing";
+import { RESERVATION_TYPES, type ReservationType } from "@/types/reservation";
 import { errorMessage } from "@/utils/errors";
 import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 import {
@@ -39,6 +41,14 @@ export default function ListingDetailPage() {
   const company = useCompany();
   const { t, locale, withLocale } = useLanguage();
   const toMessage = usePublicErrorMessage();
+  const searchParams = useSearchParams();
+  /** Back from the login page: reopen the reservation form that was asked for. */
+  const [reserveOnArrival] = useState<ReservationType | null>(() => {
+    const value = searchParams.get(RESERVE_PARAM);
+    return (RESERVATION_TYPES as readonly string[]).includes(value ?? "")
+      ? (value as ReservationType)
+      : null;
+  });
 
   const [listing, setListing] = useState<Listing | null>(null);
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
@@ -63,6 +73,13 @@ export default function ListingDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Drop `?reserver=…` from the address once read (a reload must not reopen it).
+  useEffect(() => {
+    if (searchParams.has(RESERVE_PARAM)) router.replace(withLocale(`/annonces/${id}`));
+    // Run once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function setImages(images: ListingImage[]) {
     setListing((current) => (current ? { ...current, images } : current));
@@ -234,10 +251,12 @@ export default function ListingDetailPage() {
                 <span className="chc-price chc-price--lg">
                   {formatPrice(listing.price, locale)}
                 </span>
-                {listing.status !== "published" && (
+                {listing.status !== "published" ? (
                   <Badge bg={LISTING_STATUS_VARIANTS[listing.status]}>
                     {t.listingStatus[listing.status]}
                   </Badge>
+                ) : (
+                  listing.reserved && <Badge bg="warning" text="dark">{t.reservation.reservedBadge}</Badge>
                 )}
               </div>
 
@@ -261,8 +280,12 @@ export default function ListingDetailPage() {
                 </div>
               )}
 
+              {listing.status === "published" && (
+                <ReservationPanel listing={listing} initialType={reserveOnArrival} />
+              )}
+
               <div className="d-flex flex-wrap gap-2 mt-3">
-                <Link href={withLocale("/contact")} className="btn btn-primary">
+                <Link href={withLocale("/contact")} className="btn btn-outline-primary">
                   {t.listingDetail.contact}
                 </Link>
                 <FavoriteButton listingId={listing.id} />

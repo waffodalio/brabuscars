@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { fillDays, parsePagePath, periodBounds, weekHourGrid } from "./pageView";
+import {
+  PRICE_BANDS,
+  VISIT_DURATION_BUCKETS,
+  VISIT_PAGES_BUCKETS,
+  fillDays,
+  parsePagePath,
+  periodBounds,
+  weekHourGrid,
+} from "./pageView";
 
 describe("parsePagePath", () => {
   it("splits the locale off and spots listing pages", () => {
@@ -77,5 +85,24 @@ describe("weekHourGrid", () => {
     expect(grid[0][10]).toBe(3);
     expect(grid[1][0]).toBe(3);
     expect(grid.flat().reduce((a, b) => a + b, 0)).toBe(6);
+  });
+});
+
+describe("visit buckets", () => {
+  it.each([
+    ["pages", VISIT_PAGES_BUCKETS],
+    ["duration", VISIT_DURATION_BUCKETS],
+  ])("%s buckets are contiguous and end open", (_name, buckets) => {
+    buckets.forEach((bucket, i) => {
+      if (i > 0) expect(bucket.min).toBe(buckets[i - 1].max);
+    });
+    expect(buckets[buckets.length - 1].max).toBeNull();
+  });
+
+  it("price bands rise and end open", () => {
+    const maxima = PRICE_BANDS.map((band) => band.max);
+    expect(maxima.at(-1)).toBeNull();
+    const bounded = maxima.slice(0, -1) as number[];
+    expect([...bounded].sort((a, b) => a - b)).toEqual(bounded);
   });
 });
