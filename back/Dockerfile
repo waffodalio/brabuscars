@@ -19,14 +19,15 @@ RUN npm ci --omit=dev && npm cache clean --force
 FROM node:22-alpine
 ENV NODE_ENV=production \
     PORT=4000 \
-    UPLOAD_DIR=/app/uploads
+    UPLOAD_DIR=/app/uploads \
+    DOCUMENTS_DIR=/app/documents
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json ./
 # db/migrations/ est lu par dist/scripts/migrate.js
 COPY db ./db
-RUN mkdir -p /app/uploads && chown node:node /app/uploads
+RUN mkdir -p /app/uploads /app/documents && chown node:node /app/uploads /app/documents
 USER node
 EXPOSE 4000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=5 \

@@ -20,7 +20,7 @@ import {
   type GoogleError,
   type MfaEnrollment as MfaEnrollmentData,
 } from "@/types/auth";
-import { takeReturnPath } from "@/utils/returnPath";
+import { takeReturn } from "@/utils/returnPath";
 import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 
 /**
@@ -63,8 +63,16 @@ export default function LoginPage() {
   );
   const [submitting, setSubmitting] = useState(false);
 
-  /** Home, or back where the visitor was sent here from (e.g. "reserve this car"). */
-  const goHome = () => router.push(takeReturnPath() ?? withLocale("/"));
+  /**
+   * Home, or back where the visitor was sent here from (e.g. "reserve this
+   * car"): through the history when it is the page right before, so it isn't
+   * left twice in it; `replace` otherwise — "Back" must not return to the form.
+   */
+  const goHome = () => {
+    const target = takeReturn();
+    if (target?.previous) router.back();
+    else router.replace(target?.path ?? withLocale("/"));
+  };
 
   // Coming back from Google (state above was seeded from the query): drop
   // the parameters from the URL, and fetch the QR code if enrollment is due.

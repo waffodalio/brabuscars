@@ -141,9 +141,10 @@ SMTP_HOST=
 SMTP_PORT=587
 SMTP_USER=
 SMTP_PASSWORD=
-MAIL_FROM=BrabusCars <no-reply@chcars.fr>
+MAIL_FROM=BrabusCars <no-reply@brabuscars.be>
 UPLOAD_DIR=uploads
 PUBLIC_UPLOADS_URL=http://localhost:4000/uploads
+DOCUMENTS_DIR=documents
 MAX_UPLOAD_BYTES=15728640
 MAX_IMAGES_PER_LISTING=20
 COMPANY_NAME=BrabusCars
@@ -152,12 +153,16 @@ COMPANY_POSTAL_CODE=69003
 COMPANY_CITY=Lyon
 COMPANY_COUNTRY=France
 COMPANY_PHONE=+33 4 78 00 00 00
-COMPANY_EMAIL=contact@chcars.fr
+COMPANY_EMAIL=contact@brabuscars.be
 COMPANY_HOURS=Du lundi au samedi, 9h–19h
 COMPANY_HOURS_EN=Monday to Saturday, 9 am–7 pm
 COMPANY_HOURS_NL=Maandag tot zaterdag, 9u–19u
 COMPANY_INSTAGRAM_URL=https://www.instagram.com/<compte>
 COMPANY_FACEBOOK_URL=https://www.facebook.com/<page>
+# Mentions des bons de commande / factures (facultatives mais recommandées)
+COMPANY_VAT_NUMBER=BE 0123.456.789
+COMPANY_IBAN=BE68 5390 0754 7034
+COMPANY_BIC=GKCCBEBB
 ```
 
 Puis `back/.env.development.local` avec le mot de passe MariaDB :
@@ -184,9 +189,11 @@ et vivre dans `back/.env.production.local`.
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `MAIL_FROM` | envoi des e-mails (lien « mot de passe oublié », avis de changement de mot de passe) via **Brevo** : `smtp-relay.brevo.com`, port `587` (STARTTLS ; `465` = TLS direct), identifiant et **clé SMTP** de Brevo (*Paramètres → SMTP & API → Clés SMTP*, pas la clé API). `MAIL_FROM` = expéditeur affiché, dont l'adresse doit être un expéditeur ou un domaine **vérifié** dans Brevo (SPF/DKIM). Sans `SMTP_HOST` : e-mails affichés dans la console en dev/test, **non envoyés** en production (avertissement dans les logs, lien jamais journalisé) |
 | `UPLOAD_DIR` | dossier où sont écrits les fichiers image (hors dépôt ; hors dossier de déploiement en prod) |
 | `PUBLIC_UPLOADS_URL` | préfixe d'URL publique des images (`…/uploads`) |
+| `DOCUMENTS_DIR` | dossier **privé** des bons de commande et factures PDF (`back/documents/` par défaut, ignoré par git) ; jamais servi publiquement, téléchargé uniquement via l'API admin. En prod : volume Docker `documents` |
 | `MAX_UPLOAD_BYTES` / `MAX_IMAGES_PER_LISTING` | limites d'upload (défaut 15 Mo / 20 images) |
 | `COMPANY_*` | coordonnées de la concession (nom, adresse, CP, ville, pays, téléphone, e-mail, horaires) — l'adresse suffit, la carte (Google Maps) géolocalise automatiquement |
 | `COMPANY_HOURS_EN` / `COMPANY_HOURS_NL` | horaires affichés sur le site en anglais / néerlandais (optionnels ; à défaut, `COMPANY_HOURS` en français) |
+| `COMPANY_VAT_NUMBER` / `COMPANY_IBAN` / `COMPANY_BIC` | n° de TVA, IBAN et BIC de la concession, imprimés sur les bons de commande et factures (pied de page) ; facultatifs mais recommandés |
 | `COMPANY_INSTAGRAM_URL` / `COMPANY_FACEBOOK_URL` | pages Instagram / Facebook affichées dans le pied de page (optionnelles, `https://` uniquement ; icône masquée si vide) |
 
 ### Frontend
@@ -225,7 +232,7 @@ l'interface, `/admin/utilisateurs`) :
 
 ```bash
 cd back
-npm run create-admin -- --email=admin@chcars.fr --password=motdepasse123 \
+npm run create-admin -- --email=admin@brabuscars.be --password=motdepasse123 \
   --firstName=Alice --lastName=Martin --super
 ```
 
@@ -268,10 +275,10 @@ Sur une annonce publiée, un client **connecté** peut **réserver le véhicule*
 20 h, au moins 1 h à l'avance, au plus 90 jours) :
 
 - **Compte obligatoire** : un visiteur qui clique sur « Réserver » ou « Planifier
-  un essai » se voit proposer « Se connecter » / « Créer un compte » ; une fois
-  connecté (mot de passe, inscription ou Google), il revient sur l'annonce avec
-  le formulaire ouvert (chemin de retour gardé en `sessionStorage`, chemins du
-  site uniquement).
+  un essai » arrive directement sur la page de connexion (lien « Créer un
+  compte » sur place) ; une fois connecté (mot de passe, inscription ou Google),
+  il revient sur l'annonce avec le formulaire ouvert (retour gardé en
+  `sessionStorage`, chemins du site uniquement).
 - Le client donne son téléphone (nom et e-mail viennent du compte) ; la demande
   part directement à la concession. Il la suit et peut l'annuler dans « Mon compte ».
 - **Admin** (`/admin/reservations`) : confirme (mise de côté de 3 à 30 jours,
@@ -281,9 +288,41 @@ Sur une annonce publiée, un client **connecté** peut **réserver le véhicule*
 - Une seule **mise de côté active** par véhicule (vérifiée sous verrou) : tant
   qu'elle court, l'annonce affiche « Réservé » et n'accepte plus de mise de
   côté, mais toujours des visites.
+- **Véhicule vendu, archivé ou hors ligne** alors que des réservations sont en
+  cours : rien n'est annulé automatiquement, mais c'est signalé partout (page
+  Réservations, liste et fiche des annonces, dossier de vente, « Mon compte »
+  du client) ; la confirmation est bloquée et le refus prérempli (« Ce véhicule
+  a été vendu… »). Une annonce qui a des réservations en cours ne peut pas être
+  supprimée : il faut d'abord les refuser ou les annuler (le client est prévenu).
 
 Réserver ne dépend pas de l'envoi d'e-mails ; sans SMTP, seuls les avis
 (client et concession) ne partent pas.
+
+### Facturation (dossiers de vente)
+
+Module du back-office (`/admin/ventes`, admin), **indépendant des comptes clients** :
+l'acheteur est saisi à la main.
+
+- **Dossier** : acheteur, véhicule (choisi dans les annonces pour préremplir, ou
+  saisi librement), n° de châssis, lignes (prix TVA comprise : véhicule, frais,
+  garantie…), régime de TVA : **marge** (occasion, TVA non détaillée + mention
+  légale) ou **TVA 21 %** (HTVA / TVA / TVAC détaillés).
+- **Paiements** saisis par l'admin (montant, date, mode, référence). Ils pilotent
+  le dossier : une **avance** génère le **bon de commande** (`BC-AAAA-NNNN`,
+  statut « Bon de commande émis ») ; le **solde** génère la **facture**
+  (`F-AAAA-NNNN`, statut « Payé ») et passe l'annonce liée en « Vendue ». Un
+  paiement intégral d'emblée donne directement la facture.
+- Numérotation **continue, sans trou**, par type et par année (table
+  `document_counter`, incrémentée dans la transaction d'émission).
+- Un document émis est **figé** (montants et PDF archivés) ; le dossier n'est
+  plus modifiable dès le premier document ; un paiement n'est supprimable que
+  s'il n'a donné lieu à aucun document. Trop-perçu refusé.
+- PDF générés par le back (`pdfkit`), stockés dans `DOCUMENTS_DIR`
+  (privé), téléchargés via `GET /api/sales/:id/documents/:documentId/pdf`.
+  **Pensez à sauvegarder le volume `documents`** (la sauvegarde automatique de
+  `deploy.sh` ne couvre que la base).
+- La mention du régime de la marge et les libellés (HTVA / TVAC) sont à
+  valider avec votre comptable.
 
 ## API REST
 
@@ -319,6 +358,7 @@ crée tout dans le même formulaire, avec les photos.
 | Favoris | `GET /favorites` · `POST /favorites` · `DELETE /favorites/:listingId` | session (tout `user`) |
 | Réservations | `POST /reservations` (`{ listingId, type: hold\|visit, phone, visitAt?, message?, locale }`, rate-limité) · `GET /reservations/mine` · `POST /reservations/:id/cancel` | session |
 | | `GET /reservations` (`?status=` `?type=`) · `PATCH /reservations/:id` (`{ status: confirmed\|declined\|cancelled, holdDays?, visitAt?, adminNote? }`) · `DELETE /reservations/:id` | **admin** |
+| Ventes | `GET /sales` (`?status=`) · `POST /sales` · `GET` / `PUT` / `DELETE /sales/:id` · `POST /sales/:id/payments` · `DELETE /sales/:id/payments/:paymentId` · `GET /sales/:id/documents/:documentId/pdf` | **admin** |
 | Contact | `POST /contact` (formulaire public) | public |
 | | `GET /contact` · `PATCH /contact/:id` · `DELETE /contact/:id` | **admin** |
 
@@ -384,7 +424,7 @@ photos séparés), deux plages de ports, deux sites nginx.
 |---|---|---|
 | `DEPLOY_PATH` | `/opt/chcars-prod` | `/opt/chcars-preprod` |
 | `COMPOSE_PROJECT_NAME` | `chcars-prod` | `chcars-preprod` |
-| Domaine (`SITE_DOMAIN`) | `chcars.fr` | `preprod.chcars.fr` |
+| Domaine (`SITE_DOMAIN`) | `brabuscars.be` | `preprod.brabuscars.be` |
 | `FRONT_PORT` / `BACK_PORT` / `DB_HOST_PORT` | 3010 / 3011 / 3012 | 3013 / 3014 / 3015 |
 | Site nginx | `/etc/nginx/sites-available/chcars-prod` | `/etc/nginx/sites-available/chcars-preprod` |
 
@@ -396,12 +436,12 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
    DNS des **deux** domaines pointé dessus, un utilisateur de déploiement
    membre du groupe `docker` avec une clé SSH dédiée.
 2. **Un `.env` par environnement**, dans son `DEPLOY_PATH` (jamais versionné).
-   Exemple préprod — en prod : `chcars-prod`, `chcars.fr`, `chcars_prod`,
+   Exemple préprod — en prod : `chcars-prod`, `brabuscars.be`, `chcars_prod`,
    `chcarsprod`, ports 3010 / 3011 / 3012 :
 
    ```dotenv
    COMPOSE_PROJECT_NAME=chcars-preprod      # OBLIGATOIRE et unique (deploy.sh le vérifie)
-   SITE_DOMAIN=preprod.chcars.fr            # sans https://
+   SITE_DOMAIN=preprod.brabuscars.be            # sans https://
    FRONT_PORT=3013
    BACK_PORT=3014
    DB_HOST_PORT=3015
@@ -420,7 +460,7 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
    SMTP_PORT=587
    SMTP_USER=<identifiant SMTP Brevo, ex. xxxx@smtp-brevo.com>
    SMTP_PASSWORD=<clé SMTP Brevo>
-   MAIL_FROM=BrabusCars <no-reply@chcars.fr>   # expéditeur vérifié dans Brevo
+   MAIL_FROM=BrabusCars <no-reply@brabuscars.be>   # expéditeur vérifié dans Brevo
    ```
 
    Au premier démarrage, l'image MariaDB crée la base et l'utilisateur à
@@ -430,14 +470,14 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
 
    ```bash
    # Production
-   sed -e 's/@ENV@/prod/g' -e 's/@DOMAIN@/chcars.fr/g'        -e 's/@FRONT_PORT@/3010/g' -e 's/@BACK_PORT@/3011/g'        deploy/nginx/chcars.conf | sudo tee /etc/nginx/sites-available/chcars-prod >/dev/null
+   sed -e 's/@ENV@/prod/g' -e 's/@DOMAIN@/brabuscars.be/g'        -e 's/@FRONT_PORT@/3010/g' -e 's/@BACK_PORT@/3011/g'        deploy/nginx/chcars.conf | sudo tee /etc/nginx/sites-available/chcars-prod >/dev/null
    # Préprod
-   sed -e 's/@ENV@/preprod/g' -e 's/@DOMAIN@/preprod.chcars.fr/g'        -e 's/@FRONT_PORT@/3013/g' -e 's/@BACK_PORT@/3014/g'        deploy/nginx/chcars.conf | sudo tee /etc/nginx/sites-available/chcars-preprod >/dev/null
+   sed -e 's/@ENV@/preprod/g' -e 's/@DOMAIN@/preprod.brabuscars.be/g'        -e 's/@FRONT_PORT@/3013/g' -e 's/@BACK_PORT@/3014/g'        deploy/nginx/chcars.conf | sudo tee /etc/nginx/sites-available/chcars-preprod >/dev/null
 
    sudo ln -s /etc/nginx/sites-available/chcars-prod /etc/nginx/sites-available/chcars-preprod        /etc/nginx/sites-enabled/
    sudo nginx -t && sudo systemctl reload nginx
-   sudo certbot --nginx -d chcars.fr --redirect
-   sudo certbot --nginx -d preprod.chcars.fr --redirect
+   sudo certbot --nginx -d brabuscars.be --redirect
+   sudo certbot --nginx -d preprod.brabuscars.be --redirect
    ```
 
    certbot ajoute lui-même le bloc HTTPS et renouvelle les certificats
@@ -453,8 +493,8 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
 
      | Variable | Valeur |
      |---|---|
-     | `SITE_URL_PREPROD` | `https://preprod.chcars.fr` |
-     | `SITE_URL_PROD` | `https://chcars.fr` |
+     | `SITE_URL_PREPROD` | `https://preprod.brabuscars.be` |
+     | `SITE_URL_PROD` | `https://brabuscars.be` |
      | `DEPLOY_PATH_PREPROD` | `/opt/chcars-preprod` |
      | `DEPLOY_PATH_PROD` | `/opt/chcars-prod` |
      | `DEPLOY_PORT` | port SSH du serveur (**obligatoire**) |
@@ -517,7 +557,7 @@ cd e2e && npm install && npx playwright install chromium
 E2E_BASE_URL=http://localhost:3000 npm test
 ```
 
-Les tests créent un compte `e2e+…@chcars.test` à chaque exécution : à lancer
+Les tests créent un compte `e2e+…@brabuscars.test` à chaque exécution : à lancer
 contre la préprod ou le dev, jamais contre la production.
 
 ## Notes

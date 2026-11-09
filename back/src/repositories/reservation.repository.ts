@@ -1,4 +1,4 @@
-import { In, MoreThan, type EntityManager } from "typeorm";
+import { In, MoreThan, Not, type EntityManager } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import {
   Reservation,
@@ -31,7 +31,8 @@ export const reservationRepository = AppDataSource.getRepository(Reservation).ex
 
   findForUser(userId: number): Promise<Reservation[]> {
     return this.find({
-      where: { userId },
+      // Cancelled requests are hidden from the customer (kept for the back-office).
+      where: { userId, status: Not("cancelled") },
       relations: WITH_LISTING,
       order: { createdAt: "DESC" },
     });
@@ -86,5 +87,20 @@ export const reservationRepository = AppDataSource.getRepository(Reservation).ex
 
   countPending(): Promise<number> {
     return this.countBy({ status: "pending" });
+  },
+
+  /**
+   * Requests on this listing still in progress: pending, or confirmed and not
+   * over yet (hold still running, visit still to come).
+   */
+  countOpenForListing(listingId: number): Promise<number> {
+    return this.createQueryBuilder("r")
+      .where("r.listing_id = :listingId", { listingId })
+      .andWhere(
+        `(r.status = 'pending' OR (r.status = 'confirmed' AND (
+            (r.type = 'hold' AND r.hold_until > :now) OR (r.type = 'visit' AND r.visit_at > :now))))`,
+        { now: new Date() },
+      )
+      .getCount();
   },
 });

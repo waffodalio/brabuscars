@@ -203,7 +203,7 @@ export function AdminFooter() {
             </div>
             <Link href={withLocale("/mon-compte")} className="chc-admin-footer-link">
               <Icon d={USER} size={14} />
-              Mon compte · mot de passe
+              Mon compte
             </Link>
           </section>
         </div>

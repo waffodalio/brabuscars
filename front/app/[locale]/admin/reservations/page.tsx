@@ -21,6 +21,9 @@ import type {
 } from "@/types/reservation";
 import { errorMessage } from "@/utils/errors";
 import { formatPrice } from "@/utils/listingLabels";
+import { ConfirmButton } from "@/components/ConfirmButton";
+import { listingPath } from "@/utils/listingPath";
+import { isOpenReservation, unavailableLabel } from "@/utils/reservationAvailability";
 import {
   RESERVATION_STATUS_VARIANTS,
   formatReservationDay,
@@ -76,7 +79,15 @@ function DecisionModal({
 }) {
   const [holdDays, setHoldDays] = useState(7);
   const [visitAt, setVisitAt] = useState(reservation.visitAt ? toLocalInput(reservation.visitAt) : "");
-  const [note, setNote] = useState("");
+  // Car sold / taken offline: the customer is told why, pre-filled.
+  const unavailable = unavailableLabel(reservation.listing.status);
+  const [note, setNote] = useState(
+    unavailable && decision !== "confirmed"
+      ? reservation.listing.status === "sold"
+        ? "Ce véhicule a été vendu entre-temps. N'hésitez pas à nous contacter : nous vous proposerons volontiers un modèle similaire."
+        : "Ce véhicule n'est plus disponible à la vente. N'hésitez pas à nous contacter pour un autre modèle."
+      : "",
+  );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -207,6 +218,9 @@ export default function AdminReservationsPage() {
     return byStatus;
   }, [items]);
 
+  // Requests in progress on a car that can no longer be sold.
+  const conflicts = items.filter((r) => isOpenReservation(r) && unavailableLabel(r.listing.status)).length;
+
   const shown = items
     .filter((r) => tab === "all" || r.status === tab)
     .filter((r) => type === "all" || r.type === type)
@@ -222,7 +236,6 @@ export default function AdminReservationsPage() {
   }
 
   async function remove(reservation: Reservation) {
-    if (!window.confirm(`Supprimer la demande de ${reservation.customer.firstName} ${reservation.customer.lastName} ?`)) return;
     setBusyId(reservation.id);
     setError("");
     try {
@@ -279,6 +292,16 @@ export default function AdminReservationsPage() {
 
       <ErrorAlert message={error} />
 
+      {conflicts > 0 && (
+        <Alert variant="danger" className="d-flex flex-wrap align-items-center gap-2">
+          <strong>
+            {conflicts} demande{conflicts > 1 ? "s" : ""} en cours concerne{conflicts > 1 ? "nt" : ""} un véhicule qui
+            n&apos;est plus en vente
+          </strong>
+          <span>(vendu, archivé ou hors ligne) : refusez ou annulez-les pour prévenir le client.</span>
+        </Alert>
+      )}
+
       {shown.length === 0 ? (
         <Alert variant="light" className="border">
           {tab === "pending" ? "Aucune demande à traiter." : "Aucune demande ici."}
@@ -286,7 +309,16 @@ export default function AdminReservationsPage() {
       ) : (
         <div className="d-flex flex-column gap-3">
           {shown.map((r) => (
-            <Card key={r.id} className={r.status === "pending" ? "border-warning-subtle" : undefined}>
+            <Card
+              key={r.id}
+              className={
+                isOpenReservation(r) && unavailableLabel(r.listing.status)
+                  ? "border-danger"
+                  : r.status === "pending"
+                    ? "border-warning-subtle"
+                    : undefined
+              }
+            >
               <Card.Body className="d-flex flex-column flex-md-row gap-3">
                 <div className="chc-stats-thumb d-none d-sm-block">
                   {r.listing.thumbnailUrl && (
@@ -298,10 +330,13 @@ export default function AdminReservationsPage() {
                 <div className="flex-grow-1" style={{ minWidth: 0 }}>
                   <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
                     <Badge bg={r.type === "hold" ? "primary" : "info"}>{TYPE_LABELS[r.type]}</Badge>
+                    {isOpenReservation(r) && unavailableLabel(r.listing.status) && (
+                      <Badge bg="danger">⚠ {unavailableLabel(r.listing.status)}</Badge>
+                    )}
                     <Badge bg={RESERVATION_STATUS_VARIANTS[r.status]} text={r.status === "pending" ? "dark" : undefined}>
                       {STATUS_LABELS[r.status]}
                     </Badge>
-                    <Link href={withLocale(`/annonces/${r.listing.id}`)} className="fw-semibold text-reset text-truncate">
+                    <Link href={withLocale(listingPath(r.listing))} className="fw-semibold text-reset text-truncate">
                       {r.listing.title}
                     </Link>
                     <span className="small text-secondary">{formatPrice(r.listing.price)}</span>
@@ -346,9 +381,11 @@ export default function AdminReservationsPage() {
                 <div className="d-flex flex-md-column gap-2 flex-wrap align-items-start align-items-md-end">
                   {r.status === "pending" && (
                     <>
-                      <Button size="sm" variant="success" onClick={() => setDeciding({ reservation: r, decision: "confirmed" })}>
-                        Confirmer
-                      </Button>
+                      {!unavailableLabel(r.listing.status) && (
+                        <Button size="sm" variant="success" onClick={() => setDeciding({ reservation: r, decision: "confirmed" })}>
+                          Confirmer
+                        </Button>
+                      )}
                       <Button size="sm" variant="outline-danger" onClick={() => setDeciding({ reservation: r, decision: "declined" })}>
                         Refuser
                       </Button>
@@ -360,14 +397,16 @@ export default function AdminReservationsPage() {
                     </Button>
                   )}
                   {(r.status === "declined" || r.status === "cancelled") && (
-                    <Button
-                      size="sm"
+                    <ConfirmButton
                       variant="outline-secondary"
                       disabled={busyId === r.id}
-                      onClick={() => void remove(r)}
+                      message={<>Supprimer la demande de {r.customer.firstName} {r.customer.lastName} ?</>}
+                      confirmLabel="Oui, supprimer"
+                      cancelLabel="Non"
+                      onConfirm={() => remove(r)}
                     >
                       Supprimer
-                    </Button>
+                    </ConfirmButton>
                   )}
                 </div>
               </Card.Body>

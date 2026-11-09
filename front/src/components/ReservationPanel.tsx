@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
@@ -16,6 +17,8 @@ import { ApiClientError } from "@/services/apiClient";
 import { reservationService } from "@/services/reservationService";
 import type { Listing } from "@/types/listing";
 import type { ReservationType } from "@/types/reservation";
+import { setReservationIntent } from "@/utils/reservationIntent";
+import { listingPath } from "@/utils/listingPath";
 import { setReturnPath } from "@/utils/returnPath";
 
 /** Visit slots offered: every half hour, 08:00 → 19:30 (dealership hours). */
@@ -37,10 +40,10 @@ export const RESERVE_PARAM = "reserver";
 
 /**
  * "Interested in this car?" box of a listing page: put the car aside or book
- * a visit / test drive. Reserving needs an account: a visitor is offered to
- * log in or sign up and is brought back here afterwards, with the form open
- * (`?reserver=hold|visit`, see `initialType`). A car already held can still
- * be visited.
+ * a visit / test drive. Reserving needs an account: a visitor is taken
+ * straight to the login page and brought back here afterwards, with the form
+ * open (`?reserver=hold|visit`, see `initialType`). A car already held can
+ * still be visited.
  */
 export function ReservationPanel({
   listing,
@@ -50,7 +53,8 @@ export function ReservationPanel({
   /** Form to open on arrival (back from the login page). */
   initialType?: ReservationType | null;
 }) {
-  const { user } = useAuth();
+  const { user, initializing } = useAuth();
+  const router = useRouter();
   const { t, locale, withLocale } = useLanguage();
   const toMessage = usePublicErrorMessage();
   // Back from the login page to put aside a car held meanwhile: open nothing.
@@ -68,6 +72,14 @@ export function ReservationPanel({
   const maxDay = new Date(today.getTime() + 89 * 86_400_000);
 
   function open(next: ReservationType) {
+    if (initializing) return; // session not known yet
+    if (!user) {
+      // Visitor: straight to the login page, back here afterwards with this form open.
+      setReturnPath(`/${locale}${listingPath(listing)}?${RESERVE_PARAM}=${next}`);
+      setReservationIntent(listing.id, next);
+      router.push(withLocale("/connexion"));
+      return;
+    }
     setType(next);
     setError("");
     setSent(false);
@@ -76,11 +88,6 @@ export function ReservationPanel({
   function close() {
     setType(null);
     if (sent) setForm(EMPTY);
-  }
-
-  /** Remember where to come back, then go to the login / sign-up page. */
-  function rememberReturn() {
-    if (type) setReturnPath(`/${locale}/annonces/${listing.id}?${RESERVE_PARAM}=${type}`);
   }
 
   function update(field: keyof typeof EMPTY) {
@@ -121,65 +128,42 @@ export function ReservationPanel({
 
   return (
     <div className="chc-reserve">
-      <div className="fw-semibold mb-2">{t.reservation.panelTitle}</div>
-      {reserved && (
-        <Alert variant="warning" className="small py-2 px-3 mb-2">
-          {t.reservation.reservedNotice}
-        </Alert>
-      )}
-      <div className="d-grid gap-2">
+      {reserved && <div className="chc-reserve-note">{t.reservation.reservedNotice}</div>}
+      <div className="chc-reserve-actions">
         {!reserved && (
-          <button type="button" className="chc-reserve-option" onClick={() => open("hold")}>
-            <span className="chc-reserve-icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-              </svg>
-            </span>
-            <span>
-              <span className="d-block fw-semibold">{t.reservation.holdAction}</span>
-              <span className="d-block small text-secondary">{t.reservation.holdHint}</span>
-            </span>
+          <button
+            type="button"
+            className="chc-reserve-tile chc-reserve-tile--main"
+            title={t.reservation.holdHint}
+            onClick={() => open("hold")}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+            {t.reservation.holdAction}
           </button>
         )}
-        <button type="button" className="chc-reserve-option" onClick={() => open("visit")}>
-          <span className="chc-reserve-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M8 2v4M16 2v4M3 9h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
-            </svg>
-          </span>
-          <span>
-            <span className="d-block fw-semibold">{t.reservation.visitAction}</span>
-            <span className="d-block small text-secondary">{t.reservation.visitHint}</span>
-          </span>
+        <button
+          type="button"
+          className="chc-reserve-tile"
+          title={t.reservation.visitHint}
+          onClick={() => open("visit")}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M8 2v4M16 2v4M3 9h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+          </svg>
+          {t.reservation.visitAction}
         </button>
       </div>
 
-      <Modal show={type !== null} onHide={close} centered>
+      <Modal show={Boolean(user) && type !== null} onHide={close} centered>
         <Modal.Header closeButton>
           <Modal.Title as="h2" className="h5">
-            {user ? title : t.reservation.loginRequiredTitle}
+            {title}
           </Modal.Title>
         </Modal.Header>
 
-        {!user ? (
-          // Visitor: an account is needed — log in or sign up, then come back here.
-          <>
-            <Modal.Body>
-              <p className="small text-secondary mb-2">
-                {title} · <span className="fw-semibold text-body">{listing.title}</span>
-              </p>
-              <p className="mb-0">{t.reservation.loginRequired}</p>
-            </Modal.Body>
-            <Modal.Footer>
-              <Link href={withLocale("/inscription")} className="btn btn-outline-primary" onClick={rememberReturn}>
-                {t.reservation.register}
-              </Link>
-              <Link href={withLocale("/connexion")} className="btn btn-primary" onClick={rememberReturn}>
-                {t.reservation.login}
-              </Link>
-            </Modal.Footer>
-          </>
-        ) : sent ? (
+        {!user ? null : sent ? (
           <>
             <Modal.Body>
               <div className="text-center py-2">

@@ -3,21 +3,26 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Badge from "react-bootstrap/Badge";
-import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Spinner from "react-bootstrap/Spinner";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { useLanguage } from "@/context/LanguageContext";
 import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 import { reservationService } from "@/services/reservationService";
 import type { Reservation } from "@/types/reservation";
+import { listingPath } from "@/utils/listingPath";
+import { isOpenReservation } from "@/utils/reservationAvailability";
 import {
   RESERVATION_STATUS_VARIANTS,
   formatReservationDay,
   formatSlot,
 } from "@/utils/reservationLabels";
 
-/** The signed-in customer's reservations, with a way to withdraw open ones. */
+/**
+ * The signed-in customer's reservations, with a way to withdraw open ones
+ * (confirmed in a bubble; a cancelled request leaves the list).
+ */
 export function MyReservations() {
   const { t, locale, withLocale } = useLanguage();
   const toMessage = usePublicErrorMessage();
@@ -40,12 +45,12 @@ export function MyReservations() {
   }, [load]);
 
   async function cancel(reservation: Reservation) {
-    if (!window.confirm(t.reservation.mineCancelConfirm)) return;
     setBusyId(reservation.id);
     setError("");
     try {
-      const updated = await reservationService.cancelMine(reservation.id);
-      setItems((current) => current?.map((r) => (r.id === updated.id ? updated : r)) ?? null);
+      await reservationService.cancelMine(reservation.id);
+      // A cancelled request leaves the list.
+      setItems((current) => current?.filter((r) => r.id !== reservation.id) ?? null);
     } catch (err) {
       setError(toMessage(err, t.reservation.error));
     } finally {
@@ -74,12 +79,17 @@ export function MyReservations() {
                 </div>
                 <div className="flex-grow-1" style={{ minWidth: 0 }}>
                   <div className="d-flex flex-wrap align-items-center gap-2">
-                    <Link href={withLocale(`/annonces/${r.listing.id}`)} className="fw-semibold text-reset text-truncate">
+                    <Link href={withLocale(listingPath(r.listing))} className="fw-semibold text-reset text-truncate">
                       {r.listing.title}
                     </Link>
                     <Badge bg={RESERVATION_STATUS_VARIANTS[r.status]} text={r.status === "pending" ? "dark" : undefined}>
                       {t.reservation.statuses[r.status]}
                     </Badge>
+                    {isOpenReservation(r) && r.listing.status !== "published" && (
+                      <Badge bg="danger">
+                        {r.listing.status === "sold" ? t.reservation.listingSold : t.reservation.listingUnavailable}
+                      </Badge>
+                    )}
                   </div>
                   <div className="small text-secondary">
                     {t.reservation.types[r.type]}
@@ -95,15 +105,16 @@ export function MyReservations() {
                   )}
                 </div>
                 {(r.status === "pending" || r.status === "confirmed") && (
-                  <Button
-                    size="sm"
+                  <ConfirmButton
                     variant="outline-secondary"
                     className="text-nowrap align-self-center"
                     disabled={busyId === r.id}
-                    onClick={() => void cancel(r)}
+                    message={t.reservation.mineCancelConfirm}
+                    confirmLabel={t.reservation.mineCancelYes}
+                    onConfirm={() => cancel(r)}
                   >
                     {t.reservation.mineCancel}
-                  </Button>
+                  </ConfirmButton>
                 )}
               </li>
             ))}

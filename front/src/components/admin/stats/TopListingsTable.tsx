@@ -7,6 +7,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import type { TopListing } from "@/types/analytics";
 import { LISTING_STATUS_LABELS, LISTING_STATUS_VARIANTS, formatPrice } from "@/utils/listingLabels";
 import { AdminIcon } from "../AdminIcon";
+import { listingPath } from "@/utils/listingPath";
 import { formatNumber } from "./format";
 
 const PENCIL = "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z";
@@ -54,7 +55,7 @@ export function TopListingsTable({ rows }: { rows: TopListing[] }) {
                   )}
                 </div>
                 <div className="chc-stats-title">
-                  <Link href={withLocale(`/annonces/${row.listingId}`)} className="fw-semibold text-reset d-block text-truncate">
+                  <Link href={withLocale(listingPath({ id: row.listingId, title: row.title }))} className="fw-semibold text-reset d-block text-truncate">
                     {row.title}
                   </Link>
                   <div className="small text-secondary text-truncate">

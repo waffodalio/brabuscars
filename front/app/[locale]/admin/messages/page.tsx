@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Alert from "react-bootstrap/Alert";
 import Badge from "react-bootstrap/Badge";
-import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Spinner from "react-bootstrap/Spinner";
@@ -11,6 +10,7 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { contactService } from "@/services/contactService";
 import type { ContactMessage } from "@/types/contact";
 import { errorMessage } from "@/utils/errors";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { INTL_LOCALES } from "@/i18n/locales";
 
 export default function AdminMessagesPage() {
@@ -53,7 +53,6 @@ export default function AdminMessagesPage() {
   }
 
   async function handleDelete(message: ContactMessage) {
-    if (!window.confirm(`Supprimer le message de ${message.name} ?`)) return;
     await run(message.id, () => contactService.remove(message.id));
   }
 
@@ -121,15 +120,16 @@ export default function AdminMessagesPage() {
                       )
                     }
                   />
-                  <Button
-                    size="sm"
-                    variant="outline-danger"
+                  <ConfirmButton
                     className="ms-auto"
                     disabled={pendingId === message.id}
-                    onClick={() => handleDelete(message)}
+                    message={<>Supprimer le message de {message.name} ?</>}
+                    confirmLabel="Oui, supprimer"
+                    cancelLabel="Non"
+                    onConfirm={() => handleDelete(message)}
                   >
                     Supprimer
-                  </Button>
+                  </ConfirmButton>
                 </div>
               </Card.Body>
             </Card>

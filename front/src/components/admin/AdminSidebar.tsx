@@ -33,6 +33,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/annonces", label: "Annonces", icon: ADMIN_ICONS.listing },
       { href: "/admin/annonces/nouvelle", label: "Nouvelle annonce", icon: ADMIN_ICONS.plus },
+      { href: "/admin/ventes", label: "Facturation", icon: ADMIN_ICONS.invoice },
     ],
   },
   {

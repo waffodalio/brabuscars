@@ -7,7 +7,7 @@
 # Configuration (Settings → Secrets and variables → Actions) :
 #   secrets   : DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS
 #               (communs : préprod et prod partagent le serveur)
-#   variables : SITE_URL_PREPROD / SITE_URL_PROD (ex. https://preprod.chcars.fr),
+#   variables : SITE_URL_PREPROD / SITE_URL_PROD (ex. https://preprod.brabuscars.be),
 #               DEPLOY_PATH_PREPROD / DEPLOY_PATH_PROD (/opt/chcars-preprod,
 #               /opt/chcars-prod), DEPLOY_PORT (port SSH du serveur, obligatoire)
 name: Deploy

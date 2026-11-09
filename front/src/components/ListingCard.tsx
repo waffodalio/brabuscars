@@ -9,6 +9,7 @@ import { VehicleSpecs } from "@/components/VehicleSpecs";
 import { useLanguage } from "@/context/LanguageContext";
 import type { Listing } from "@/types/listing";
 import { LISTING_STATUS_VARIANTS, formatPrice } from "@/utils/listingLabels";
+import { listingPath } from "@/utils/listingPath";
 import { vehicleTitle } from "@/utils/vehicleLabels";
 
 /** Listing summary used in the listings and favourites grids. */
@@ -103,7 +104,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
         <div className="chc-price mb-1">{formatPrice(listing.price, locale)}</div>
         <Card.Title className="h6 fw-semibold mb-1">
           <Link
-            href={withLocale(`/annonces/${listing.id}`)}
+            href={withLocale(listingPath(listing))}
             className="text-reset stretched-link"
           >
             {listing.title}

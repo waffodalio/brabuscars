@@ -126,8 +126,19 @@ export const listingService = {
     return toListingResponse(await loadOrFail(id));
   },
 
+  /**
+   * Deletes a listing and its photos. Refused while reservations are in
+   * progress on it: deleting would silently remove the customers' requests
+   * (cascade) — they must be declined / cancelled first, which tells them.
+   */
   async remove(id: number): Promise<void> {
     await loadOrFail(id); // 404 if missing
+    const open = await reservationService.countOpenForListing(id);
+    if (open > 0) {
+      throw ApiError.conflict(
+        `${open} reservation(s) in progress on this listing: decline or cancel them first`,
+      );
+    }
     await listingImageService.purgeForListing(id); // delete image files first
     const result = await listingRepository.delete({ id });
     if (!result.affected) {

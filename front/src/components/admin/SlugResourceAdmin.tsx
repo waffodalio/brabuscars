@@ -8,6 +8,7 @@ import Spinner from "react-bootstrap/Spinner";
 import Table from "react-bootstrap/Table";
 import { AdminFormModal } from "@/components/admin/AdminFormModal";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { errorMessage } from "@/utils/errors";
 
 interface SlugRow {
@@ -100,7 +101,6 @@ export function SlugResourceAdmin<T extends SlugRow>({
   }
 
   async function handleDelete(row: T) {
-    if (!window.confirm(`Supprimer « ${row.name} » ?`)) return;
     try {
       await remove(row.id);
       load();
@@ -152,13 +152,14 @@ export function SlugResourceAdmin<T extends SlugRow>({
                       >
                         Modifier
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline-danger"
-                        onClick={() => handleDelete(row)}
+                      <ConfirmButton
+                        message={<>Supprimer « {row.name} » ?</>}
+                        confirmLabel="Oui, supprimer"
+                        cancelLabel="Non"
+                        onConfirm={() => handleDelete(row)}
                       >
                         Supprimer
-                      </Button>
+                      </ConfirmButton>
                     </td>
                   </tr>
                 ))}

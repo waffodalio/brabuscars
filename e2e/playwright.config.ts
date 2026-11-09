@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * End-to-end tests against an already deployed environment (preprod in CI).
  *
- *   E2E_BASE_URL=https://preprod.chcars.fr npm test
+ *   E2E_BASE_URL=https://preprod.brabuscars.be npm test
  *
  * Front and API share one origin behind the reverse proxy (`deploy/`), so
  * API calls go to `${E2E_BASE_URL}/api`.

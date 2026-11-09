@@ -11,6 +11,7 @@ import { favoriteRouter } from "./favorite.routes";
 import { contactRouter } from "./contact.routes";
 import { analyticsRouter } from "./analytics.routes";
 import { reservationRouter } from "./reservation.routes";
+import { saleRouter } from "./sale.routes";
 
 /**
  * Root API router. Every resource router is mounted here; the whole tree is
@@ -30,3 +31,4 @@ apiRouter.use("/favorites", favoriteRouter);
 apiRouter.use("/contact", contactRouter);
 apiRouter.use("/analytics", analyticsRouter);
 apiRouter.use("/reservations", reservationRouter);
+apiRouter.use("/sales", saleRouter);

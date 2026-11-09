@@ -6,11 +6,13 @@ export interface ParsedPagePath {
 }
 
 const LOCALE_PREFIX = /^\/([a-z]{2})(?=\/|$)/;
-const LISTING_PATH = /^\/annonces\/(\d+)$/;
+/** `/annonces/12` or `/annonces/12-mercedes-benz-glc` (id + title words). */
+const LISTING_PATH = /^\/annonces\/(\d+)(?:-[a-z0-9-]*)?$/;
 
 /**
- * Splits `/fr/annonces/12` into `{ path: "/annonces/12", locale: "fr",
- * listingId: 12 }`. Returns `null` for back-office pages, which are never
+ * Splits `/fr/annonces/12-mercedes-benz-glc` into `{ path: "/annonces/12",
+ * locale: "fr", listingId: 12 }` — the title words are dropped so a listing's
+ * views add up whatever its address said. Returns `null` for back-office pages, which are never
  * measured (admins browsing their own back-office would skew the figures).
  */
 export function parsePagePath(pathname: string): ParsedPagePath | null {
@@ -23,7 +25,7 @@ export function parsePagePath(pathname: string): ParsedPagePath | null {
 
   const listingMatch = LISTING_PATH.exec(path);
   return {
-    path,
+    path: listingMatch ? `/annonces/${listingMatch[1]}` : path,
     locale,
     listingId: listingMatch ? Number(listingMatch[1]) : null,
   };

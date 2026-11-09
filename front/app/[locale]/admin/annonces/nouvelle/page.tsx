@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
@@ -21,6 +20,7 @@ import { listingImageService } from "@/services/listingImageService";
 import { listingService } from "@/services/listingService";
 import type { CarModel } from "@/types/carModel";
 import type { Category } from "@/types/category";
+import { listingPath } from "@/utils/listingPath";
 import { errorMessage } from "@/utils/errors";
 
 export default function NewListingPage() {
@@ -81,7 +81,7 @@ export default function NewListingPage() {
         await listingImageService.upload(listing.id, files[i]);
       }
 
-      router.push(withLocale(`/annonces/${listing.id}`));
+      router.push(withLocale(listingPath(listing)));
     } catch (err) {
       setError(errorMessage(err, "Enregistrement impossible"));
       setSubmitting(false);
@@ -100,12 +100,6 @@ export default function NewListingPage() {
     <section style={{ maxWidth: 720 }}>
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <h1 className="h4 mb-0">Nouvelle annonce</h1>
-        <Link
-          href={withLocale("/admin/annonces")}
-          className="btn btn-sm btn-outline-secondary"
-        >
-          Retour
-        </Link>
       </div>
 
       {models.length === 0 && (

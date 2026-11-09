@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { notFound, useParams, useRouter, useSearchParams } from "next/navigation";
+import Alert from "react-bootstrap/Alert";
 import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
@@ -21,6 +22,10 @@ import { VehicleSpecs } from "@/components/VehicleSpecs";
 import { listingService } from "@/services/listingService";
 import type { Listing, ListingImage, ListingStatus } from "@/types/listing";
 import { RESERVATION_TYPES, type ReservationType } from "@/types/reservation";
+import { listingIdFromParam, listingPath } from "@/utils/listingPath";
+import { reservationService } from "@/services/reservationService";
+import { openReservationsByListing } from "@/utils/reservationAvailability";
+import { clearReservationIntent, peekReservationIntent } from "@/utils/reservationIntent";
 import { errorMessage } from "@/utils/errors";
 import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 import {
@@ -29,25 +34,32 @@ import {
   formatMileage,
   formatPrice,
 } from "@/utils/listingLabels";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { vehicleTitle } from "@/utils/vehicleLabels";
 
 const ALL_STATUSES: ListingStatus[] = ["draft", "published", "sold", "archived"];
 
 export default function ListingDetailPage() {
   const params = useParams<{ id: string }>();
-  const id = Number(params.id);
+  // `5-mercedes-benz-glc…`: only the leading id counts.
+  const parsedId = listingIdFromParam(params.id);
+  if (parsedId === null) notFound();
+  const id = parsedId;
   const router = useRouter();
   const { isAdmin } = useAuth();
   const company = useCompany();
   const { t, locale, withLocale } = useLanguage();
   const toMessage = usePublicErrorMessage();
   const searchParams = useSearchParams();
-  /** Back from the login page: reopen the reservation form that was asked for. */
+  /**
+   * Back from the login page: reopen the reservation form that was asked for
+   * (`?reserver=` after a redirect, or the stored intent after going back).
+   */
   const [reserveOnArrival] = useState<ReservationType | null>(() => {
     const value = searchParams.get(RESERVE_PARAM);
     return (RESERVATION_TYPES as readonly string[]).includes(value ?? "")
       ? (value as ReservationType)
-      : null;
+      : peekReservationIntent(id);
   });
 
   const [listing, setListing] = useState<Listing | null>(null);
@@ -56,6 +68,16 @@ export default function ListingDetailPage() {
   const [busy, setBusy] = useState(false);
   /** Full-size viewer open on the active photo. */
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  /** Admin: reservations in progress on this car (to flag status changes / deletion). */
+  const [openReservations, setOpenReservations] = useState(0);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    reservationService
+      .list()
+      .then((reservations) => setOpenReservations(openReservationsByListing(reservations).get(id) ?? 0))
+      .catch(() => setOpenReservations(0));
+  }, [isAdmin, id]);
 
   const load = useCallback(() => {
     setError("");
@@ -64,21 +86,27 @@ export default function ListingDetailPage() {
       .then((data) => {
         setListing(data);
         setActiveUrl(data.images[0]?.url ?? null);
+        // Old / bare-id / mistyped address, or `?reserver=…` already read:
+        // show the canonical one. History API rather than the router, so the
+        // page (and a reservation form opened on arrival) stays as it is.
+        const canonical = withLocale(listingPath(data));
+        if (window.location.pathname !== canonical || window.location.search) {
+          window.history.replaceState(null, "", canonical);
+        }
       })
       .catch((err: unknown) =>
         setError(toMessage(err, t.common.unknownError)),
       );
-  }, [id, t, toMessage]);
+  }, [id, t, toMessage, withLocale]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // Drop `?reserver=…` from the address once read (a reload must not reopen it).
+  // Read once: drop the stored intent (a reload must not reopen the form;
+  // `?reserver=…` leaves the address with the canonical-path fix above).
   useEffect(() => {
-    if (searchParams.has(RESERVE_PARAM)) router.replace(withLocale(`/annonces/${id}`));
-    // Run once, on arrival.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    clearReservationIntent();
   }, []);
 
   function setImages(images: ListingImage[]) {
@@ -107,7 +135,7 @@ export default function ListingDetailPage() {
     setError("");
     try {
       const updated = await listingService.updateStatus(id, status);
-      setListing(updated);
+      setListing((current) => ({ ...updated, reserved: current?.reserved }));
     } catch (err) {
       setError(errorMessage(err, "Action impossible"));
     } finally {
@@ -116,7 +144,6 @@ export default function ListingDetailPage() {
   }
 
   async function remove() {
-    if (!window.confirm("Supprimer définitivement cette annonce ?")) return;
     setBusy(true);
     try {
       await listingService.remove(id);
@@ -350,6 +377,15 @@ export default function ListingDetailPage() {
           <Card.Body>
             <h2 className="h6">Gérer l&apos;annonce</h2>
 
+            {openReservations > 0 && (
+              <Alert variant={listing.status === "published" ? "info" : "danger"} className="small py-2">
+                {listing.status === "published"
+                  ? `${openReservations} réservation${openReservations > 1 ? "s" : ""} en cours sur ce véhicule.`
+                  : `Ce véhicule n'est plus en vente mais a ${openReservations} réservation${openReservations > 1 ? "s" : ""} en cours : prévenez les clients.`}{" "}
+                <Link href={withLocale("/admin/reservations")}>Voir les réservations →</Link>
+              </Alert>
+            )}
+
             <ListingImagePanel
               listingId={listing.id}
               images={listing.images}
@@ -372,15 +408,16 @@ export default function ListingDetailPage() {
                   </Button>
                 ),
               )}
-              <Button
-                variant="outline-danger"
-                size="sm"
+              <ConfirmButton
                 className="ms-auto"
-                disabled={busy}
-                onClick={remove}
+                disabled={busy || openReservations > 0}
+                message="Supprimer définitivement cette annonce et ses photos ?"
+                confirmLabel="Oui, supprimer"
+                cancelLabel="Non"
+                onConfirm={remove}
               >
                 Supprimer l&apos;annonce
-              </Button>
+              </ConfirmButton>
             </div>
           </Card.Body>
         </Card>

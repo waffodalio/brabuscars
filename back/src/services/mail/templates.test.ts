@@ -10,7 +10,7 @@ describe("escapeHtml", () => {
 });
 
 describe("passwordResetEmail", () => {
-  const link = "https://chcars.fr/fr/reinitialiser-mot-de-passe?token=abc";
+  const link = "https://brabuscars.be/fr/reinitialiser-mot-de-passe?token=abc";
 
   it("carries the link in both text and HTML, in the requested language", () => {
     const mail = passwordResetEmail({
@@ -49,10 +49,10 @@ describe("passwordChangedEmail", () => {
       firstName: "Jan",
       locale: "nl",
       company: "BrabusCars",
-      contact: "contact@chcars.fr",
+      contact: "contact@brabuscars.be",
     });
     expect(mail.subject).toContain("gewijzigd");
-    expect(mail.text).toContain("contact@chcars.fr");
+    expect(mail.text).toContain("contact@brabuscars.be");
     expect(mail.html).not.toContain("<a ");
   });
 });

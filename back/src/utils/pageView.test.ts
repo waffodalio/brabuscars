@@ -18,6 +18,20 @@ describe("parsePagePath", () => {
     });
   });
 
+  it("drops the title words of a listing address", () => {
+    expect(parsePagePath("/fr/annonces/12-mercedes-benz-glc-300e")).toEqual({
+      path: "/annonces/12",
+      locale: "fr",
+      listingId: 12,
+    });
+    // Not a listing id: kept as a plain page.
+    expect(parsePagePath("/fr/annonces/mercedes")).toEqual({
+      path: "/annonces/mercedes",
+      locale: "fr",
+      listingId: null,
+    });
+  });
+
   it("maps the locale root to /", () => {
     expect(parsePagePath("/en")).toEqual({ path: "/", locale: "en", listingId: null });
     expect(parsePagePath("/nl/")).toEqual({ path: "/", locale: "nl", listingId: null });

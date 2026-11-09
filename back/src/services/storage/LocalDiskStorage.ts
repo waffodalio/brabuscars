@@ -1,27 +1,35 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { env } from "../../config/env";
 import type { StorageService } from "./StorageService";
 
-const ROOT = path.resolve(env.UPLOAD_DIR);
-
-/** Resolves a key inside the upload root, rejecting path-traversal attempts. */
-function resolveInRoot(key: string): string {
-  const target = path.resolve(ROOT, key);
-  if (target !== ROOT && !target.startsWith(ROOT + path.sep)) {
-    throw new Error(`Unsafe storage key: ${key}`);
-  }
-  return target;
-}
-
+/** Files on the local disk, under one root directory. */
 export class LocalDiskStorage implements StorageService {
+  private readonly root: string;
+
+  constructor(root: string) {
+    this.root = path.resolve(root);
+  }
+
+  /** Resolves a key inside the root, rejecting path-traversal attempts. */
+  private resolve(key: string): string {
+    const target = path.resolve(this.root, key);
+    if (target !== this.root && !target.startsWith(this.root + path.sep)) {
+      throw new Error(`Unsafe storage key: ${key}`);
+    }
+    return target;
+  }
+
   async save(key: string, data: Buffer): Promise<void> {
-    const target = resolveInRoot(key);
+    const target = this.resolve(key);
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, data);
   }
 
+  read(key: string): Promise<Buffer> {
+    return readFile(this.resolve(key));
+  }
+
   async delete(key: string): Promise<void> {
-    await rm(resolveInRoot(key), { force: true });
+    await rm(this.resolve(key), { force: true });
   }
 }

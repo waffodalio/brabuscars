@@ -125,10 +125,10 @@ const envSchema = z.object({
   /** SMTP key (Brevo: « Clés SMTP », not the API key). */
   SMTP_PASSWORD: optionalString,
   /**
-   * Sender shown to recipients, e.g. `BrabusCars <no-reply@chcars.fr>`. The
+   * Sender shown to recipients, e.g. `BrabusCars <no-reply@brabuscars.be>`. The
    * address must be a verified sender / domain in Brevo.
    */
-  MAIL_FROM: z.string().min(3).default("BrabusCars <no-reply@chcars.fr>"),
+  MAIL_FROM: z.string().min(3).default("BrabusCars <no-reply@brabuscars.be>"),
 
   // --- Uploads (image files stored on the local disk) ---
   /** Directory where image files are written. Keep it outside the repo and,
@@ -147,6 +147,12 @@ const envSchema = z.object({
     .default(15 * 1024 * 1024),
   /** Max images per listing. */
   MAX_IMAGES_PER_LISTING: z.coerce.number().int().positive().default(20),
+  /**
+   * Private directory for the purchase orders / invoices (PDF). Never served
+   * publicly — only downloaded through the admin API. Keep it apart from
+   * UPLOAD_DIR.
+   */
+  DOCUMENTS_DIR: z.string().min(1).default("documents"),
 
   // --- Company (single dealership: all vehicles are at this address) ---
   COMPANY_NAME: z.string().min(1).default("BrabusCars"),
@@ -155,7 +161,7 @@ const envSchema = z.object({
   COMPANY_CITY: z.string().min(1).default("Lyon"),
   COMPANY_COUNTRY: z.string().min(1).default("France"),
   COMPANY_PHONE: z.string().min(1).default("+33 4 78 00 00 00"),
-  COMPANY_EMAIL: z.string().email().default("contact@chcars.fr"),
+  COMPANY_EMAIL: z.string().email().default("contact@brabuscars.be"),
   COMPANY_HOURS: z
     .string()
     .min(1)
@@ -166,6 +172,10 @@ const envSchema = z.object({
   /** Social pages shown in the site footer — optional, hidden when empty. */
   COMPANY_INSTAGRAM_URL: optionalHttpsUrl,
   COMPANY_FACEBOOK_URL: optionalHttpsUrl,
+  /** Legal details printed on purchase orders and invoices — optional. */
+  COMPANY_VAT_NUMBER: optionalText,
+  COMPANY_IBAN: optionalText,
+  COMPANY_BIC: optionalText,
 }).refine(
   (value) => Boolean(value.GOOGLE_CLIENT_ID) === Boolean(value.GOOGLE_CLIENT_SECRET),
   {

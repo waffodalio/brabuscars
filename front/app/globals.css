@@ -2632,38 +2632,55 @@ a:hover .chc-logo-word::after {
    Reservations — listing page box, account list, admin tabs
    --------------------------------------------------------------------------- */
 .chc-reserve {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--bs-border-color);
+  margin-top: 1.1rem;
 }
-.chc-reserve-option {
+.chc-reserve-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+/* Reserve / test-drive tiles: big icon above a short word */
+.chc-reserve-tile {
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 0.75rem 0.9rem;
-  text-align: start;
-  color: var(--bs-body-color);
-  background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius-lg);
-  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
-}
-.chc-reserve-option:hover,
-.chc-reserve-option:focus-visible {
-  border-color: var(--bs-primary-border-subtle);
-  background: var(--bs-primary-bg-subtle);
-  transform: translateY(-1px);
-}
-.chc-reserve-icon {
-  flex: 0 0 auto;
-  display: inline-grid;
-  place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.6rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 5.25rem;
+  padding: 0.85rem 0.75rem;
+  border: 1px solid var(--bs-primary-border-subtle);
+  border-radius: var(--bs-border-radius-xl);
+  font-weight: 700;
   color: var(--bs-primary-text-emphasis);
+  background: var(--bs-body-bg);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+.chc-reserve-tile--main {
+  border-color: transparent;
   background: var(--bs-primary-bg-subtle);
+}
+.chc-reserve-tile:hover,
+.chc-reserve-tile:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--bs-primary);
+  box-shadow: 0 10px 22px -12px var(--chc-primary-glow);
+}
+.chc-reserve-tile svg {
+  color: var(--bs-primary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chc-reserve-tile {
+    transition: none;
+  }
+  .chc-reserve-tile:hover {
+    transform: none;
+  }
+}
+.chc-reserve-note {
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--bs-warning-text-emphasis);
 }
 .chc-reserve-done {
   display: inline-grid;
@@ -2726,11 +2743,123 @@ a:hover .chc-logo-word::after {
   border-radius: 0 var(--bs-border-radius) var(--bs-border-radius) 0;
 }
 
+
+/* "← Back" at the top of the pages (BackButton) */
+.chc-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  padding: 0.3rem 0.8rem 0.3rem 0.6rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  background: var(--bs-body-bg);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.chc-back:hover,
+.chc-back:focus-visible {
+  color: var(--bs-primary);
+  border-color: var(--bs-primary-border-subtle);
+}
+.chc-back svg {
+  transition: transform 0.15s ease;
+}
+.chc-back:hover svg {
+  transform: translateX(-2px);
+}
 @media (prefers-reduced-motion: reduce) {
-  .chc-reserve-option {
+  .chc-back,
+  .chc-back svg {
     transition: none;
   }
-  .chc-reserve-option:hover {
-    transform: none;
-  }
+}
+
+/* Confirmation bubble (ConfirmButton) */
+.chc-confirm {
+  --bs-popover-max-width: 19rem;
+  --bs-popover-border-color: var(--bs-border-color);
+  --bs-popover-border-radius: var(--bs-border-radius-lg);
+  --bs-popover-body-padding-x: 0.9rem;
+  --bs-popover-body-padding-y: 0.75rem;
+  box-shadow: var(--chc-shadow-md);
+}
+.chc-confirm-message {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--bs-emphasis-color);
+}
+
+/* Billing (admin/ventes) — progress steps, payment & document lists */
+.chc-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.88rem;
+  color: var(--bs-secondary-color);
+}
+.chc-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.chc-steps li + li::before {
+  content: "";
+  width: 1.75rem;
+  border-top: 2px solid var(--bs-border-color);
+  margin-right: 0.5rem;
+}
+.chc-steps-dot {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+}
+.chc-steps .is-current {
+  color: var(--bs-emphasis-color);
+  font-weight: 600;
+}
+.chc-steps .is-current .chc-steps-dot {
+  color: #fff;
+  border-color: transparent;
+  background-image: var(--chc-primary-gradient);
+}
+.chc-steps .is-done .chc-steps-dot {
+  color: var(--bs-success-text-emphasis);
+  border-color: transparent;
+  background: var(--bs-success-bg-subtle);
+}
+.chc-payments li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+.chc-payments li:last-child {
+  border-bottom: 0;
+}
+.chc-payment-form {
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--bs-border-color);
+}
+/* Square icon-only button (e.g. download a PDF) */
+.chc-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 0.6rem;
 }

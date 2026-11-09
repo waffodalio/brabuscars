@@ -12,6 +12,7 @@ import { brandService } from "@/services/brandService";
 import { carModelService } from "@/services/carModelService";
 import type { Brand } from "@/types/brand";
 import type { CarModel } from "@/types/carModel";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { errorMessage } from "@/utils/errors";
 
 export default function AdminCarModelsPage() {
@@ -77,7 +78,6 @@ export default function AdminCarModelsPage() {
   }
 
   async function handleDelete(model: CarModel) {
-    if (!window.confirm(`Supprimer le modèle « ${model.name} » ?`)) return;
     try {
       await carModelService.remove(model.id);
       load();
@@ -129,13 +129,14 @@ export default function AdminCarModelsPage() {
                       >
                         Modifier
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline-danger"
-                        onClick={() => handleDelete(model)}
+                      <ConfirmButton
+                        message={<>Supprimer le modèle « {model.name} » ?</>}
+                        confirmLabel="Oui, supprimer"
+                        cancelLabel="Non"
+                        onConfirm={() => handleDelete(model)}
                       >
                         Supprimer
-                      </Button>
+                      </ConfirmButton>
                     </td>
                   </tr>
                 ))}

@@ -19,6 +19,7 @@ import { listingService } from "@/services/listingService";
 import type { CarModel } from "@/types/carModel";
 import type { Category } from "@/types/category";
 import type { Listing } from "@/types/listing";
+import { listingPath } from "@/utils/listingPath";
 import { errorMessage } from "@/utils/errors";
 
 function formOf(listing: Listing): ListingFormState {
@@ -88,8 +89,8 @@ export default function EditListingPage() {
     }
     setSubmitting(true);
     try {
-      await listingService.update(id, payload);
-      router.push(withLocale(`/annonces/${id}`));
+      const updated = await listingService.update(id, payload);
+      router.push(withLocale(listingPath(updated)));
     } catch (err) {
       setError(errorMessage(err, "Enregistrement impossible"));
       setSubmitting(false);
@@ -109,16 +110,10 @@ export default function EditListingPage() {
         <h1 className="h4 mb-0">Modifier l&apos;annonce</h1>
         <div className="d-flex gap-2">
           <Link
-            href={withLocale(`/annonces/${id}`)}
+            href={withLocale(form ? listingPath({ id, title: form.title }) : `/annonces/${id}`)}
             className="btn btn-sm btn-outline-primary"
           >
             Photos &amp; publication
-          </Link>
-          <Link
-            href={withLocale("/admin/annonces")}
-            className="btn btn-sm btn-outline-secondary"
-          >
-            Retour
           </Link>
         </div>
       </div>

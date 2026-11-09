@@ -11,7 +11,7 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { takeReturnPath } from "@/utils/returnPath";
+import { takeReturn } from "@/utils/returnPath";
 import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
 
 export default function RegisterPage() {
@@ -40,7 +40,10 @@ export default function RegisterPage() {
     try {
       await register(form);
       // Home, or back where the visitor was sent here from (e.g. "reserve this car").
-      router.push(takeReturnPath() ?? withLocale("/"));
+      // Back where the visitor came from (see the login page), else home.
+      const target = takeReturn();
+      if (target?.previous) router.back();
+      else router.replace(target?.path ?? withLocale("/"));
     } catch (err) {
       setError(toMessage(err, t.auth.register.error, {
           409: t.auth.register.emailTaken,

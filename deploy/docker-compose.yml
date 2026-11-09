@@ -64,25 +64,31 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      MAIL_FROM: ${MAIL_FROM:-BrabusCars <no-reply@chcars.fr>}
+      MAIL_FROM: ${MAIL_FROM:-BrabusCars <no-reply@brabuscars.be>}
       UPLOAD_DIR: /app/uploads
       PUBLIC_UPLOADS_URL: https://${SITE_DOMAIN}/uploads
+      # Bons de commande / factures : volume privé, jamais servi par nginx.
+      DOCUMENTS_DIR: /app/documents
       COMPANY_NAME: ${COMPANY_NAME:-BrabusCars}
       COMPANY_ADDRESS: ${COMPANY_ADDRESS:-12 avenue de l'Automobile}
       COMPANY_POSTAL_CODE: ${COMPANY_POSTAL_CODE:-69003}
       COMPANY_CITY: ${COMPANY_CITY:-Lyon}
       COMPANY_COUNTRY: ${COMPANY_COUNTRY:-France}
       COMPANY_PHONE: ${COMPANY_PHONE:-+33 4 78 00 00 00}
-      COMPANY_EMAIL: ${COMPANY_EMAIL:-contact@chcars.fr}
+      COMPANY_EMAIL: ${COMPANY_EMAIL:-contact@brabuscars.be}
       COMPANY_HOURS: ${COMPANY_HOURS:-Du lundi au samedi, 9h–19h}
       COMPANY_HOURS_EN: ${COMPANY_HOURS_EN:-}
       COMPANY_HOURS_NL: ${COMPANY_HOURS_NL:-}
       COMPANY_INSTAGRAM_URL: ${COMPANY_INSTAGRAM_URL:-}
       COMPANY_FACEBOOK_URL: ${COMPANY_FACEBOOK_URL:-}
+      COMPANY_VAT_NUMBER: ${COMPANY_VAT_NUMBER:-}
+      COMPANY_IBAN: ${COMPANY_IBAN:-}
+      COMPANY_BIC: ${COMPANY_BIC:-}
     ports:
       - "127.0.0.1:${BACK_PORT:-3011}:4000"
     volumes:
       - uploads:/app/uploads
+      - documents:/app/documents
 
   front:
     image: ${IMAGE_FRONT:?}:${IMAGE_TAG:?}
@@ -96,3 +102,4 @@ services:
 volumes:
   db_data:
   uploads:
+  documents:

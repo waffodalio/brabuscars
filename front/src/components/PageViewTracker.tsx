@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useCookieConsent } from "@/context/CookieConsentContext";
 import { analyticsService } from "@/services/analyticsService";
+import { pageKey } from "@/utils/listingPath";
 
 /**
  * Reports each public page displayed to the internal audience measurement —
@@ -15,13 +16,18 @@ export function PageViewTracker() {
   const pathname = usePathname();
   const { consent } = useCookieConsent();
   const allowed = consent?.analytics === true;
-  /** Last path sent: avoids a double count when React re-runs the effect. */
+  /**
+   * Last page sent: avoids a double count when React re-runs the effect, or
+   * when only the words of a listing address are fixed (`/annonces/5` →
+   * `/annonces/5-mercedes…`), which is the same page.
+   */
   const lastTracked = useRef<string | null>(null);
 
   useEffect(() => {
     if (!allowed || pathname.split("/")[2] === "admin") return;
-    if (lastTracked.current === pathname) return;
-    lastTracked.current = pathname;
+    const key = pageKey(pathname);
+    if (lastTracked.current === key) return;
+    lastTracked.current = key;
     analyticsService.trackPageView(pathname).catch(() => {
       /* measurement is best-effort */
     });

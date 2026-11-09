@@ -178,6 +178,10 @@ export const reservationService = {
     if (!canMoveTo(reservation.status, dto.status)) {
       throw ApiError.conflict(`A ${reservation.status} request cannot become ${dto.status}`);
     }
+    // Sold, archived or taken offline meanwhile: nothing left to confirm.
+    if (dto.status === "confirmed" && !isPublished(reservation.listing)) {
+      throw ApiError.conflict("This vehicle is no longer for sale");
+    }
 
     const changes: Partial<Reservation> = {
       status: dto.status,
@@ -255,6 +259,11 @@ export const reservationService = {
   async remove(id: number): Promise<void> {
     const result = await reservationRepository.delete({ id });
     if (!result.affected) throw ApiError.notFound(`Reservation ${id} not found`);
+  },
+
+  /** Requests in progress on a listing (see the repository). */
+  countOpenForListing(listingId: number): Promise<number> {
+    return reservationRepository.countOpenForListing(listingId);
   },
 
   /** Listing ids, among these, currently held for a customer. */

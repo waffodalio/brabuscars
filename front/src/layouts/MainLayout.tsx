@@ -4,11 +4,13 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AppNavbar } from "@/components/AppNavbar";
 import { AppFooter } from "@/components/AppFooter";
+import { BackButton, NavigationTracker } from "@/components/BackButton";
 import { AdminFooter } from "@/components/admin/AdminFooter";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { ReturnAfterLogin } from "@/components/ReturnAfterLogin";
+import { pageKey } from "@/utils/listingPath";
 
 /**
  * Application shell shared by every page: top navigation, centered content
@@ -23,10 +25,11 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const isAdminSection = pathname.split("/")[2] === "admin";
   const content = (
     <div
-      key={pathname}
+      key={pageKey(pathname)}
       className="container chc-animate-in"
       style={{ maxWidth: 1140 }}
     >
+      <BackButton />
       {children}
     </div>
   );
@@ -53,6 +56,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
       <CookieConsentBanner />
       <PageViewTracker />
       <ReturnAfterLogin />
+      <NavigationTracker />
     </>
   );
 }

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 /**
  * Full account lifecycle for a throwaway `user`. Each run creates one account
- * (`e2e+<timestamp>@chcars.test`) on the target environment — run against
+ * (`e2e+<timestamp>@brabuscars.test`) on the target environment — run against
  * preprod, never against production.
  */
 test.describe("Authentification", () => {
@@ -11,7 +11,7 @@ test.describe("Authentification", () => {
   test("inscription, déconnexion puis reconnexion", async ({
     page,
   }, testInfo) => {
-    const email = `e2e+${Date.now()}-${testInfo.project.name}@chcars.test`;
+    const email = `e2e+${Date.now()}-${testInfo.project.name}@brabuscars.test`;
     const password = "E2e-password-123";
 
     await page.goto("/fr/inscription");
@@ -40,7 +40,7 @@ test.describe("Authentification", () => {
 
   test("un mauvais mot de passe est refusé", async ({ page }) => {
     await page.goto("/fr/connexion");
-    await page.getByLabel("Adresse e-mail", { exact: true }).fill("inconnu@chcars.test");
+    await page.getByLabel("Adresse e-mail", { exact: true }).fill("inconnu@brabuscars.test");
     await page.getByLabel("Mot de passe", { exact: true }).fill("mauvais-mot-de-passe");
     await page.getByRole("button", { name: "Se connecter" }).click();
     await expect(page.getByRole("alert")).toBeVisible();
@@ -50,7 +50,7 @@ test.describe("Authentification", () => {
   test("« Mon compte » : profil et réservations, sans formulaire de mot de passe", async ({
     page,
   }, testInfo) => {
-    const email = `e2e+account-${Date.now()}-${testInfo.project.name}@chcars.test`;
+    const email = `e2e+account-${Date.now()}-${testInfo.project.name}@brabuscars.test`;
 
     await page.goto("/fr/inscription");
     await page.getByLabel("Prénom", { exact: true }).fill("E2E");
@@ -76,7 +76,7 @@ test.describe("Authentification", () => {
     await expect(page).toHaveURL(/\/fr\/mot-de-passe-oublie/);
     await page
       .getByLabel("Adresse e-mail", { exact: true })
-      .fill(`inconnu-${Date.now()}@chcars.test`);
+      .fill(`inconnu-${Date.now()}@brabuscars.test`);
     await page.getByRole("button", { name: "Envoyer le lien" }).click();
     await expect(page.getByRole("status")).toContainText(
       "Si un compte existe avec cette adresse",

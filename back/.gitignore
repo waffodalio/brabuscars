@@ -6,6 +6,8 @@ dist/
 
 # images téléversées (UPLOAD_DIR)
 uploads/
+# bons de commande et factures (DOCUMENTS_DIR, privé)
+documents/
 
 # env — jamais versionnés (voir README pour le contenu attendu)
 .env

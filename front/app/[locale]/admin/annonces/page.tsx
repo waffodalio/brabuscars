@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Alert from "react-bootstrap/Alert";
 import Badge from "react-bootstrap/Badge";
-import Button from "react-bootstrap/Button";
 import Dropdown from "react-bootstrap/Dropdown";
 import Spinner from "react-bootstrap/Spinner";
 import Table from "react-bootstrap/Table";
@@ -18,6 +17,10 @@ import {
   LISTING_STATUS_VARIANTS,
   formatPrice,
 } from "@/utils/listingLabels";
+import { ConfirmButton } from "@/components/ConfirmButton";
+import { reservationService } from "@/services/reservationService";
+import { openReservationsByListing } from "@/utils/reservationAvailability";
+import { listingPath } from "@/utils/listingPath";
 import { vehicleTitle } from "@/utils/vehicleLabels";
 
 export default function AdminListingsPage() {
@@ -27,13 +30,16 @@ export default function AdminListingsPage() {
     "loading",
   );
   const [listError, setListError] = useState("");
+  /** Reservations in progress per listing, to flag the risky actions. */
+  const [openCounts, setOpenCounts] = useState<Map<number, number>>(new Map());
+  const [warning, setWarning] = useState<{ title: string; count: number } | null>(null);
 
   const load = useCallback(() => {
     setStatus("loading");
-    listingService
-      .list()
-      .then((listingList) => {
+    Promise.all([listingService.list(), reservationService.list().catch(() => [])])
+      .then(([listingList, reservations]) => {
         setListings(listingList);
+        setOpenCounts(openReservationsByListing(reservations));
         setStatus("ready");
       })
       .catch((err: unknown) => {
@@ -49,6 +55,9 @@ export default function AdminListingsPage() {
   async function changeStatus(listing: Listing, next: Listing["status"]) {
     try {
       await listingService.updateStatus(listing.id, next);
+      // No longer for sale while customers still wait: say so.
+      const count = openCounts.get(listing.id) ?? 0;
+      setWarning(next !== "published" && count > 0 ? { title: listing.title, count } : null);
       load();
     } catch (err) {
       setListError(errorMessage(err, "Action impossible"));
@@ -56,7 +65,6 @@ export default function AdminListingsPage() {
   }
 
   async function handleDelete(listing: Listing) {
-    if (!window.confirm(`Supprimer l'annonce « ${listing.title} » ?`)) return;
     try {
       await listingService.remove(listing.id);
       load();
@@ -81,6 +89,13 @@ export default function AdminListingsPage() {
       {status === "ready" && (
         <>
           <ErrorAlert message={listError} />
+          {warning && (
+            <Alert variant="warning" dismissible onClose={() => setWarning(null)}>
+              « {warning.title} » n&apos;est plus en vente mais a {warning.count} réservation
+              {warning.count > 1 ? "s" : ""} en cours.{" "}
+              <Link href={withLocale("/admin/reservations")}>Prévenir les clients →</Link>
+            </Alert>
+          )}
           {listings.length === 0 ? (
             <Alert variant="info">
               Aucune annonce. Créez-en une avec « Nouvelle annonce ».
@@ -102,7 +117,7 @@ export default function AdminListingsPage() {
                   <tr key={listing.id}>
                     <td data-label="#">{listing.id}</td>
                     <td data-label="Titre">
-                      <Link href={withLocale(`/annonces/${listing.id}`)}>
+                      <Link href={withLocale(listingPath(listing))}>
                         {listing.title}
                       </Link>
                     </td>
@@ -114,6 +129,15 @@ export default function AdminListingsPage() {
                       <Badge bg={LISTING_STATUS_VARIANTS[listing.status]}>
                         {LISTING_STATUS_LABELS[listing.status]}
                       </Badge>
+                      {(openCounts.get(listing.id) ?? 0) > 0 && (
+                        <Link
+                          href={withLocale("/admin/reservations")}
+                          className={`badge ms-1 text-decoration-none ${listing.status === "published" ? "text-bg-info" : "text-bg-danger"}`}
+                          title="Réservations en cours sur ce véhicule"
+                        >
+                          {openCounts.get(listing.id)} résa
+                        </Link>
+                      )}
                     </td>
                     <td data-label="" className="text-end text-nowrap">
                       <Dropdown className="d-inline-block me-2">
@@ -134,7 +158,7 @@ export default function AdminListingsPage() {
                         </Dropdown.Menu>
                       </Dropdown>
                       <Link
-                        href={withLocale(`/annonces/${listing.id}`)}
+                        href={withLocale(listingPath(listing))}
                         className="btn btn-sm btn-outline-primary me-2"
                       >
                         Photos
@@ -145,13 +169,23 @@ export default function AdminListingsPage() {
                       >
                         Modifier
                       </Link>
-                      <Button
-                        size="sm"
-                        variant="outline-danger"
-                        onClick={() => handleDelete(listing)}
-                      >
-                        Supprimer
-                      </Button>
+                      {(openCounts.get(listing.id) ?? 0) > 0 ? (
+                        // Deleting would silently drop the customers' requests (refused by the API too).
+                        <span title={`${openCounts.get(listing.id)} réservation(s) en cours : refusez ou annulez-les d'abord`}>
+                          <button type="button" className="btn btn-sm btn-outline-danger" disabled>
+                            Supprimer
+                          </button>
+                        </span>
+                      ) : (
+                        <ConfirmButton
+                          message={<>Supprimer l&apos;annonce « {listing.title} » ?</>}
+                          confirmLabel="Oui, supprimer"
+                          cancelLabel="Non"
+                          onConfirm={() => handleDelete(listing)}
+                        >
+                          Supprimer
+                        </ConfirmButton>
+                      )}
                     </td>
                   </tr>
                 ))}
