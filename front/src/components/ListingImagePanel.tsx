@@ -9,8 +9,31 @@ import { listingImageService } from "@/services/listingImageService";
 import type { ListingImage } from "@/types/listing";
 import { errorMessage } from "@/utils/errors";
 
+/** Where the gallery lives: a listing's photos, or a garage-register car's. */
+export interface ImageGalleryApi {
+  list: () => Promise<ListingImage[]>;
+  upload: (file: File) => Promise<unknown>;
+  update: (imageId: number, input: { isCover?: boolean }) => Promise<unknown>;
+  remove: (imageId: number) => Promise<unknown>;
+}
+
+/** The gallery of a listing (`/listings/:id/images`). */
+export function listingGallery(listingId: number): ImageGalleryApi {
+  return {
+    list: () => listingImageService.list(listingId),
+    upload: (file) => listingImageService.upload(listingId, file),
+    update: (imageId, input) => listingImageService.update(listingId, imageId, input),
+    remove: (imageId) => listingImageService.remove(listingId, imageId),
+  };
+}
+
 interface ListingImagePanelProps {
-  listingId: number;
+  /** A listing's gallery… */
+  listingId?: number;
+  /** …or any other one (a stock car's photos). */
+  api?: ImageGalleryApi;
+  /** Section title (default « Photos »). */
+  title?: string;
   images: ListingImage[];
   canManage: boolean;
   /** Called with the fresh list after any change. */
@@ -24,16 +47,19 @@ interface ListingImagePanelProps {
  */
 export function ListingImagePanel({
   listingId,
+  api: givenApi,
+  title = "Photos",
   images,
   canManage,
   onChange,
 }: ListingImagePanelProps) {
+  const api = givenApi ?? listingGallery(listingId ?? 0);
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   async function refresh() {
-    onChange(await listingImageService.list(listingId));
+    onChange(await api.list());
   }
 
   async function run(action: () => Promise<unknown>) {
@@ -58,7 +84,7 @@ export function ListingImagePanel({
     setError("");
     try {
       for (const file of files) {
-        await listingImageService.upload(listingId, file);
+        await api.upload(file);
       }
       await refresh();
     } catch (err) {
@@ -70,7 +96,7 @@ export function ListingImagePanel({
 
   return (
     <section className="mt-4">
-      <h2 className="h5">Photos</h2>
+      {title && <h2 className="h5">{title}</h2>}
 
       <ErrorAlert message={error} />
 
@@ -99,11 +125,7 @@ export function ListingImagePanel({
                         className="p-0"
                         disabled={busy}
                         onClick={() =>
-                          run(() =>
-                            listingImageService.update(listingId, image.id, {
-                              isCover: true,
-                            }),
-                          )
+                          run(() => api.update(image.id, { isCover: true }))
                         }
                       >
                         Couverture
@@ -115,9 +137,7 @@ export function ListingImagePanel({
                       className="p-0 text-danger"
                       disabled={busy}
                       onClick={() =>
-                        run(() =>
-                          listingImageService.remove(listingId, image.id),
-                        )
+                        run(() => api.remove(image.id))
                       }
                     >
                       Supprimer

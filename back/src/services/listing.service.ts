@@ -7,11 +7,17 @@ import type {
 import { listingRepository } from "../repositories/listing.repository";
 import { carModelRepository } from "../repositories/carModel.repository";
 import { categoryRepository } from "../repositories/category.repository";
+import { saleRepository } from "../repositories/sale.repository";
+import { markListingVehicleSold, stockVehicleRepository } from "../repositories/stockVehicle.repository";
+import { todayInBrussels } from "../utils/stockRules";
+import { isInGarage, listingStatusProblem, reopensVehicle } from "../utils/stockListingRules";
+import { syncListingFromVehicle } from "./stockSync";
 import { ApiError } from "../utils/ApiError";
 import type { Actor } from "../utils/actor";
 import { toListingResponse, type ListingResponse } from "../utils/listingResponse";
 import { listingImageService } from "./listingImage.service";
 import { reservationService } from "./reservation.service";
+import { normalizeWarranty, uniqueValues } from "../utils/listingWarranty";
 
 /** A listing plus whether it is currently held for a customer. */
 export type PublicListing = ListingResponse & { reserved: boolean };
@@ -59,6 +65,12 @@ export const listingService = {
 
   async create(actor: Actor, dto: CreateListingDto): Promise<ListingResponse> {
     await assertModelExists(dto.modelId);
+    if (dto.stockVehicleId !== undefined) {
+      const vehicle = await stockVehicleRepository.findOneBy({ id: dto.stockVehicleId });
+      if (!vehicle) throw ApiError.badRequest(`Stock vehicle ${dto.stockVehicleId} does not exist`);
+      if (vehicle.listingId !== null) throw ApiError.conflict("This stock vehicle already has a listing");
+      if (!isInGarage(vehicle.status)) throw ApiError.conflict("This stock vehicle has left the garage");
+    }
     if (dto.categoryId != null) {
       await assertCategoryExists(dto.categoryId);
     }
@@ -78,9 +90,26 @@ export const listingService = {
         power: dto.power ?? null,
         doors: dto.doors ?? null,
         color: dto.color ?? null,
+        equipment: uniqueValues(dto.equipment ?? []),
+        euroNorm: dto.euroNorm ?? null,
+        co2: dto.co2 ?? null,
+        hasCarPass: dto.hasCarPass ?? false,
+        ...normalizeWarranty({
+          months: dto.warrantyMonths,
+          kind: dto.warrantyKind,
+          coverage: dto.warrantyCoverage,
+          custom: dto.warrantyCustom,
+          notes: dto.warrantyNotes,
+        }),
         status: "draft",
       }),
     );
+    if (dto.stockVehicleId !== undefined) {
+      await stockVehicleRepository.update({ id: dto.stockVehicleId }, { listingId: saved.id });
+      // Technical data and options exactly the car's, whatever the form sent.
+      const vehicle = await stockVehicleRepository.findOneBy({ id: dto.stockVehicleId });
+      if (vehicle) await syncListingFromVehicle(vehicle);
+    }
     return toListingResponse(await loadOrFail(saved.id));
   },
 
@@ -106,6 +135,29 @@ export const listingService = {
     if (dto.power !== undefined) listing.power = dto.power;
     if (dto.doors !== undefined) listing.doors = dto.doors;
     if (dto.color !== undefined) listing.color = dto.color;
+    if (dto.equipment !== undefined) listing.equipment = uniqueValues(dto.equipment);
+    if (dto.euroNorm !== undefined) listing.euroNorm = dto.euroNorm;
+    if (dto.co2 !== undefined) listing.co2 = dto.co2;
+    if (dto.hasCarPass !== undefined) listing.hasCarPass = dto.hasCarPass;
+    const warrantyTouched =
+      dto.warrantyMonths !== undefined ||
+      dto.warrantyKind !== undefined ||
+      dto.warrantyCoverage !== undefined ||
+      dto.warrantyCustom !== undefined ||
+      dto.warrantyNotes !== undefined;
+    if (warrantyTouched) {
+      // Fields left out keep their current value; the whole warranty is then re-checked.
+      Object.assign(
+        listing,
+        normalizeWarranty({
+          months: dto.warrantyMonths !== undefined ? dto.warrantyMonths : listing.warrantyMonths,
+          kind: dto.warrantyKind !== undefined ? dto.warrantyKind : listing.warrantyKind,
+          coverage: dto.warrantyCoverage !== undefined ? dto.warrantyCoverage : listing.warrantyCoverage,
+          custom: dto.warrantyCustom !== undefined ? dto.warrantyCustom : listing.warrantyCustom,
+          notes: dto.warrantyNotes !== undefined ? dto.warrantyNotes : listing.warrantyNotes,
+        }),
+      );
+    }
 
     await listingRepository.save(listing);
     return toListingResponse(await loadOrFail(id));
@@ -116,6 +168,17 @@ export const listingService = {
     status: ListingStatus,
   ): Promise<ListingResponse> {
     const listing = await loadOrFail(id);
+    const vehicle = await stockVehicleRepository.findOneBy({ listingId: id });
+    const invoiced =
+      (await saleRepository.existsBy({ listingId: id, status: "paid" })) ||
+      (vehicle !== null && (await saleRepository.existsBy({ stockVehicleId: vehicle.id, status: "paid" })));
+    const change = { current: listing.status, next: status, vehicleStatus: vehicle?.status ?? null, invoiced };
+    const problem = listingStatusProblem(change);
+    if (problem) throw ApiError.conflict(problem);
+    // Un-selling a car sold by hand (no invoice): the car is back in stock.
+    if (vehicle && reopensVehicle(change)) {
+      await stockVehicleRepository.update({ id: vehicle.id }, { status: "in_stock", exitDate: null, exitReason: null });
+    }
 
     listing.status = status;
     if (status === "published" && listing.publishedAt === null) {
@@ -123,6 +186,8 @@ export const listingService = {
     }
 
     await listingRepository.save(listing);
+    // Marked sold by hand: the garage register is told (its car leaves the stock).
+    if (status === "sold") await markListingVehicleSold(id, todayInBrussels());
     return toListingResponse(await loadOrFail(id));
   },
 
@@ -137,6 +202,14 @@ export const listingService = {
     if (open > 0) {
       throw ApiError.conflict(
         `${open} reservation(s) in progress on this listing: decline or cancel them first`,
+      );
+    }
+    // A purchase order or an invoice names this car: deleting the listing
+    // would cut that link (sale.listing_id → NULL). Archive it instead.
+    const documents = await saleRepository.documentNumbersForListing(id);
+    if (documents.length > 0) {
+      throw ApiError.conflict(
+        `This listing is on sale documents (${documents.join(", ")}): archive it instead of deleting it`,
       );
     }
     await listingImageService.purgeForListing(id); // delete image files first

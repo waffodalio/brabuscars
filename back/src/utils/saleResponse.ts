@@ -1,5 +1,8 @@
 import type { PaymentMethod, Sale, SaleDocumentKind, SaleStatus, VatRegime } from "../entities/Sale";
 import type { ListingStatus } from "../entities/Listing";
+import type { StockStatus } from "../entities/stockTypes";
+import { stockReference } from "./stockRules";
+import { stockVehicleLabel } from "./stockResponse";
 import {
   canDeletePayment,
   documentFilename,
@@ -15,6 +18,8 @@ export interface SaleResponse {
   status: SaleStatus;
   vatRegime: VatRegime;
   listing: { id: number; title: string; status: ListingStatus } | null;
+  /** Garage-register car sold here, if any. */
+  stockVehicle: { id: number; reference: string; label: string; status: StockStatus } | null;
   buyer: {
     name: string;
     company: string | null;
@@ -37,6 +42,8 @@ export interface SaleResponse {
     paidOn: string;
     method: PaymentMethod;
     reference: string | null;
+    /** Document this payment triggered (purchase order or invoice), if any. */
+    documentId: number | null;
     /** Can still be removed (entry mistake). */
     deletable: boolean;
   }[];
@@ -67,6 +74,14 @@ export function toSaleResponse(sale: Sale): SaleResponse {
     status: sale.status,
     vatRegime: sale.vatRegime,
     listing: sale.listing ? { id: sale.listing.id, title: sale.listing.title, status: sale.listing.status } : null,
+    stockVehicle: sale.stockVehicle
+      ? {
+          id: sale.stockVehicle.id,
+          reference: stockReference(sale.stockVehicle.id),
+          label: stockVehicleLabel(sale.stockVehicle),
+          status: sale.stockVehicle.status,
+        }
+      : null,
     buyer: {
       name: sale.buyerName,
       company: sale.buyerCompany,
@@ -102,6 +117,7 @@ export function toSaleResponse(sale: Sale): SaleResponse {
         paidOn: payment.paidOn,
         method: payment.method,
         reference: payment.reference,
+        documentId: payment.documentId,
         deletable: canDeletePayment(sale.status, payment.documentId),
       })),
     documents: [...(sale.documents ?? [])]

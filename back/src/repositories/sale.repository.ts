@@ -3,7 +3,7 @@ import { AppDataSource } from "../config/data-source";
 import { Sale, type SaleDocumentKind } from "../entities/Sale";
 import { SaleDocument } from "../entities/SaleDocument";
 
-const DETAIL_RELATIONS = { lines: true, payments: true, documents: true, listing: true } as const;
+const DETAIL_RELATIONS = { lines: true, payments: true, documents: true, listing: true, stockVehicle: { model: { brand: true } } } as const;
 const DETAIL_ORDER = {
   lines: { position: "ASC" },
   payments: { paidOn: "ASC", id: "ASC" },
@@ -20,9 +20,20 @@ export const saleRepository = AppDataSource.getRepository(Sale).extend({
   /** Every sale with what the list needs (lines and payments for the totals). */
   findAllForList(): Promise<Sale[]> {
     return this.find({
-      relations: { lines: true, payments: true, documents: true },
+      relations: { lines: true, payments: true, documents: true, listing: true, stockVehicle: { model: { brand: true } } },
       order: { createdAt: "DESC" },
     });
+  },
+
+  /** Numbers of the documents issued for sales of this listing (empty: none). */
+  async documentNumbersForListing(listingId: number): Promise<string[]> {
+    const rows = await this.createQueryBuilder("sale")
+      .innerJoin("sale.documents", "document")
+      .select("document.number", "number")
+      .where("sale.listing_id = :listingId", { listingId })
+      .orderBy("document.issued_at", "ASC")
+      .getRawMany<{ number: string }>();
+    return rows.map((row) => row.number);
   },
 
   /**

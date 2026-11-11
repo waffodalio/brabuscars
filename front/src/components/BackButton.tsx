@@ -14,6 +14,7 @@ function parentOf(pathname: string, locale: string): string {
   const rest = pathname.slice(`/${locale}`.length); // e.g. "/annonces/12"
   if (rest.startsWith("/admin/annonces/")) return `/${locale}/admin/annonces`;
   if (rest.startsWith("/admin/ventes/")) return `/${locale}/admin/ventes`;
+  if (rest.startsWith("/admin/stock/")) return `/${locale}/admin/stock`;
   if (rest.startsWith("/admin/")) return `/${locale}/admin`;
   if (rest.startsWith("/annonces/")) return `/${locale}/annonces`;
   if (rest === "/reinitialiser-mot-de-passe" || rest === "/mot-de-passe-oublie" || rest === "/inscription") {

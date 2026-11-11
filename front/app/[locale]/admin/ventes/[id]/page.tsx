@@ -33,6 +33,7 @@ import {
   VAT_REGIME_LABELS,
   formatDay,
   formatEuros,
+  saleReference,
   todayIso,
 } from "@/utils/saleLabels";
 
@@ -46,6 +47,7 @@ function toInput(sale: Sale): SaleInput {
   return {
     vatRegime: sale.vatRegime,
     listingId: sale.listing?.id ?? null,
+    stockVehicleId: sale.stockVehicle?.id ?? null,
     buyer: sale.buyer,
     vehicleVin: sale.vehicleVin,
     notes: sale.notes,
@@ -213,7 +215,7 @@ export default function SaleDetailPage() {
   const invoice = celebration?.documents.find((document) => document.kind === "invoice");
 
   return (
-    <section style={{ maxWidth: 1080 }}>
+    <section style={{ maxWidth: 1180 }}>
       {celebration &&
         createPortal(
         <>
@@ -226,7 +228,7 @@ export default function SaleDetailPage() {
             </span>
             <div className="flex-grow-1" style={{ minWidth: 0 }}>
               <div className="chc-sold-title">Vendu !</div>
-              <div className="text-truncate">{celebration.lines[0]?.description ?? `Dossier #${celebration.id}`}</div>
+              <div className="text-truncate">{celebration.lines[0]?.description ?? saleReference(celebration) ?? "Dossier"}</div>
               <div className="small text-secondary">
                 {celebration.buyer.name} · <span className="chc-num">{formatEuros(celebration.totals.total)}</span>
               </div>
@@ -246,31 +248,62 @@ export default function SaleDetailPage() {
           // Window-fixed, out of the page container (see Confetti).
           document.body,
         )}
-      <div className="d-flex flex-wrap align-items-center gap-3 mb-4">
-        <h1 className="h4 mb-0 me-2">Dossier de vente #{sale.id}</h1>
-        <Badge bg={SALE_STATUS_VARIANTS[sale.status]} text={sale.status === "ordered" ? "dark" : undefined}>
-          {SALE_STATUS_LABELS[sale.status]}
-        </Badge>
-        {sale.editable && !editing && (
-          <div className="ms-auto d-flex gap-2">
-            <Button size="sm" variant="outline-secondary" onClick={() => setEditing(true)}>
-              Modifier
-            </Button>
-            <ConfirmButton message="Supprimer ce brouillon ?" confirmLabel="Oui, supprimer" cancelLabel="Non" onConfirm={removeDraft}>
-              Supprimer
-            </ConfirmButton>
+      {/* Hero: reference, buyer & car, progress steps, paid ring */}
+      <header className={`chc-sale-hero chc-sale-hero--${sale.status}`}>
+        <div className="chc-sale-hero-main">
+          <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
+            <span className="chc-sale-hero-eyebrow">Dossier de vente</span>
+            <Badge bg={SALE_STATUS_VARIANTS[sale.status]} text={sale.status === "ordered" ? "dark" : undefined}>
+              {SALE_STATUS_LABELS[sale.status]}
+            </Badge>
           </div>
-        )}
-      </div>
+          <h1 className="chc-sale-hero-title">{saleReference(sale) ?? "Brouillon"}</h1>
+          <p className="chc-sale-hero-sub">
+            <strong>{sale.buyer.name}</strong>
+            {sale.buyer.company && ` · ${sale.buyer.company}`}
+            {sale.lines[0] && <> · {sale.lines[0].description.split(" — ")[0]}</>}
+          </p>
+          <ol className="chc-steps chc-steps--hero">
+            {STEPS.map((step, index) => (
+              <li key={step.key} className={index < stepIndex ? "is-done" : index === stepIndex ? "is-current" : undefined}>
+                <span className="chc-steps-dot" aria-hidden="true">{index < stepIndex ? "✓" : index + 1}</span>
+                {step.label}
+              </li>
+            ))}
+          </ol>
+        </div>
 
-      <ol className="chc-steps mb-5">
-        {STEPS.map((step, index) => (
-          <li key={step.key} className={index < stepIndex ? "is-done" : index === stepIndex ? "is-current" : undefined}>
-            <span className="chc-steps-dot" aria-hidden="true">{index < stepIndex ? "✓" : index + 1}</span>
-            {step.label}
-          </li>
-        ))}
-      </ol>
+        <div className="chc-sale-hero-side">
+          <div
+            className={`chc-sale-ring${progress >= 100 ? " is-full" : ""}`}
+            style={{ "--chc-progress": progress } as React.CSSProperties}
+            role="img"
+            aria-label={`Payé à ${progress} %`}
+          >
+            <span className="chc-sale-ring-value">
+              {progress}
+              <small>%</small>
+            </span>
+            <span className="chc-sale-ring-label">payé</span>
+          </div>
+          {sale.editable && !editing && (
+            <div className="d-flex gap-2">
+              <Button size="sm" variant="light" onClick={() => setEditing(true)}>
+                Modifier
+              </Button>
+              <ConfirmButton
+                variant="outline-light"
+                message="Supprimer ce brouillon ?"
+                confirmLabel="Oui, supprimer"
+                cancelLabel="Non"
+                onConfirm={removeDraft}
+              >
+                Supprimer
+              </ConfirmButton>
+            </div>
+          )}
+        </div>
+      </header>
 
       <ErrorAlert message={error} />
 
@@ -306,172 +339,253 @@ export default function SaleDetailPage() {
         </>
       ) : (
         <Row className="g-4">
-          {/* Amounts */}
-          <Col lg={5}>
-            <Card className="h-100">
-              <Card.Body className="p-3 p-md-4">
-                <h2 className="h6 mb-3">Montants</h2>
-                <div className="d-flex justify-content-between mb-1"><span>Total TVAC</span><strong className="chc-num">{formatEuros(sale.totals.total)}</strong></div>
-                {sale.vatRegime === "standard" && (
-                  <div className="small text-secondary">
-                    dont TVA 21 % : {formatEuros(sale.totals.vat)} (HTVA {formatEuros(sale.totals.net)})
-                  </div>
-                )}
-                <div className="d-flex justify-content-between mt-3 mb-1"><span>Encaissé</span><span className="chc-num">{formatEuros(sale.totals.paid)}</span></div>
-                <div className="d-flex justify-content-between fw-bold"><span>Reste à payer</span><span className="chc-num">{formatEuros(sale.totals.due)}</span></div>
-                <ProgressBar now={progress} variant={progress >= 100 ? "success" : "primary"} className="mt-4" aria-label={`Payé à ${progress} %`} />
-                <div className="small text-secondary mt-2">Payé à {progress} %</div>
-                <hr className="my-4" />
-                <div className="small text-secondary">{VAT_REGIME_LABELS[sale.vatRegime]}</div>
-                {sale.listing && (
-                  <div className="small mt-2">
-                    Annonce : <Link href={withLocale(listingPath(sale.listing))}>{sale.listing.title}</Link>
-                    {sale.listing.status === "sold" && <Badge bg="dark" className="ms-2">Vendue</Badge>}
-                  </div>
-                )}
-                {sale.vehicleVin && <div className="small mt-2">VIN : <span className="font-monospace">{sale.vehicleVin}</span></div>}
-              </Card.Body>
-            </Card>
-          </Col>
-
-          {/* Buyer */}
-          <Col lg={7}>
-            <Card className="h-100">
-              <Card.Body className="p-3 p-md-4">
-                <h2 className="h6 mb-3">Acheteur</h2>
-                <div className="fw-semibold fs-6 mb-1">
-                  {sale.buyer.name}
-                  {sale.buyer.company && <span className="text-secondary fw-normal"> · {sale.buyer.company}</span>}
-                </div>
-                <div className="small text-secondary">
-                  {[sale.buyer.address, [sale.buyer.postalCode, sale.buyer.city].filter(Boolean).join(" "), sale.buyer.country]
-                    .filter(Boolean)
-                    .join(", ") || "Adresse non renseignée"}
-                </div>
-                <div className="small mt-2">
-                  {sale.buyer.email && <a href={`mailto:${sale.buyer.email}`}>{sale.buyer.email}</a>}
-                  {sale.buyer.email && sale.buyer.phone && " · "}
-                  {sale.buyer.phone && <a href={`tel:${sale.buyer.phone.replace(/[^+0-9]/g, "")}`}>{sale.buyer.phone}</a>}
-                </div>
-                {sale.buyer.vatNumber && <div className="small mt-2">TVA : {sale.buyer.vatNumber}</div>}
-                {sale.notes && <p className="small mt-3 mb-0 chc-resa-message">{sale.notes}</p>}
-              </Card.Body>
-            </Card>
-          </Col>
-
-          {/* Lines */}
-          <Col xs={12}>
+          {/* Main column: what is sold, then the payments */}
+          <Col lg={8} className="d-flex flex-column gap-3 gap-lg-4">
             <Card>
               <Card.Body className="p-3 p-md-4">
-                <h2 className="h6 mb-3">Lignes</h2>
+                <div className="d-flex align-items-baseline justify-content-between gap-2 mb-3">
+                  <h2 className="h6 mb-0">Lignes</h2>
+                  {!sale.editable && (
+                    <span className="chc-sale-frozen" title="Un document a été émis : le contenu du dossier est figé.">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4" />
+                      </svg>
+                      Figé
+                    </span>
+                  )}
+                </div>
                 <Table responsive className="mb-0 align-middle chc-sale-lines">
                   <thead>
                     <tr>
                       <th>Désignation</th>
-                      <th className="text-end">Qté</th>
-                      <th className="text-end">Prix unit. TVAC</th>
+                      <th className="text-end d-none d-sm-table-cell">Qté</th>
+                      <th className="text-end d-none d-sm-table-cell">Prix unit. TVAC</th>
                       <th className="text-end">Total TVAC</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sale.lines.map((line) => (
                       <tr key={line.id}>
-                        <td>{line.description}</td>
-                        <td className="text-end chc-num">{line.quantity}</td>
-                        <td className="text-end chc-num">{formatEuros(line.unitPrice)}</td>
+                        <td className="fw-semibold">
+                          {line.description}
+                          {line.quantity > 1 && <span className="d-sm-none text-secondary fw-normal"> × {line.quantity}</span>}
+                        </td>
+                        <td className="text-end chc-num d-none d-sm-table-cell">{line.quantity}</td>
+                        <td className="text-end chc-num d-none d-sm-table-cell">{formatEuros(line.unitPrice)}</td>
                         <td className="text-end chc-num">{formatEuros(line.total)}</td>
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={3} className="text-end text-secondary d-none d-sm-table-cell">Total TVAC</td>
+                      <td className="text-end text-secondary d-sm-none">Total TVAC</td>
+                      <td className="text-end chc-num fw-bold fs-5 text-nowrap">{formatEuros(sale.totals.total)}</td>
+                    </tr>
+                  </tfoot>
                 </Table>
-                {!sale.editable && (
-                  <div className="small text-secondary mt-3">
-                    Un document a été émis : le contenu du dossier est figé.
+              </Card.Body>
+            </Card>
+
+            <Card>
+              <Card.Body className="p-3 p-md-4">
+                <h2 className="h6 mb-4">Paiements</h2>
+                {sale.payments.length === 0 ? (
+                  <p className="small text-secondary mb-4">
+                    Aucun paiement pour l&apos;instant. Une avance génère le bon de commande, le solde la facture.
+                  </p>
+                ) : (
+                  <ol className="chc-timeline">
+                    {sale.payments.map((payment) => {
+                      const document = sale.documents.find((item) => item.id === payment.documentId);
+                      return (
+                        <li key={payment.id} className="chc-timeline-item">
+                          <span className="chc-timeline-dot" aria-hidden="true" />
+                          <div className="chc-timeline-body">
+                            <div className="d-flex flex-wrap align-items-center gap-2">
+                              <span className="chc-timeline-amount chc-num">{formatEuros(payment.amount)}</span>
+                              {document && (
+                                <span className={`chc-doc-chip chc-doc-chip--${document.kind}`}>
+                                  → {document.number}
+                                </span>
+                              )}
+                              {payment.deletable && (
+                                <ConfirmButton
+                                  className="ms-auto"
+                                  variant="outline-secondary"
+                                  message="Supprimer ce paiement (erreur de saisie) ?"
+                                  confirmLabel="Oui, supprimer"
+                                  cancelLabel="Non"
+                                  onConfirm={() => run(() => saleService.deletePayment(sale.id, payment.id), "Suppression impossible")}
+                                >
+                                  Supprimer
+                                </ConfirmButton>
+                              )}
+                            </div>
+                            <div className="small text-secondary">
+                              {formatDay(payment.paidOn)} · {PAYMENT_METHOD_LABELS[payment.method]}
+                              {payment.reference && ` · ${payment.reference}`}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+                {sale.status === "paid" ? (
+                  <div className="chc-sale-settled">
+                    <span aria-hidden="true">✓</span> Dossier entièrement payé
+                  </div>
+                ) : (
+                  <div className="chc-sale-payment-box">
+                    <div className="fw-semibold mb-3">Encaisser un paiement</div>
+                    <PaymentForm key={sale.totals.due} sale={sale} onDone={paymentRecorded} />
                   </div>
                 )}
               </Card.Body>
             </Card>
           </Col>
 
-          {/* Payments */}
-          <Col lg={7}>
-            <Card className="h-100">
-              <Card.Body className="p-3 p-md-4">
-                <h2 className="h6 mb-3">Paiements</h2>
-                {sale.payments.length === 0 ? (
-                  <p className="small text-secondary mb-4">Aucun paiement enregistré.</p>
-                ) : (
-                  <ul className="list-unstyled mb-4 chc-payments">
-                    {sale.payments.map((payment) => (
-                      <li key={payment.id}>
-                        <span>
-                          <span className="fw-semibold chc-num">{formatEuros(payment.amount)}</span>
-                          <span className="small text-secondary">
-                            {" "}· {formatDay(payment.paidOn)} · {PAYMENT_METHOD_LABELS[payment.method]}
-                            {payment.reference && ` · ${payment.reference}`}
-                          </span>
-                        </span>
-                        {payment.deletable && (
-                          <ConfirmButton
-                            variant="outline-secondary"
-                            message="Supprimer ce paiement (erreur de saisie) ?"
-                            confirmLabel="Oui, supprimer"
-                            cancelLabel="Non"
-                            onConfirm={() => run(() => saleService.deletePayment(sale.id, payment.id), "Suppression impossible")}
-                          >
-                            Supprimer
-                          </ConfirmButton>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {sale.status === "paid" ? (
-                  <Alert variant="success" className="mb-0 py-2 small">Dossier entièrement payé.</Alert>
-                ) : (
-                  <PaymentForm key={sale.totals.due} sale={sale} onDone={paymentRecorded} />
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
+          {/* Side column (sticky): amounts, documents, buyer, vehicle */}
+          <Col lg={4}>
+            <div className="chc-sale-aside">
+              <Card>
+                <Card.Body className="p-3 p-md-4">
+                  <h2 className="h6 mb-3">Montants</h2>
+                  <dl className="chc-sale-amounts">
+                    <div>
+                      <dt>Total TVAC</dt>
+                      <dd className="chc-num">{formatEuros(sale.totals.total)}</dd>
+                    </div>
+                    {sale.vatRegime === "standard" && (
+                      <div className="is-sub">
+                        <dt>dont TVA 21 %</dt>
+                        <dd className="chc-num">{formatEuros(sale.totals.vat)}</dd>
+                      </div>
+                    )}
+                    <div>
+                      <dt>Encaissé</dt>
+                      <dd className="chc-num text-primary-emphasis">{formatEuros(sale.totals.paid)}</dd>
+                    </div>
+                    <div className="is-total">
+                      <dt>Reste à payer</dt>
+                      <dd className="chc-num">{formatEuros(sale.totals.due)}</dd>
+                    </div>
+                  </dl>
+                  <ProgressBar now={progress} className="chc-sale-bar" aria-hidden="true" />
+                </Card.Body>
+              </Card>
 
-          {/* Documents */}
-          <Col lg={5}>
-            <Card className="h-100">
-              <Card.Body className="p-3 p-md-4">
-                <h2 className="h6 mb-3">Documents</h2>
-                {sale.documents.length === 0 ? (
-                  <p className="small text-secondary mb-0">
-                    Le bon de commande sera généré au premier paiement (avance), la facture une fois tout payé.
-                  </p>
-                ) : (
-                  <ul className="list-unstyled mb-0 chc-payments">
-                    {sale.documents.map((document) => (
-                      <li key={document.id}>
-                        <span>
-                          <span className="fw-semibold">{DOCUMENT_KIND_LABELS[document.kind]}</span>{" "}
-                          <span className="small text-secondary">
-                            {document.number} · {new Date(document.issuedAt).toLocaleDateString("fr-BE")}
-                          </span>
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline-primary"
-                          className="chc-icon-btn"
-                          aria-label={`Télécharger ${document.number} (PDF)`}
+              <Card>
+                <Card.Body className="p-3 p-md-4">
+                  <h2 className="h6 mb-3">Documents</h2>
+                  {sale.documents.length === 0 ? (
+                    <p className="small text-secondary mb-0">
+                      Le bon de commande sera généré au premier paiement, la facture une fois tout payé.
+                    </p>
+                  ) : (
+                    <div className="d-flex flex-column gap-2">
+                      {sale.documents.map((document) => (
+                        <button
+                          key={document.id}
+                          type="button"
+                          className={`chc-doc-tile chc-doc-tile--${document.kind}`}
                           title={`Télécharger ${document.filename}`}
                           onClick={() => void download(document.id, document.filename)}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
-                          </svg>
-                        </Button>
+                          <span className="chc-doc-tile-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5" />
+                            </svg>
+                          </span>
+                          <span className="flex-grow-1 text-start" style={{ minWidth: 0 }}>
+                            <span className="d-block fw-semibold">{DOCUMENT_KIND_LABELS[document.kind]}</span>
+                            <span className="d-block small text-secondary">
+                              {document.number} · {new Date(document.issuedAt).toLocaleDateString("fr-BE")}
+                            </span>
+                          </span>
+                          <span className="chc-doc-tile-download" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+                            </svg>
+                          </span>
+                          <span className="visually-hidden">Télécharger {document.number} (PDF)</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
+
+              <Card>
+                <Card.Body className="p-3 p-md-4">
+                  <h2 className="h6 mb-3">Acheteur</h2>
+                  <div className="d-flex align-items-center gap-3 mb-2">
+                    <span className="chc-admin-avatar" aria-hidden="true">
+                      {sale.buyer.name
+                        .split(/\s+/)
+                        .map((part) => part[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="fw-semibold text-truncate">{sale.buyer.name}</div>
+                      {sale.buyer.company && <div className="small text-secondary text-truncate">{sale.buyer.company}</div>}
+                    </div>
+                  </div>
+                  <ul className="chc-sale-facts">
+                    <li>
+                      {[sale.buyer.address, [sale.buyer.postalCode, sale.buyer.city].filter(Boolean).join(" "), sale.buyer.country]
+                        .filter(Boolean)
+                        .join(", ") || "Adresse non renseignée"}
+                    </li>
+                    {sale.buyer.email && (
+                      <li>
+                        <a href={`mailto:${sale.buyer.email}`}>{sale.buyer.email}</a>
                       </li>
-                    ))}
+                    )}
+                    {sale.buyer.phone && (
+                      <li>
+                        <a href={`tel:${sale.buyer.phone.replace(/[^+0-9]/g, "")}`}>{sale.buyer.phone}</a>
+                      </li>
+                    )}
+                    {sale.buyer.vatNumber && <li>TVA : {sale.buyer.vatNumber}</li>}
                   </ul>
-                )}
-              </Card.Body>
-            </Card>
+                  {sale.notes && <p className="small mt-3 mb-0 chc-resa-message">{sale.notes}</p>}
+                </Card.Body>
+              </Card>
+
+              <Card>
+                <Card.Body className="p-3 p-md-4">
+                  <h2 className="h6 mb-3">Véhicule</h2>
+                  <ul className="chc-sale-facts">
+                    {sale.stockVehicle && (
+                      <li>
+                        Stock :{" "}
+                        <Link href={withLocale(`/admin/stock/${sale.stockVehicle.id}`)}>
+                          {sale.stockVehicle.reference} · {sale.stockVehicle.label}
+                        </Link>
+                      </li>
+                    )}
+                    {sale.listing ? (
+                      <li>
+                        <Link href={withLocale(listingPath(sale.listing))}>{sale.listing.title}</Link>
+                        {sale.listing.status === "sold" && <Badge bg="dark" className="ms-2">Vendue</Badge>}
+                      </li>
+                    ) : (
+                      <li className="text-secondary">Aucune annonce liée</li>
+                    )}
+                    {sale.vehicleVin && (
+                      <li>
+                        VIN <span className="font-monospace">{sale.vehicleVin}</span>
+                      </li>
+                    )}
+                    <li className="text-secondary">{VAT_REGIME_LABELS[sale.vatRegime]}</li>
+                  </ul>
+                </Card.Body>
+              </Card>
+            </div>
           </Col>
         </Row>
       )}

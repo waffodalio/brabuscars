@@ -25,6 +25,8 @@ export const companyController = {
         },
         instagramUrl: env.COMPANY_INSTAGRAM_URL ?? null,
         facebookUrl: env.COMPANY_FACEBOOK_URL ?? null,
+        // Legal mention in the footer (also printed on invoices); null when not set.
+        vatNumber: env.COMPANY_VAT_NUMBER ?? null,
       }),
     );
   },

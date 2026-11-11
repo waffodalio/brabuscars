@@ -17,6 +17,9 @@ import { useLanguage } from "@/context/LanguageContext";
 import { carModelService } from "@/services/carModelService";
 import { categoryService } from "@/services/categoryService";
 import { listingService } from "@/services/listingService";
+import { stockService } from "@/services/stockService";
+import type { StockVehicle } from "@/types/stock";
+import { StockVehicleSummary } from "@/components/admin/StockVehicleSummary";
 import type { CarModel } from "@/types/carModel";
 import type { Category } from "@/types/category";
 import type { Listing } from "@/types/listing";
@@ -37,6 +40,16 @@ function formOf(listing: Listing): ListingFormState {
     power: listing.power ? String(listing.power) : "",
     doors: listing.doors ? String(listing.doors) : "",
     color: listing.color ?? "",
+    equipment: listing.equipment ?? [],
+    euroNorm: listing.euroNorm ?? "",
+    co2: listing.co2 !== null ? String(listing.co2) : "",
+    hasCarPass: listing.hasCarPass,
+    warranty: listing.warrantyMonths !== null,
+    warrantyMonths: String(listing.warrantyMonths ?? 12),
+    warrantyKind: listing.warrantyKind ?? "dealer",
+    warrantyCoverage: listing.warrantyCoverage ?? [],
+    warrantyCustom: listing.warrantyCustom ?? [],
+    warrantyNotes: listing.warrantyNotes ?? "",
   };
 }
 
@@ -49,6 +62,8 @@ export default function EditListingPage() {
   const [models, setModels] = useState<CarModel[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState<ListingFormState | null>(null);
+  /** The garage-register car of this listing, if any: the technical reference. */
+  const [car, setCar] = useState<StockVehicle | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -61,9 +76,31 @@ export default function EditListingPage() {
       listingService.getById(id),
       carModelService.list(),
       categoryService.list(),
+      stockService.list().catch(() => []),
     ])
-      .then(([listing, modelList, categoryList]) => {
-        setForm(formOf(listing));
+      .then(([listing, modelList, categoryList, stock]) => {
+        const linked = stock.find((item) => item.listing?.id === listing.id) ?? null;
+        setCar(linked);
+        // Linked: the technical fields are the car's (saving then re-aligns an older listing).
+        setForm(
+          linked
+            ? {
+                ...formOf(listing),
+                modelId: String(linked.modelId),
+                year: String(linked.year),
+                mileage: String(Math.max(linked.mileage, listing.mileage)),
+                fuelType: linked.fuelType,
+                transmission: linked.transmission,
+                power: linked.power ? String(linked.power) : "",
+                doors: linked.doors ? String(linked.doors) : "",
+                color: linked.color ?? "",
+                equipment: linked.equipment,
+                euroNorm: linked.euroNorm ?? "",
+                co2: linked.co2 !== null ? String(linked.co2) : "",
+                hasCarPass: linked.hasCarPass,
+              }
+            : formOf(listing),
+        );
         setModels(modelList);
         setCategories(categoryList);
         setStatus("ready");
@@ -74,7 +111,7 @@ export default function EditListingPage() {
       });
   }, [id]);
 
-  function set(field: keyof ListingFormState, value: string) {
+  function set<K extends keyof ListingFormState>(field: K, value: ListingFormState[K]) {
     setForm((current) => (current ? { ...current, [field]: value } : current));
   }
 
@@ -127,6 +164,12 @@ export default function EditListingPage() {
       >
         <ErrorAlert message={error} />
 
+        {car && (
+          <div className="mb-4">
+            <StockVehicleSummary vehicle={car} />
+          </div>
+        )}
+
         <Card className="mb-2">
           <Card.Body className="p-3 p-md-4">
             <ListingFormFields
@@ -134,6 +177,7 @@ export default function EditListingPage() {
               models={models}
               categories={categories}
               onChange={set}
+              lockTechnical={car !== null}
             />
           </Card.Body>
         </Card>

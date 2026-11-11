@@ -10,6 +10,12 @@ import Table from "react-bootstrap/Table";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { useLanguage } from "@/context/LanguageContext";
 import { listingService } from "@/services/listingService";
+import { saleService } from "@/services/saleService";
+import { stockService } from "@/services/stockService";
+import type { StockStatus } from "@/types/stock";
+import { listingStatusBlock } from "@/utils/stockLabels";
+import type { Sale } from "@/types/sale";
+import { saleReference, salesByListing } from "@/utils/saleLabels";
 import { LISTING_STATUSES, type Listing } from "@/types/listing";
 import { errorMessage } from "@/utils/errors";
 import {
@@ -33,13 +39,24 @@ export default function AdminListingsPage() {
   /** Reservations in progress per listing, to flag the risky actions. */
   const [openCounts, setOpenCounts] = useState<Map<number, number>>(new Map());
   const [warning, setWarning] = useState<{ title: string; count: number } | null>(null);
+  /** Sale files per listing: the car's purchase order / invoice, one click away. */
+  const [salesOf, setSalesOf] = useState<Map<number, Sale[]>>(new Map());
+  /** Stock car status per listing id (publishing needs the car at the garage). */
+  const [carStatusOf, setCarStatusOf] = useState<Map<number, StockStatus>>(new Map());
 
   const load = useCallback(() => {
     setStatus("loading");
-    Promise.all([listingService.list(), reservationService.list().catch(() => [])])
-      .then(([listingList, reservations]) => {
+    Promise.all([
+      listingService.list(),
+      reservationService.list().catch(() => []),
+      saleService.list().catch(() => []),
+      stockService.list().catch(() => []),
+    ])
+      .then(([listingList, reservations, sales, cars]) => {
+        setCarStatusOf(new Map(cars.filter((car) => car.listing).map((car) => [car.listing!.id, car.status])));
         setListings(listingList);
         setOpenCounts(openReservationsByListing(reservations));
+        setSalesOf(salesByListing(sales));
         setStatus("ready");
       })
       .catch((err: unknown) => {
@@ -130,6 +147,16 @@ export default function AdminListingsPage() {
                       <Badge bg={LISTING_STATUS_VARIANTS[listing.status]}>
                         {LISTING_STATUS_LABELS[listing.status]}
                       </Badge>
+                      {(salesOf.get(listing.id) ?? []).map((sale) => (
+                        <Link
+                          key={sale.id}
+                          href={withLocale(`/admin/ventes/${sale.id}`)}
+                          className="badge ms-1 text-decoration-none text-bg-light border"
+                          title={`Dossier de vente — ${sale.buyer.name}`}
+                        >
+                          {saleReference(sale) ?? "Dossier brouillon"}
+                        </Link>
+                      ))}
                       {(openCounts.get(listing.id) ?? 0) > 0 && (
                         <Link
                           href={withLocale("/admin/reservations")}
@@ -151,6 +178,14 @@ export default function AdminListingsPage() {
                           ).map((value) => (
                             <Dropdown.Item
                               key={value}
+                              disabled={
+                                listingStatusBlock({
+                                  current: listing.status,
+                                  next: value,
+                                  vehicleStatus: carStatusOf.get(listing.id) ?? null,
+                                  invoiced: (salesOf.get(listing.id) ?? []).some((sale) => sale.status === "paid"),
+                                }) !== null
+                              }
                               onClick={() => changeStatus(listing, value)}
                             >
                               {LISTING_STATUS_LABELS[value]}
@@ -170,7 +205,14 @@ export default function AdminListingsPage() {
                       >
                         Modifier
                       </Link>
-                      {(openCounts.get(listing.id) ?? 0) > 0 ? (
+                      {(salesOf.get(listing.id) ?? []).some((sale) => sale.documents.length > 0) ? (
+                        // On a purchase order / invoice: deleting would cut the link (refused by the API too).
+                        <span title="Ce véhicule figure sur un bon de commande ou une facture : archivez-le plutôt.">
+                          <button type="button" className="btn btn-sm btn-outline-danger" disabled>
+                            Supprimer
+                          </button>
+                        </span>
+                      ) : (openCounts.get(listing.id) ?? 0) > 0 ? (
                         // Deleting would silently drop the customers' requests (refused by the API too).
                         <span title={`${openCounts.get(listing.id)} réservation(s) en cours : refusez ou annulez-les d'abord`}>
                           <button type="button" className="btn btn-sm btn-outline-danger" disabled>

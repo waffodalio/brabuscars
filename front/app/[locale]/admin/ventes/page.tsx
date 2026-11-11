@@ -11,7 +11,9 @@ import { useLanguage } from "@/context/LanguageContext";
 import { saleService } from "@/services/saleService";
 import { SALE_STATUSES, type Sale, type SaleStatus } from "@/types/sale";
 import { errorMessage } from "@/utils/errors";
-import { SALE_STATUS_LABELS, SALE_STATUS_VARIANTS, formatEuros } from "@/utils/saleLabels";
+import { listingPath } from "@/utils/listingPath";
+import Form from "react-bootstrap/Form";
+import { SALE_STATUS_LABELS, SALE_STATUS_VARIANTS, formatEuros, saleMatches, saleReference } from "@/utils/saleLabels";
 
 type Filter = SaleStatus | "all";
 
@@ -21,6 +23,7 @@ export default function AdminSalesPage() {
   const [sales, setSales] = useState<Sale[] | null>(null);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     saleService
@@ -36,7 +39,9 @@ export default function AdminSalesPage() {
     (acc, sale) => ({ ...acc, [sale.status]: (acc[sale.status] ?? 0) + 1 }),
     { all: sales?.length ?? 0 },
   );
-  const shown = (sales ?? []).filter((sale) => filter === "all" || sale.status === filter);
+  const shown = (sales ?? []).filter(
+    (sale) => (filter === "all" || sale.status === filter) && saleMatches(sale, search),
+  );
   const due = (sales ?? []).reduce((sum, sale) => sum + sale.totals.due, 0);
 
   return (
@@ -72,6 +77,15 @@ export default function AdminSalesPage() {
                 </button>
               ))}
             </div>
+            <Form.Control
+              type="search"
+              size="sm"
+              className="chc-sales-search"
+              placeholder="N° de document, client, véhicule, VIN…"
+              aria-label="Rechercher un dossier"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
             {due > 0 && (
               <span className="ms-auto small text-secondary">
                 Reste à encaisser : <strong className="text-body chc-num">{formatEuros(due)}</strong>
@@ -81,29 +95,43 @@ export default function AdminSalesPage() {
 
           {shown.length === 0 ? (
             <Alert variant="light" className="border">
-              {sales.length === 0 ? "Aucun dossier pour le moment. Créez-en un avec « Nouveau dossier »." : "Aucun dossier ici."}
+              {sales.length === 0
+                ? "Aucun dossier pour le moment. Créez-en un avec « Nouveau dossier »."
+                : search.trim()
+                  ? `Aucun dossier ne correspond à « ${search.trim()} ».`
+                  : "Aucun dossier ici."}
             </Alert>
           ) : (
             <div className="chc-admin-table">
             <Table hover responsive className="align-middle mb-0 chc-table-cards">
               <thead>
                 <tr>
-                  <th>N°</th>
+                  <th>Référence</th>
                   <th>Acheteur</th>
                   <th>Véhicule</th>
                   <th className="text-end">Total</th>
                   <th className="text-end">Reste</th>
                   <th>Statut</th>
-                  <th>Documents</th>
                 </tr>
               </thead>
               <tbody>
                 {shown.map((sale) => (
                   <tr key={sale.id}>
-                    <td data-label="N°">
-                      <Link href={withLocale(`/admin/ventes/${sale.id}`)} className="fw-semibold">
-                        #{sale.id}
+                    <td data-label="Référence">
+                      <Link href={withLocale(`/admin/ventes/${sale.id}`)} className="fw-semibold text-nowrap">
+                        {saleReference(sale) ?? "Brouillon"}
                       </Link>
+                      {/* Invoiced: its purchase order too, for the paper trail. */}
+                      {sale.documents.length > 1 && (
+                        <div className="small text-secondary text-nowrap">
+                          {sale.documents.find((document) => document.kind === "order")?.number}
+                        </div>
+                      )}
+                      {sale.documents.length === 0 && (
+                        <div className="small text-secondary text-nowrap">
+                          {new Date(sale.createdAt).toLocaleDateString("fr-BE")}
+                        </div>
+                      )}
                     </td>
                     <td data-label="Acheteur">
                       <div>{sale.buyer.name}</div>
@@ -111,6 +139,13 @@ export default function AdminSalesPage() {
                     </td>
                     <td data-label="Véhicule" className="text-truncate" style={{ maxWidth: 260 }}>
                       {sale.lines[0]?.description ?? "—"}
+                      {sale.listing && (
+                        <div className="small">
+                          <Link href={withLocale(listingPath(sale.listing))} className="text-secondary">
+                            Annonce : {sale.listing.title}
+                          </Link>
+                        </div>
+                      )}
                     </td>
                     <td data-label="Total" className="text-end chc-num">{formatEuros(sale.totals.total)}</td>
                     <td data-label="Reste" className="text-end chc-num">
@@ -120,15 +155,6 @@ export default function AdminSalesPage() {
                       <Badge bg={SALE_STATUS_VARIANTS[sale.status]} text={sale.status === "ordered" ? "dark" : undefined}>
                         {SALE_STATUS_LABELS[sale.status]}
                       </Badge>
-                    </td>
-                    <td data-label="Documents" className="small text-secondary">
-                      {sale.documents.length === 0
-                        ? "—"
-                        : sale.documents.map((document) => (
-                            <div key={document.id} className="text-nowrap">
-                              {document.number}
-                            </div>
-                          ))}
                     </td>
                   </tr>
                 ))}

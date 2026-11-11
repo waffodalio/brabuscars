@@ -1,3 +1,4 @@
+import type { StockStatus } from "./stock";
 import type { ListingStatus } from "./listing";
 
 export const SALE_STATUSES = ["draft", "ordered", "paid"] as const;
@@ -29,6 +30,8 @@ export interface Sale {
   status: SaleStatus;
   vatRegime: VatRegime;
   listing: { id: number; title: string; status: ListingStatus } | null;
+  /** Garage-register car sold here, if any. */
+  stockVehicle: { id: number; reference: string; label: string; status: StockStatus } | null;
   buyer: SaleBuyer;
   vehicleVin: string | null;
   notes: string | null;
@@ -41,6 +44,8 @@ export interface Sale {
     paidOn: string;
     method: PaymentMethod;
     reference: string | null;
+    /** Document this payment triggered (purchase order or invoice), if any. */
+    documentId: number | null;
     /** Not frozen by a document: can still be removed. */
     deletable: boolean;
   }[];
@@ -64,6 +69,7 @@ export interface Sale {
 export interface SaleInput {
   vatRegime: VatRegime;
   listingId: number | null;
+  stockVehicleId: number | null;
   buyer: SaleBuyer;
   vehicleVin: string | null;
   notes: string | null;

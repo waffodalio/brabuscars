@@ -9,7 +9,7 @@ import {
 /** Statuses of a request still "in progress" (blocks a duplicate). */
 export const OPEN_STATUSES: ReservationStatus[] = ["pending", "confirmed"];
 
-const WITH_LISTING = { listing: { model: { brand: true }, images: true } } as const;
+const WITH_LISTING = { listing: { model: { brand: true }, images: true, stockVehicle: { images: true } } } as const;
 
 /** Data-access layer for {@link Reservation}. */
 export const reservationRepository = AppDataSource.getRepository(Reservation).extend({

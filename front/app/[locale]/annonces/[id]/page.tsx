@@ -16,6 +16,10 @@ import { useLanguage } from "@/context/LanguageContext";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { CompareButton } from "@/components/CompareButton";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { ListingActionBar, RESERVE_ANCHOR } from "@/components/ListingActionBar";
+import { ListingEquipment, ListingPerks, ListingWarranty } from "@/components/ListingDetails";
+import { ShareButton } from "@/components/ShareButton";
+import { SimilarListings } from "@/components/SimilarListings";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { ListingImagePanel } from "@/components/ListingImagePanel";
 import { RESERVE_PARAM, ReservationPanel } from "@/components/ReservationPanel";
@@ -26,6 +30,12 @@ import type { Listing, ListingImage, ListingStatus } from "@/types/listing";
 import { RESERVATION_TYPES, type ReservationType } from "@/types/reservation";
 import { listingIdFromParam, listingPath } from "@/utils/listingPath";
 import { reservationService } from "@/services/reservationService";
+import { saleService } from "@/services/saleService";
+import { stockService } from "@/services/stockService";
+import type { StockVehicle } from "@/types/stock";
+import { listingStatusBlock } from "@/utils/stockLabels";
+import type { Sale } from "@/types/sale";
+import { SALE_STATUS_LABELS, saleReference, salesByListing } from "@/utils/saleLabels";
 import { openReservationsByListing } from "@/utils/reservationAvailability";
 import { clearReservationIntent, peekReservationIntent } from "@/utils/reservationIntent";
 import { errorMessage } from "@/utils/errors";
@@ -38,6 +48,7 @@ import {
 } from "@/utils/listingLabels";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { vehicleTitle } from "@/utils/vehicleLabels";
+import { euroNormLabel } from "@/types/listingDetails";
 
 const ALL_STATUSES: ListingStatus[] = ["draft", "published", "sold", "archived"];
 
@@ -85,6 +96,34 @@ export default function ListingDetailPage() {
       .then((reservations) => setOpenReservations(openReservationsByListing(reservations).get(id) ?? 0))
       .catch(() => setOpenReservations(0));
   }, [isAdmin, id]);
+
+  /** Admin: sale files of this car (purchase order / invoice). */
+  const [sales, setSales] = useState<Sale[]>([]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    saleService
+      .list()
+      .then((all) => setSales(salesByListing(all).get(id) ?? []))
+      .catch(() => setSales([]));
+  }, [isAdmin, id]);
+  const invoiced = sales.some((sale) => sale.documents.length > 0);
+  const paid = sales.some((sale) => sale.status === "paid");
+
+  /** Admin: the garage-register car of this listing (its photos are the listing's). */
+  const [stockCar, setStockCar] = useState<StockVehicle | null>(null);
+  useEffect(() => {
+    if (!isAdmin) return;
+    stockService
+      .list()
+      .then((cars) => setStockCar(cars.find((car) => car.listing?.id === id) ?? null))
+      .catch(() => setStockCar(null));
+  }, [isAdmin, id]);
+
+  /** Why a status button is off (the car left the stock, or was invoiced). */
+  const statusBlock = (next: ListingStatus) =>
+    listing
+      ? listingStatusBlock({ current: listing.status, next, vehicleStatus: stockCar?.status ?? null, invoiced: paid })
+      : null;
 
   const load = useCallback(() => {
     setError("");
@@ -303,6 +342,7 @@ export default function ListingDetailPage() {
               </p>
 
               <VehicleSpecs listing={listing} className="mb-3" />
+              <ListingPerks listing={listing} />
 
               {company && (
                 <div className="small text-secondary mb-3">
@@ -317,7 +357,9 @@ export default function ListingDetailPage() {
               )}
 
               {listing.status === "published" && (
-                <ReservationPanel listing={listing} initialType={reserveOnArrival} />
+                <div id={RESERVE_ANCHOR} className="chc-reserve-anchor">
+                  <ReservationPanel listing={listing} initialType={reserveOnArrival} />
+                </div>
               )}
 
               <div className="d-flex flex-wrap gap-2 mt-3">
@@ -326,6 +368,7 @@ export default function ListingDetailPage() {
                 </Link>
                 <FavoriteButton listingId={listing.id} />
                 {listing.status === "published" && <CompareButton listing={listing} />}
+                <ShareButton title={listing.title} />
               </div>
             </Card.Body>
           </Card>
@@ -368,6 +411,9 @@ export default function ListingDetailPage() {
                   : null,
                 listing.color ? [t.listingDetail.color, listing.color] : null,
                 [t.listingDetail.category, listing.category?.name ?? "—"],
+                listing.euroNorm ? [t.details.euroNorm, euroNormLabel(listing.euroNorm)] : null,
+                listing.co2 != null ? [t.details.co2, `${listing.co2} ${t.details.co2Unit}`] : null,
+                listing.hasCarPass ? [t.details.carPass, t.details.yes] : null,
               ]
                 .filter((entry): entry is [string, string | number] =>
                   Boolean(entry),
@@ -382,10 +428,27 @@ export default function ListingDetailPage() {
           </Card.Body>
         </Card>
 
+      <ListingEquipment listing={listing} />
+      <ListingWarranty listing={listing} />
+
       {isAdmin && (
         <Card className="mt-4 border-primary-subtle">
           <Card.Body>
             <h2 className="h6">Gérer l&apos;annonce</h2>
+
+            {sales.length > 0 && (
+              <div className="chc-sale-links mb-3">
+                {sales.map((sale) => (
+                  <Link key={sale.id} href={withLocale(`/admin/ventes/${sale.id}`)} className="chc-sale-link">
+                    <span className="fw-semibold">{saleReference(sale) ?? "Dossier brouillon"}</span>
+                    <span className="text-secondary">
+                      {sale.buyer.name} · {SALE_STATUS_LABELS[sale.status]}
+                    </span>
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                ))}
+              </div>
+            )}
 
             {openReservations > 0 && (
               <Alert variant={listing.status === "published" ? "info" : "danger"} className="small py-2">
@@ -396,12 +459,20 @@ export default function ListingDetailPage() {
               </Alert>
             )}
 
-            <ListingImagePanel
-              listingId={listing.id}
-              images={listing.images}
-              canManage
-              onChange={setImages}
-            />
+            {stockCar ? (
+              <div className="chc-sale-link mt-4">
+                <span className="fw-semibold">Photos du véhicule {stockCar.reference}</span>
+                <span className="text-secondary">L&apos;annonce affiche les photos du stock.</span>
+                <Link href={withLocale(`/admin/stock/${stockCar.id}`)}>Gérer les photos →</Link>
+              </div>
+            ) : (
+              <ListingImagePanel
+                listingId={listing.id}
+                images={listing.images}
+                canManage
+                onChange={setImages}
+              />
+            )}
 
             <div className="border-top mt-4 pt-3 d-flex flex-wrap align-items-center gap-2">
               <span className="small text-secondary me-1">Statut :</span>
@@ -411,7 +482,8 @@ export default function ListingDetailPage() {
                     key={status}
                     variant="outline-secondary"
                     size="sm"
-                    disabled={busy}
+                    disabled={busy || statusBlock(status) !== null}
+                    title={statusBlock(status) ?? undefined}
                     onClick={() => changeStatus(status)}
                   >
                     {LISTING_STATUS_LABELS[status]}
@@ -420,7 +492,7 @@ export default function ListingDetailPage() {
               )}
               <ConfirmButton
                 className="ms-auto"
-                disabled={busy || openReservations > 0}
+                disabled={busy || openReservations > 0 || invoiced}
                 message="Supprimer définitivement cette annonce et ses photos ?"
                 confirmLabel="Oui, supprimer"
                 cancelLabel="Non"
@@ -432,6 +504,9 @@ export default function ListingDetailPage() {
           </Card.Body>
         </Card>
       )}
+
+      {listing.status === "published" && <SimilarListings listing={listing} />}
+      {listing.status === "published" && <ListingActionBar listing={listing} />}
     </article>
   );
 }

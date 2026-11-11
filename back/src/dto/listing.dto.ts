@@ -4,6 +4,12 @@ import {
   LISTING_STATUSES,
   TRANSMISSIONS,
 } from "../entities/Listing";
+import {
+  EQUIPMENT,
+  EURO_NORMS,
+  WARRANTY_COVERAGE,
+  WARRANTY_KINDS,
+} from "../entities/listingDetails";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -36,9 +42,26 @@ const listingFields = {
   power: z.number().int().positive().max(2000).nullable().optional(),
   doors: z.number().int().min(1).max(9).nullable().optional(),
   color: z.string().trim().min(1).max(50).nullable().optional(),
+  equipment: z.array(z.enum(EQUIPMENT)).max(EQUIPMENT.length * 2).optional(),
+  euroNorm: z.enum(EURO_NORMS).nullable().optional(),
+  co2: z.number().int().min(0).max(999).nullable().optional(),
+  hasCarPass: z.boolean().optional(),
+  /** Null (or absent) = no warranty: the other warranty fields are then ignored. */
+  warrantyMonths: z.number().int().min(1).max(120).nullable().optional(),
+  warrantyKind: z.enum(WARRANTY_KINDS).nullable().optional(),
+  warrantyCoverage: z.array(z.enum(WARRANTY_COVERAGE)).max(WARRANTY_COVERAGE.length * 2).optional(),
+  /** Own covered parts (« Embrayage »…), beyond `warrantyCoverage`. */
+  warrantyCustom: z.array(z.string().trim().min(1).max(60)).max(15).optional(),
+  warrantyNotes: z.string().trim().min(1).max(500).nullable().optional(),
 };
 
-export const createListingSchema = z.object(listingFields).strict();
+export const createListingSchema = z
+  .object({
+    ...listingFields,
+    /** Created from a garage-register car: that car gets linked to the new listing. */
+    stockVehicleId: z.number().int().positive().optional(),
+  })
+  .strict();
 
 export const updateListingSchema = z
   .object(listingFields)

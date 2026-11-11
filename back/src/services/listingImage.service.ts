@@ -3,6 +3,7 @@ import { env } from "../config/env";
 import type { UpdateListingImageDto } from "../dto/listingImage.dto";
 import { listingImageRepository } from "../repositories/listingImage.repository";
 import { listingRepository } from "../repositories/listing.repository";
+import { stockVehicleRepository } from "../repositories/stockVehicle.repository";
 import { ApiError } from "../utils/ApiError";
 import { isPublished } from "../utils/listingVisibility";
 import {
@@ -54,6 +55,13 @@ export const listingImageService = {
     const listing = await listingRepository.findOneBy({ id: listingId });
     if (!listing || (publishedOnly && !isPublished(listing))) {
       throw ApiError.notFound(`Listing ${listingId} not found`);
+    }
+    // A garage car's listing shows the car's photos.
+    const vehicle = await stockVehicleRepository.findOne({ where: { listingId }, relations: { images: true } });
+    if (vehicle) {
+      return [...vehicle.images]
+        .sort((a, b) => Number(b.isCover) - Number(a.isCover) || a.position - b.position || a.id - b.id)
+        .map(toListingImageResponse);
     }
     const images = await listingImageRepository.findByListing(listingId);
     return images.map(toListingImageResponse);

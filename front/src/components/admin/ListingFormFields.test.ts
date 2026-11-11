@@ -54,3 +54,60 @@ describe("toListingPayload", () => {
     expect(payload.description).toBeNull();
   });
 });
+
+describe("toListingPayload — details", () => {
+  it("sends no warranty fields when the warranty is off", () => {
+    const payload = toListingPayload({
+      ...filled,
+      warranty: false,
+      warrantyMonths: "24",
+      warrantyCoverage: ["engine"],
+      warrantyCustom: ["Embrayage"],
+      warrantyNotes: "x",
+    });
+    expect(payload).toMatchObject({
+      warrantyMonths: null,
+      warrantyKind: null,
+      warrantyCoverage: [],
+      warrantyCustom: [],
+      warrantyNotes: null,
+    });
+  });
+
+  it("sends the warranty, equipment and environment as typed values", () => {
+    const payload = toListingPayload({
+      ...filled,
+      equipment: ["gps"],
+      euroNorm: "euro6d",
+      co2: "118",
+      hasCarPass: true,
+      warranty: true,
+      warrantyMonths: "12",
+      warrantyKind: "manufacturer",
+      warrantyCoverage: ["engine", "gearbox"],
+      warrantyCustom: ["Embrayage"],
+      warrantyNotes: "  150 000 km max  ",
+    });
+    expect(payload).toMatchObject({
+      equipment: ["gps"],
+      euroNorm: "euro6d",
+      co2: 118,
+      hasCarPass: true,
+      warrantyMonths: 12,
+      warrantyKind: "manufacturer",
+      warrantyCoverage: ["engine", "gearbox"],
+      warrantyCustom: ["Embrayage"],
+      warrantyNotes: "150 000 km max",
+    });
+  });
+
+  it("rejects an invalid CO2 or warranty length", () => {
+    expect(() => toListingPayload({ ...filled, co2: "12.5" })).toThrow();
+    expect(() => toListingPayload({ ...filled, warranty: true, warrantyMonths: "0" })).toThrow();
+    expect(() => toListingPayload({ ...filled, warranty: true, warrantyMonths: "200" })).toThrow();
+  });
+
+  it("leaves blank environment fields empty", () => {
+    expect(toListingPayload(filled)).toMatchObject({ euroNorm: null, co2: null, hasCarPass: false });
+  });
+});

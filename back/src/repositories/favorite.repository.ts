@@ -8,6 +8,7 @@ const LISTING_RELATIONS = {
     model: { brand: true },
     category: true,
     images: true,
+    stockVehicle: { images: true },
   },
 } as const;
 

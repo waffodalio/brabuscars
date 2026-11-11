@@ -51,6 +51,7 @@ export const saleInputSchema = z
   .object({
     vatRegime: z.enum(VAT_REGIMES),
     listingId: z.number().int().positive().nullish(),
+    stockVehicleId: z.number().int().positive().nullish(),
     buyer: buyerSchema,
     vehicleVin: z
       .string()

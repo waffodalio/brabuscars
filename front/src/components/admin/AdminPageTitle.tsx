@@ -12,6 +12,7 @@ const TITLES: Record<string, string> = {
   messages: "Messages",
   reservations: "Réservations",
   ventes: "Facturation",
+  stock: "Stock du garage",
   utilisateurs: "Utilisateurs",
   systeme: "Système",
 };

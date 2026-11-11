@@ -86,3 +86,43 @@ describe("updateListingSchema", () => {
     expect(() => updateListingSchema.parse({ price: 9999 })).not.toThrow();
   });
 });
+
+describe("detailed fields (equipment, environment, warranty)", () => {
+  const detailed = {
+    ...validListing,
+    equipment: ["gps", "rearCamera"],
+    euroNorm: "euro6d",
+    co2: 118,
+    hasCarPass: true,
+    warrantyMonths: 12,
+    warrantyKind: "dealer",
+    warrantyCoverage: ["engine", "gearbox"],
+    warrantyNotes: "Jusqu'à 150 000 km",
+  };
+
+  it("accepts a fully detailed listing", () => {
+    expect(() => createListingSchema.parse(detailed)).not.toThrow();
+  });
+
+  it("rejects equipment or covered parts outside the lists", () => {
+    expect(() => createListingSchema.parse({ ...detailed, equipment: ["jetpack"] })).toThrow();
+    expect(() => createListingSchema.parse({ ...detailed, warrantyCoverage: ["tyres"] })).toThrow();
+  });
+
+  it("rejects an out-of-range warranty or CO2", () => {
+    expect(() => createListingSchema.parse({ ...detailed, warrantyMonths: 0 })).toThrow();
+    expect(() => createListingSchema.parse({ ...detailed, warrantyMonths: 121 })).toThrow();
+    expect(() => createListingSchema.parse({ ...detailed, co2: 1200 })).toThrow();
+  });
+
+  it("lets an update clear the warranty", () => {
+    expect(updateListingSchema.parse({ warrantyMonths: null })).toEqual({ warrantyMonths: null });
+  });
+});
+
+describe("createListingSchema — from a stock vehicle", () => {
+  it("accepts the stock vehicle on creation only", () => {
+    expect(createListingSchema.parse({ ...validListing, stockVehicleId: 4 }).stockVehicleId).toBe(4);
+    expect(() => updateListingSchema.parse({ stockVehicleId: 4 })).toThrow();
+  });
+});

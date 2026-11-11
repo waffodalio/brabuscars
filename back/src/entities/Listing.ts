@@ -5,6 +5,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
@@ -12,8 +13,17 @@ import { CarModel } from "./CarModel";
 import { Category } from "./Category";
 import { Favorite } from "./Favorite";
 import { ListingImage } from "./ListingImage";
+import { StockVehicle } from "./StockVehicle";
 import { User } from "./User";
 import { decimalTransformer } from "../utils/decimalTransformer";
+import {
+  EURO_NORMS,
+  WARRANTY_KINDS,
+  type Equipment,
+  type EuroNorm,
+  type WarrantyCoverage,
+  type WarrantyKind,
+} from "./listingDetails";
 
 export const LISTING_STATUSES = [
   "draft",
@@ -23,17 +33,10 @@ export const LISTING_STATUSES = [
 ] as const;
 export type ListingStatus = (typeof LISTING_STATUSES)[number];
 
-export const FUEL_TYPES = [
-  "petrol",
-  "diesel",
-  "hybrid",
-  "electric",
-  "lpg",
-] as const;
-export type FuelType = (typeof FUEL_TYPES)[number];
-
-export const TRANSMISSIONS = ["manual", "automatic"] as const;
-export type Transmission = (typeof TRANSMISSIONS)[number];
+// Kept in their own module: `StockVehicle` needs them while it is being
+// defined, and it is linked back from `Listing` (import cycle otherwise).
+export { FUEL_TYPES, TRANSMISSIONS, type FuelType, type Transmission } from "./vehicleTypes";
+import { FUEL_TYPES, TRANSMISSIONS, type FuelType, type Transmission } from "./vehicleTypes";
 
 /**
  * A vehicle for sale. CHCars is a single dealership selling its own stock, so
@@ -104,6 +107,39 @@ export class Listing {
   @Column({ type: "varchar", length: 50, nullable: true })
   color!: string | null;
 
+  /** Equipment keys (JSON array). Null on listings created before migration 008. */
+  @Column({ type: "simple-json", nullable: true })
+  equipment!: Equipment[] | null;
+
+  @Column({ name: "euro_norm", type: "enum", enum: [...EURO_NORMS], nullable: true })
+  euroNorm!: EuroNorm | null;
+
+  /** CO₂ emissions, g/km. */
+  @Column({ type: "smallint", unsigned: true, nullable: true })
+  co2!: number | null;
+
+  @Column({ name: "has_car_pass", type: "boolean", default: false })
+  hasCarPass!: boolean;
+
+  /** Warranty length in months; null means no warranty (then the other warranty fields are null). */
+  @Column({ name: "warranty_months", type: "tinyint", unsigned: true, nullable: true })
+  warrantyMonths!: number | null;
+
+  @Column({ name: "warranty_kind", type: "enum", enum: [...WARRANTY_KINDS], nullable: true })
+  warrantyKind!: WarrantyKind | null;
+
+  /** Parts covered (JSON array). */
+  @Column({ name: "warranty_coverage", type: "simple-json", nullable: true })
+  warrantyCoverage!: WarrantyCoverage[] | null;
+
+  /** Covered parts typed by the admin, beyond the fixed list (JSON array of labels). */
+  @Column({ name: "warranty_custom", type: "simple-json", nullable: true })
+  warrantyCustom!: string[] | null;
+
+  /** Conditions in free text (mileage cap, exclusions…). */
+  @Column({ name: "warranty_notes", type: "varchar", length: 500, nullable: true })
+  warrantyNotes!: string | null;
+
   @Column({ type: "enum", enum: [...LISTING_STATUSES], default: "draft" })
   status!: ListingStatus;
 
@@ -121,4 +157,8 @@ export class Listing {
 
   @OneToMany(() => ListingImage, (image) => image.listing)
   images!: ListingImage[];
+
+  /** Garage-register car of this listing (inverse side): its photos are the listing's. */
+  @OneToOne(() => StockVehicle, (vehicle) => vehicle.listing)
+  stockVehicle?: StockVehicle | null;
 }

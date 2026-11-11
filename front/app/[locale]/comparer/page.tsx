@@ -10,6 +10,7 @@ import { MAX_COMPARE, useCompare } from "@/utils/compareStore";
 import { formatMileage, formatPrice } from "@/utils/listingLabels";
 import { listingPath } from "@/utils/listingPath";
 import { vehicleTitle } from "@/utils/vehicleLabels";
+import { euroNormLabel } from "@/types/listingDetails";
 
 type Best = "min" | "max";
 
@@ -81,6 +82,17 @@ export default function ComparePage() {
     { label: t.listingDetail.doors, value: (l) => l.doors ?? "—" },
     { label: t.listingDetail.color, value: (l) => l.color ?? "—" },
     { label: t.listingDetail.category, value: (l) => l.category?.name ?? "—" },
+    { label: t.details.euroNorm, value: (l) => (l.euroNorm ? euroNormLabel(l.euroNorm) : "—") },
+    {
+      label: t.details.warrantyTitle,
+      value: (l) => (l.warrantyMonths ? t.details.warrantyLength(l.warrantyMonths) : "—"),
+      best: { pick: "max", of: (l) => l.warrantyMonths },
+    },
+    {
+      label: t.details.equipmentTitle,
+      value: (l) => l.equipment?.length ?? 0,
+      best: { pick: "max", of: (l) => l.equipment?.length ?? 0 },
+    },
   ];
 
   if (listings.length === 0) {

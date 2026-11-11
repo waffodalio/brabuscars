@@ -18,8 +18,9 @@ export function thumbnailKey(storageKey: string): string {
   return storageKey.replace(/\.webp$/i, "_thumb.webp");
 }
 
+/** Same shape for listing photos and garage-register car photos. */
 export function toListingImageResponse(
-  image: ListingImage,
+  image: Pick<ListingImage, "id" | "storageKey" | "width" | "height" | "position" | "isCover">,
 ): ListingImageResponse {
   return {
     id: image.id,

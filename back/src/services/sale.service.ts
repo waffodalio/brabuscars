@@ -7,7 +7,9 @@ import { Sale, type SaleDocumentKind, type SaleStatus } from "../entities/Sale";
 import { SaleDocument } from "../entities/SaleDocument";
 import { SaleLine } from "../entities/SaleLine";
 import { SalePayment } from "../entities/SalePayment";
+import { StockVehicle } from "../entities/StockVehicle";
 import { listingRepository } from "../repositories/listing.repository";
+import { markListingVehicleSold, stockVehicleRepository } from "../repositories/stockVehicle.repository";
 import { saleDocumentRepository, saleRepository } from "../repositories/sale.repository";
 import { ApiError } from "../utils/ApiError";
 import type { Actor } from "../utils/actor";
@@ -44,11 +46,18 @@ async function assertListingExists(listingId: number | null | undefined): Promis
   }
 }
 
+async function assertStockVehicleExists(stockVehicleId: number | null | undefined): Promise<void> {
+  if (stockVehicleId && !(await stockVehicleRepository.existsBy({ id: stockVehicleId }))) {
+    throw ApiError.badRequest(`Stock vehicle ${stockVehicleId} does not exist`);
+  }
+}
+
 /** Sale columns from the input (lines are handled apart). */
 function saleFields(dto: SaleInputDto): Partial<Sale> {
   return {
     vatRegime: dto.vatRegime,
     listingId: dto.listingId ?? null,
+    stockVehicleId: dto.stockVehicleId ?? null,
     buyerName: dto.buyer.name,
     buyerCompany: dto.buyer.company ?? null,
     buyerVatNumber: dto.buyer.vatNumber ?? null,
@@ -174,6 +183,7 @@ export const saleService = {
 
   async create(actor: Actor, dto: SaleInputDto): Promise<SaleResponse> {
     await assertListingExists(dto.listingId);
+    await assertStockVehicleExists(dto.stockVehicleId);
     const id = await AppDataSource.transaction(async (manager) => {
       const sale = await manager.getRepository(Sale).save(
         manager.getRepository(Sale).create({ ...saleFields(dto), status: "draft", createdBy: actor.id }),
@@ -187,6 +197,7 @@ export const saleService = {
   /** Replaces buyer, lines, regime and vehicle — only before any document. */
   async update(id: number, dto: SaleInputDto): Promise<SaleResponse> {
     await assertListingExists(dto.listingId);
+    await assertStockVehicleExists(dto.stockVehicleId);
     await AppDataSource.transaction(async (manager) => {
       const sale = await manager.getRepository(Sale).findOne({ where: { id }, lock: { mode: "pessimistic_write" } });
       if (!sale) throw ApiError.notFound(`Sale ${id} not found`);
@@ -254,6 +265,15 @@ export const saleService = {
 
         if (next.status === "paid" && sale.listingId) {
           await manager.getRepository(Listing).update({ id: sale.listingId }, { status: "sold" });
+        }
+        // The car leaves the garage register: sold, on the day of the final
+        // payment — the one named on the sale, else the one carrying its listing.
+        if (next.status === "paid" && sale.stockVehicleId) {
+          await manager
+            .getRepository(StockVehicle)
+            .update({ id: sale.stockVehicleId }, { status: "sold", exitDate: dto.paidOn, exitReason: "sale" });
+        } else if (next.status === "paid" && sale.listingId) {
+          await markListingVehicleSold(sale.listingId, dto.paidOn, manager);
         }
       });
     } catch (err) {

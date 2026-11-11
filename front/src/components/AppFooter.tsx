@@ -231,6 +231,7 @@ export function AppFooter() {
         <div className="chc-footer-bottom">
           <div className="d-flex flex-wrap align-items-center gap-3">
             <span>{t.footer.rights(new Date().getFullYear())}</span>
+            {company?.vatNumber && <span>{t.footer.vat(company.vatNumber)}</span>}
             <button type="button" onClick={reopen} className="chc-footer-linkbtn">
               {t.footer.manageCookies}
             </button>

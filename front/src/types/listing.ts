@@ -1,5 +1,6 @@
 import type { CarModel } from "./carModel";
 import type { Category } from "./category";
+import type { Equipment, EuroNorm, WarrantyCoverage, WarrantyKind } from "./listingDetails";
 import type { FuelType, Transmission } from "./vehicle";
 
 export const LISTING_STATUSES = [
@@ -51,6 +52,18 @@ export interface Listing {
   power: number | null;
   doors: number | null;
   color: string | null;
+  equipment: Equipment[];
+  euroNorm: EuroNorm | null;
+  /** g/km */
+  co2: number | null;
+  hasCarPass: boolean;
+  /** Null = no warranty. */
+  warrantyMonths: number | null;
+  warrantyKind: WarrantyKind | null;
+  warrantyCoverage: WarrantyCoverage[];
+  /** Covered parts typed by the admin (shown as written). */
+  warrantyCustom: string[];
+  warrantyNotes: string | null;
   status: ListingStatus;
   publishedAt: string | null;
   /** Cover first, then by position. Empty until images are uploaded. */
@@ -74,6 +87,17 @@ export interface CreateListingInput {
   power?: number | null;
   doors?: number | null;
   color?: string | null;
+  equipment?: Equipment[];
+  euroNorm?: EuroNorm | null;
+  co2?: number | null;
+  hasCarPass?: boolean;
+  warrantyMonths?: number | null;
+  warrantyKind?: WarrantyKind | null;
+  warrantyCoverage?: WarrantyCoverage[];
+  warrantyCustom?: string[];
+  warrantyNotes?: string | null;
+  /** Creation only: the garage-register car this listing is made from (gets linked). */
+  stockVehicleId?: number;
 }
 
 export type UpdateListingInput = Partial<CreateListingInput>;

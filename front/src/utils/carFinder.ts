@@ -4,7 +4,8 @@ import type { Listing } from "@/types/listing";
  * « Trouve ma voiture »: four answers turned into an affinity score (0–100)
  * for each published listing. Pure functions, tested on their own.
  */
-export const BUDGETS = ["under10", "10to20", "20to30", "over30"] as const;
+/** Budget tiles: 2 000 – 15 000 €, the dealership's range. */
+export const BUDGETS = ["2to5", "5to8", "8to11", "11to15"] as const;
 export type Budget = (typeof BUDGETS)[number];
 export const USAGES = ["city", "family", "travel", "fun"] as const;
 export type Usage = (typeof USAGES)[number];
@@ -22,10 +23,10 @@ export interface FinderAnswers {
 
 /** Price bounds of each budget answer, in euros. */
 export const BUDGET_RANGES: Record<Budget, [number, number]> = {
-  under10: [0, 10_000],
-  "10to20": [10_000, 20_000],
-  "20to30": [20_000, 30_000],
-  over30: [30_000, Number.POSITIVE_INFINITY],
+  "2to5": [2_000, 5_000],
+  "5to8": [5_000, 8_000],
+  "8to11": [8_000, 11_000],
+  "11to15": [11_000, 15_000],
 };
 
 type Scored = Pick<Listing, "price" | "transmission" | "fuelType" | "power" | "doors">;

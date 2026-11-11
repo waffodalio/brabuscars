@@ -8,6 +8,9 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { listingService } from "@/services/listingService";
+import { stockService } from "@/services/stockService";
+import type { StockVehicle } from "@/types/stock";
+import { VehiclePicker, type PickedVehicle, type VehicleChoice } from "@/components/admin/VehiclePicker";
 import type { Listing } from "@/types/listing";
 import type { SaleBuyer, SaleInput, VatRegime } from "@/types/sale";
 import { errorMessage } from "@/utils/errors";
@@ -63,6 +66,8 @@ export function SaleForm({
 }) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [listingId, setListingId] = useState<number | null>(initial?.listingId ?? null);
+  const [vehicles, setVehicles] = useState<StockVehicle[]>([]);
+  const [stockVehicleId, setStockVehicleId] = useState<number | null>(initial?.stockVehicleId ?? null);
   const [vatRegime, setVatRegime] = useState<VatRegime>(initial?.vatRegime ?? "margin");
   const [buyer, setBuyer] = useState<SaleBuyer>(initial?.buyer ?? EMPTY_BUYER);
   const [vin, setVin] = useState(initial?.vehicleVin ?? "");
@@ -82,22 +87,54 @@ export function SaleForm({
       .list()
       .then(setListings)
       .catch(() => setListings([]));
+    stockService
+      .list()
+      .then(setVehicles)
+      .catch(() => setVehicles([]));
   }, []);
 
-  // A sold listing is offered only when it is the one already linked.
-  const choices = listings.filter((listing) => listing.status !== "sold" || listing.id === listingId);
   const total = lines.reduce((sum, line) => sum + lineTotal(line), 0);
 
-  function chooseListing(value: string) {
-    const id = value ? Number(value) : null;
-    setListingId(id);
-    const listing = listings.find((item) => item.id === id);
-    if (!listing) return;
-    // Prefill the vehicle line (first line), keep the others.
-    setLines((current) => [
-      { description: vehicleLine(listing), quantity: "1", unitPrice: String(listing.price) },
-      ...current.slice(1),
-    ]);
+  /** The car sold, as shown in the picker once chosen. */
+  const stockVehicle = vehicles.find((vehicle) => vehicle.id === stockVehicleId);
+  const listing = listings.find((item) => item.id === listingId);
+  const picked: PickedVehicle | null = stockVehicle
+    ? {
+        title: stockVehicle.label,
+        detail: [stockVehicle.reference, stockVehicle.vin, stockVehicle.listing ? `Annonce : ${stockVehicle.listing.title}` : "Sans annonce"]
+          .filter(Boolean)
+          .join(" · "),
+      }
+    : listing
+      ? { title: listing.title, detail: `Annonce · ${listing.year} · ${formatEuros(listing.price)}` }
+      : null;
+
+  /** Picking a car fills its line (first line, others kept), its VIN and its links. */
+  function pickVehicle(choice: VehicleChoice) {
+    if (choice.kind === "stock") {
+      const { vehicle } = choice;
+      setStockVehicleId(vehicle.id);
+      setListingId(vehicle.listing?.id ?? null);
+      if (vehicle.vin) setVin(vehicle.vin);
+      const price = vehicle.targetPrice ?? vehicle.listing?.price ?? null;
+      setLines((current) => [
+        {
+          description: [vehicle.label, String(vehicle.year), formatMileage(vehicle.mileage)].join(" — "),
+          quantity: "1",
+          unitPrice: price !== null ? String(price) : current[0]?.unitPrice ?? "",
+        },
+        ...current.slice(1),
+      ]);
+    } else {
+      const { listing: chosen } = choice;
+      setListingId(chosen.id);
+      // A stock car carrying this listing is the one sold.
+      setStockVehicleId(vehicles.find((vehicle) => vehicle.listing?.id === chosen.id)?.id ?? null);
+      setLines((current) => [
+        { description: vehicleLine(chosen), quantity: "1", unitPrice: String(chosen.price) },
+        ...current.slice(1),
+      ]);
+    }
   }
 
   function setBuyerField(field: keyof SaleBuyer) {
@@ -127,6 +164,7 @@ export function SaleForm({
       await onSubmit({
         vatRegime,
         listingId,
+        stockVehicleId,
         buyer: {
           name: buyer.name.trim(),
           company: clean(buyer.company),
@@ -157,18 +195,21 @@ export function SaleForm({
           <h2 className="h6 mb-4">Véhicule & TVA</h2>
           <Row className="g-4">
             <Col md={7}>
-              <Form.Group controlId="sale-listing">
-                <Form.Label>Annonce (facultatif)</Form.Label>
-                <Form.Select value={listingId ?? ""} onChange={(e) => chooseListing(e.target.value)}>
-                  <option value="">— Aucune (saisie libre) —</option>
-                  {choices.map((listing) => (
-                    <option key={listing.id} value={listing.id}>
-                      {listing.title} · {listing.year} · {formatEuros(listing.price)}
-                    </option>
-                  ))}
-                </Form.Select>
-                <Form.Text muted>Préremplit la ligne du véhicule. L&apos;annonce passera « Vendue » une fois tout payé.</Form.Text>
-              </Form.Group>
+              <Form.Label>Véhicule vendu (facultatif)</Form.Label>
+              <VehiclePicker
+                vehicles={vehicles}
+                listings={listings}
+                picked={picked}
+                onPick={pickVehicle}
+                onClear={() => {
+                  setStockVehicleId(null);
+                  setListingId(null);
+                }}
+              />
+              <Form.Text muted>
+                Stock du garage ou annonce : préremplit la ligne et le VIN. Une fois tout payé, l&apos;annonce passe
+                « Vendue » et le véhicule sort du stock.
+              </Form.Text>
             </Col>
             <Col md={5}>
               <Form.Group controlId="sale-vin">

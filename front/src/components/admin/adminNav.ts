@@ -24,6 +24,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
   {
     title: "Ventes",
     items: [
+      { href: "/admin/stock", label: "Stock du garage", icon: ADMIN_ICONS.garage },
       { href: "/admin/annonces", label: "Annonces", icon: ADMIN_ICONS.listing },
       { href: "/admin/annonces/nouvelle", label: "Nouvelle annonce", icon: ADMIN_ICONS.plus },
       { href: "/admin/ventes", label: "Facturation", icon: ADMIN_ICONS.invoice },

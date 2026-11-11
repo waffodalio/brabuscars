@@ -18,6 +18,8 @@ const RELATIONS = {
   model: { brand: true },
   category: true,
   images: true,
+  // A garage-register car's photos are its listing's (see toListingResponse).
+  stockVehicle: { images: true },
 } as const;
 
 const ORDER_BY: Record<ListingSort, FindOptionsOrder<Listing>> = {

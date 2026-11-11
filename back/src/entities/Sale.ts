@@ -13,6 +13,7 @@ import { Listing } from "./Listing";
 import { SaleDocument } from "./SaleDocument";
 import { SaleLine } from "./SaleLine";
 import { SalePayment } from "./SalePayment";
+import { StockVehicle } from "./StockVehicle";
 import { SALE_STATUSES, VAT_REGIMES, type SaleStatus, type VatRegime } from "./saleTypes";
 
 export {
@@ -50,6 +51,15 @@ export class Sale {
   @Index("idx_sale_listing")
   @Column({ name: "listing_id", type: "int", nullable: true })
   listingId!: number | null;
+
+  /** Garage-register car sold here (migration 009); the final invoice marks it sold. */
+  @ManyToOne(() => StockVehicle, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "stock_vehicle_id" })
+  stockVehicle!: StockVehicle | null;
+
+  @Index("idx_sale_stock_vehicle")
+  @Column({ name: "stock_vehicle_id", type: "int", nullable: true })
+  stockVehicleId!: number | null;
 
   @Column({ name: "buyer_name", type: "varchar", length: 150 })
   buyerName!: string;

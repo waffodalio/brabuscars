@@ -11,7 +11,7 @@ import type { Listing } from "@/types/listing";
 import type { Sale } from "@/types/sale";
 import { LISTING_STATUS_LABELS, formatPrice } from "@/utils/listingLabels";
 import { listingPath } from "@/utils/listingPath";
-import { SALE_STATUS_LABELS } from "@/utils/saleLabels";
+import { SALE_STATUS_LABELS, saleReference } from "@/utils/saleLabels";
 import { ADMIN_ICONS, AdminIcon } from "./AdminIcon";
 import { ADMIN_NAV_GROUPS, SUPER_ADMIN_NAV_GROUP } from "./adminNav";
 
@@ -76,7 +76,8 @@ export function CommandPalette() {
       saleService.list().then(setSales).catch(() => setSales([]));
     };
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
+      // `key` can be missing (browser autofill fires keydown without one).
+      if (event.key?.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         show();
       }
@@ -122,7 +123,7 @@ export function CommandPalette() {
     const saleEntries: Entry[] = (sales ?? []).map((sale) => ({
       id: `sale:${sale.id}`,
       group: "Facturation",
-      label: `#${sale.id} · ${sale.buyer.name}`,
+      label: `${saleReference(sale) ?? "Brouillon"} · ${sale.buyer.name}`,
       hint: [sale.lines[0]?.description, SALE_STATUS_LABELS[sale.status]].filter(Boolean).join(" · "),
       icon: ADMIN_ICONS.invoice,
       href: withLocale(`/admin/ventes/${sale.id}`),
