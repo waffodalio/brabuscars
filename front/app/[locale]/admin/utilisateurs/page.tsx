@@ -173,7 +173,7 @@ export default function AdminUsersPage() {
       </p>
 
       <Form
-        className="mb-3"
+        className="mb-4"
         style={{ maxWidth: 360 }}
         onSubmit={(event) => {
           event.preventDefault();
@@ -204,7 +204,8 @@ export default function AdminUsersPage() {
       )}
 
       {status === "ready" && (
-        <Table striped hover responsive className="chc-table-cards">
+        <div className="chc-admin-table">
+        <Table hover responsive className="align-middle mb-0 chc-table-cards">
           <thead>
             <tr>
               <th>#</th>
@@ -267,6 +268,7 @@ export default function AdminUsersPage() {
             })}
           </tbody>
         </Table>
+        </div>
       )}
 
       <h2 className="h5 mt-5">Historique des changements de rôle</h2>
@@ -274,7 +276,8 @@ export default function AdminUsersPage() {
       {history.length === 0 && !historyError ? (
         <p className="text-secondary">Aucun changement de rôle enregistré.</p>
       ) : (
-        <Table striped responsive size="sm" className="chc-table-cards">
+        <div className="chc-admin-table">
+        <Table responsive className="align-middle mb-0 chc-table-cards">
           <thead>
             <tr>
               <th>Date</th>
@@ -304,6 +307,7 @@ export default function AdminUsersPage() {
             ))}
           </tbody>
         </Table>
+        </div>
       )}
 
       <AdminFormModal

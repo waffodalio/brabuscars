@@ -7,6 +7,8 @@ import { AppFooter } from "@/components/AppFooter";
 import { BackButton, NavigationTracker } from "@/components/BackButton";
 import { AdminFooter } from "@/components/admin/AdminFooter";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { CommandPalette } from "@/components/admin/CommandPalette";
+import { CompareTray } from "@/components/CompareTray";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { ReturnAfterLogin } from "@/components/ReturnAfterLogin";
@@ -57,6 +59,8 @@ export function MainLayout({ children }: { children: ReactNode }) {
       <PageViewTracker />
       <ReturnAfterLogin />
       <NavigationTracker />
+      <CommandPalette />
+      <CompareTray />
     </>
   );
 }

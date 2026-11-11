@@ -32,7 +32,7 @@ export default function AdminDashboardPage() {
     : SECTIONS;
 
   return (
-    <Row xs={1} md={2} lg={3} className="g-3">
+    <Row xs={1} md={2} lg={3} className="g-4">
       {sections.map((section) => (
         <Col key={section.href}>
           <Link
@@ -40,8 +40,8 @@ export default function AdminDashboardPage() {
             className="text-decoration-none text-reset"
           >
             <Card className="h-100">
-              <Card.Body>
-                <Card.Title className="h6">{section.title}</Card.Title>
+              <Card.Body className="p-3 p-md-4">
+                <Card.Title className="h6 mb-2">{section.title}</Card.Title>
                 <Card.Text className="text-secondary small mb-0">
                   {section.text}
                 </Card.Text>

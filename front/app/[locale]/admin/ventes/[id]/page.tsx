@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import Alert from "react-bootstrap/Alert";
 import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
@@ -14,6 +15,7 @@ import Row from "react-bootstrap/Row";
 import Spinner from "react-bootstrap/Spinner";
 import Table from "react-bootstrap/Table";
 import { ConfirmButton } from "@/components/ConfirmButton";
+import { Confetti } from "@/components/Confetti";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { SaleForm } from "@/components/admin/SaleForm";
 import { useLanguage } from "@/context/LanguageContext";
@@ -86,7 +88,7 @@ function PaymentForm({ sale, onDone }: { sale: Sale; onDone: (sale: Sale) => voi
   return (
     <Form onSubmit={submit} className="chc-payment-form">
       <ErrorAlert message={error} />
-      <Row className="g-2 align-items-end">
+      <Row className="g-3 align-items-end">
         <Col xs={6}>
           <Form.Group controlId="pay-amount">
             <Form.Label className="small">Montant (€)</Form.Label>
@@ -124,7 +126,7 @@ function PaymentForm({ sale, onDone }: { sale: Sale; onDone: (sale: Sale) => voi
         </Col>
       </Row>
       {willIssue && (
-        <div className="small text-secondary mt-2">
+        <div className="small text-secondary mt-3">
           Ce paiement générera <strong className="text-body">{willIssue}</strong>.
         </div>
       )}
@@ -141,6 +143,8 @@ export default function SaleDetailPage() {
   const [sale, setSale] = useState<Sale | null>(null);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
+  /** The payment that settled the sale: confetti and the « Vendu ! » card. */
+  const [celebration, setCelebration] = useState<Sale | null>(null);
   /** Other customers' reservations in progress on the car sold here. */
   const [openReservations, setOpenReservations] = useState(0);
   const listingId = sale?.listing?.id ?? null;
@@ -175,6 +179,11 @@ export default function SaleDetailPage() {
     }
   }
 
+  function paymentRecorded(next: Sale) {
+    if (next.status === "paid" && sale?.status !== "paid") setCelebration(next);
+    setSale(next);
+  }
+
   async function download(documentId: number, filename: string) {
     setError("");
     try {
@@ -201,9 +210,43 @@ export default function SaleDetailPage() {
   const stepIndex = STEPS.findIndex((step) => step.key === sale.status);
   const progress = sale.totals.total > 0 ? Math.round((sale.totals.paid / sale.totals.total) * 100) : 0;
 
+  const invoice = celebration?.documents.find((document) => document.kind === "invoice");
+
   return (
-    <section style={{ maxWidth: 980 }}>
-      <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <section style={{ maxWidth: 1080 }}>
+      {celebration &&
+        createPortal(
+        <>
+          <Confetti />
+          <div className="chc-sold-card" role="status">
+            <span className="chc-sold-icon" aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
+            </span>
+            <div className="flex-grow-1" style={{ minWidth: 0 }}>
+              <div className="chc-sold-title">Vendu !</div>
+              <div className="text-truncate">{celebration.lines[0]?.description ?? `Dossier #${celebration.id}`}</div>
+              <div className="small text-secondary">
+                {celebration.buyer.name} · <span className="chc-num">{formatEuros(celebration.totals.total)}</span>
+              </div>
+              <div className="d-flex flex-wrap gap-2 mt-3">
+                {invoice && (
+                  <Button size="sm" onClick={() => void download(invoice.id, invoice.filename)}>
+                    Télécharger la facture
+                  </Button>
+                )}
+                <Button size="sm" variant="outline-secondary" onClick={() => setCelebration(null)}>
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>,
+          // Window-fixed, out of the page container (see Confetti).
+          document.body,
+        )}
+      <div className="d-flex flex-wrap align-items-center gap-3 mb-4">
         <h1 className="h4 mb-0 me-2">Dossier de vente #{sale.id}</h1>
         <Badge bg={SALE_STATUS_VARIANTS[sale.status]} text={sale.status === "ordered" ? "dark" : undefined}>
           {SALE_STATUS_LABELS[sale.status]}
@@ -220,7 +263,7 @@ export default function SaleDetailPage() {
         )}
       </div>
 
-      <ol className="chc-steps mb-4">
+      <ol className="chc-steps mb-5">
         {STEPS.map((step, index) => (
           <li key={step.key} className={index < stepIndex ? "is-done" : index === stepIndex ? "is-current" : undefined}>
             <span className="chc-steps-dot" aria-hidden="true">{index < stepIndex ? "✓" : index + 1}</span>
@@ -232,7 +275,7 @@ export default function SaleDetailPage() {
       <ErrorAlert message={error} />
 
       {sale.listing && openReservations > 0 && (
-        <Alert variant={sale.status === "paid" ? "danger" : "warning"} className="d-flex flex-wrap gap-1">
+        <Alert variant={sale.status === "paid" ? "danger" : "warning"} className="d-flex flex-wrap gap-1 mb-4">
           <strong>
             {openReservations} réservation{openReservations > 1 ? "s" : ""} en cours sur ce véhicule
           </strong>
@@ -262,31 +305,31 @@ export default function SaleDetailPage() {
           </Button>
         </>
       ) : (
-        <Row className="g-3">
+        <Row className="g-4">
           {/* Amounts */}
           <Col lg={5}>
             <Card className="h-100">
-              <Card.Body>
-                <h2 className="h6">Montants</h2>
-                <div className="d-flex justify-content-between"><span>Total TVAC</span><strong className="chc-num">{formatEuros(sale.totals.total)}</strong></div>
+              <Card.Body className="p-3 p-md-4">
+                <h2 className="h6 mb-3">Montants</h2>
+                <div className="d-flex justify-content-between mb-1"><span>Total TVAC</span><strong className="chc-num">{formatEuros(sale.totals.total)}</strong></div>
                 {sale.vatRegime === "standard" && (
                   <div className="small text-secondary">
                     dont TVA 21 % : {formatEuros(sale.totals.vat)} (HTVA {formatEuros(sale.totals.net)})
                   </div>
                 )}
-                <div className="d-flex justify-content-between mt-2"><span>Encaissé</span><span className="chc-num">{formatEuros(sale.totals.paid)}</span></div>
+                <div className="d-flex justify-content-between mt-3 mb-1"><span>Encaissé</span><span className="chc-num">{formatEuros(sale.totals.paid)}</span></div>
                 <div className="d-flex justify-content-between fw-bold"><span>Reste à payer</span><span className="chc-num">{formatEuros(sale.totals.due)}</span></div>
-                <ProgressBar now={progress} variant={progress >= 100 ? "success" : "primary"} className="mt-3" aria-label={`Payé à ${progress} %`} />
-                <div className="small text-secondary mt-1">Payé à {progress} %</div>
-                <hr />
+                <ProgressBar now={progress} variant={progress >= 100 ? "success" : "primary"} className="mt-4" aria-label={`Payé à ${progress} %`} />
+                <div className="small text-secondary mt-2">Payé à {progress} %</div>
+                <hr className="my-4" />
                 <div className="small text-secondary">{VAT_REGIME_LABELS[sale.vatRegime]}</div>
                 {sale.listing && (
-                  <div className="small mt-1">
+                  <div className="small mt-2">
                     Annonce : <Link href={withLocale(listingPath(sale.listing))}>{sale.listing.title}</Link>
                     {sale.listing.status === "sold" && <Badge bg="dark" className="ms-2">Vendue</Badge>}
                   </div>
                 )}
-                {sale.vehicleVin && <div className="small mt-1">VIN : <span className="font-monospace">{sale.vehicleVin}</span></div>}
+                {sale.vehicleVin && <div className="small mt-2">VIN : <span className="font-monospace">{sale.vehicleVin}</span></div>}
               </Card.Body>
             </Card>
           </Col>
@@ -294,9 +337,9 @@ export default function SaleDetailPage() {
           {/* Buyer */}
           <Col lg={7}>
             <Card className="h-100">
-              <Card.Body>
-                <h2 className="h6">Acheteur</h2>
-                <div className="fw-semibold">
+              <Card.Body className="p-3 p-md-4">
+                <h2 className="h6 mb-3">Acheteur</h2>
+                <div className="fw-semibold fs-6 mb-1">
                   {sale.buyer.name}
                   {sale.buyer.company && <span className="text-secondary fw-normal"> · {sale.buyer.company}</span>}
                 </div>
@@ -305,13 +348,13 @@ export default function SaleDetailPage() {
                     .filter(Boolean)
                     .join(", ") || "Adresse non renseignée"}
                 </div>
-                <div className="small mt-1">
+                <div className="small mt-2">
                   {sale.buyer.email && <a href={`mailto:${sale.buyer.email}`}>{sale.buyer.email}</a>}
                   {sale.buyer.email && sale.buyer.phone && " · "}
                   {sale.buyer.phone && <a href={`tel:${sale.buyer.phone.replace(/[^+0-9]/g, "")}`}>{sale.buyer.phone}</a>}
                 </div>
-                {sale.buyer.vatNumber && <div className="small mt-1">TVA : {sale.buyer.vatNumber}</div>}
-                {sale.notes && <p className="small mt-2 mb-0 chc-resa-message">{sale.notes}</p>}
+                {sale.buyer.vatNumber && <div className="small mt-2">TVA : {sale.buyer.vatNumber}</div>}
+                {sale.notes && <p className="small mt-3 mb-0 chc-resa-message">{sale.notes}</p>}
               </Card.Body>
             </Card>
           </Col>
@@ -319,9 +362,9 @@ export default function SaleDetailPage() {
           {/* Lines */}
           <Col xs={12}>
             <Card>
-              <Card.Body>
-                <h2 className="h6">Lignes</h2>
-                <Table size="sm" responsive className="mb-0 align-middle">
+              <Card.Body className="p-3 p-md-4">
+                <h2 className="h6 mb-3">Lignes</h2>
+                <Table responsive className="mb-0 align-middle chc-sale-lines">
                   <thead>
                     <tr>
                       <th>Désignation</th>
@@ -342,7 +385,7 @@ export default function SaleDetailPage() {
                   </tbody>
                 </Table>
                 {!sale.editable && (
-                  <div className="small text-secondary mt-2">
+                  <div className="small text-secondary mt-3">
                     Un document a été émis : le contenu du dossier est figé.
                   </div>
                 )}
@@ -353,12 +396,12 @@ export default function SaleDetailPage() {
           {/* Payments */}
           <Col lg={7}>
             <Card className="h-100">
-              <Card.Body>
-                <h2 className="h6">Paiements</h2>
+              <Card.Body className="p-3 p-md-4">
+                <h2 className="h6 mb-3">Paiements</h2>
                 {sale.payments.length === 0 ? (
-                  <p className="small text-secondary">Aucun paiement enregistré.</p>
+                  <p className="small text-secondary mb-4">Aucun paiement enregistré.</p>
                 ) : (
-                  <ul className="list-unstyled mb-3 chc-payments">
+                  <ul className="list-unstyled mb-4 chc-payments">
                     {sale.payments.map((payment) => (
                       <li key={payment.id}>
                         <span>
@@ -386,7 +429,7 @@ export default function SaleDetailPage() {
                 {sale.status === "paid" ? (
                   <Alert variant="success" className="mb-0 py-2 small">Dossier entièrement payé.</Alert>
                 ) : (
-                  <PaymentForm key={sale.totals.due} sale={sale} onDone={setSale} />
+                  <PaymentForm key={sale.totals.due} sale={sale} onDone={paymentRecorded} />
                 )}
               </Card.Body>
             </Card>
@@ -395,8 +438,8 @@ export default function SaleDetailPage() {
           {/* Documents */}
           <Col lg={5}>
             <Card className="h-100">
-              <Card.Body>
-                <h2 className="h6">Documents</h2>
+              <Card.Body className="p-3 p-md-4">
+                <h2 className="h6 mb-3">Documents</h2>
                 {sale.documents.length === 0 ? (
                   <p className="small text-secondary mb-0">
                     Le bon de commande sera généré au premier paiement (avance), la facture une fois tout payé.

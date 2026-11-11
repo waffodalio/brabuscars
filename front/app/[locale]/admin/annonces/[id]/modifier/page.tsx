@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Spinner from "react-bootstrap/Spinner";
 import {
@@ -105,8 +106,8 @@ export default function EditListingPage() {
   }
 
   return (
-    <section style={{ maxWidth: 720 }}>
-      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <section style={{ maxWidth: 800 }}>
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <h1 className="h4 mb-0">Modifier l&apos;annonce</h1>
         <div className="d-flex gap-2">
           <Link
@@ -126,12 +127,16 @@ export default function EditListingPage() {
       >
         <ErrorAlert message={error} />
 
-        <ListingFormFields
-          form={form}
-          models={models}
-          categories={categories}
-          onChange={set}
-        />
+        <Card className="mb-2">
+          <Card.Body className="p-3 p-md-4">
+            <ListingFormFields
+              form={form}
+              models={models}
+              categories={categories}
+              onChange={set}
+            />
+          </Card.Body>
+        </Card>
 
         <div className="mt-4">
           <Button type="submit" disabled={submitting}>

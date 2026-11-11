@@ -8,6 +8,7 @@ export const ADMIN_ICONS = {
   users:
     "M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 20v-2a4 4 0 0 0-3-3.87M16 2.13a4 4 0 0 1 0 7.75",
   stats: "M4 20V10M10 20V4M16 20v-7M22 20H2",
+  server: "M4 4h16v6H4zM4 14h16v6H4zM8 7h.01M8 17h.01",
   menu: "M4 6h16M4 12h16M4 18h16",
   external: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
   plus: "M12 5v14M5 12h14",

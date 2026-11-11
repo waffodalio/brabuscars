@@ -14,12 +14,14 @@ import { useAuth } from "@/context/AuthContext";
 import { useCompany } from "@/context/CompanyContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { CompareButton } from "@/components/CompareButton";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { ListingImagePanel } from "@/components/ListingImagePanel";
 import { RESERVE_PARAM, ReservationPanel } from "@/components/ReservationPanel";
 import { VehicleSpecs } from "@/components/VehicleSpecs";
-import { listingService } from "@/services/listingService";
+import { listingKey, listingService } from "@/services/listingService";
+import { peekQuery } from "@/utils/queryCache";
 import type { Listing, ListingImage, ListingStatus } from "@/types/listing";
 import { RESERVATION_TYPES, type ReservationType } from "@/types/reservation";
 import { listingIdFromParam, listingPath } from "@/utils/listingPath";
@@ -62,8 +64,13 @@ export default function ListingDetailPage() {
       : peekReservationIntent(id);
   });
 
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [activeUrl, setActiveUrl] = useState<string | null>(null);
+  // Opened from a card: the list already carried it, so it shows at once.
+  const [listing, setListing] = useState<Listing | null>(
+    () => peekQuery<Listing>(listingKey(id)) ?? null,
+  );
+  const [activeUrl, setActiveUrl] = useState<string | null>(
+    () => peekQuery<Listing>(listingKey(id))?.images[0]?.url ?? null,
+  );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   /** Full-size viewer open on the active photo. */
@@ -85,7 +92,9 @@ export default function ListingDetailPage() {
       .getById(id)
       .then((data) => {
         setListing(data);
-        setActiveUrl(data.images[0]?.url ?? null);
+        setActiveUrl((current) =>
+          data.images.some((image) => image.url === current) ? current : (data.images[0]?.url ?? null),
+        );
         // Old / bare-id / mistyped address, or `?reserver=…` already read:
         // show the canonical one. History API rather than the router, so the
         // page (and a reservation form opened on arrival) stays as it is.
@@ -316,6 +325,7 @@ export default function ListingDetailPage() {
                   {t.listingDetail.contact}
                 </Link>
                 <FavoriteButton listingId={listing.id} />
+                {listing.status === "published" && <CompareButton listing={listing} />}
               </div>
             </Card.Body>
           </Card>

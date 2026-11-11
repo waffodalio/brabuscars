@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Spinner from "react-bootstrap/Spinner";
 import {
@@ -97,8 +98,8 @@ export default function NewListingPage() {
   }
 
   return (
-    <section style={{ maxWidth: 720 }}>
-      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <section style={{ maxWidth: 800 }}>
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <h1 className="h4 mb-0">Nouvelle annonce</h1>
       </div>
 
@@ -117,31 +118,34 @@ export default function NewListingPage() {
       >
         <ErrorAlert message={error} />
 
-        <ListingFormFields
-          form={form}
-          models={models}
-          categories={categories}
-          onChange={set}
-        />
+        <Card className="mb-2">
+          <Card.Body className="p-3 p-md-4">
+            <ListingFormFields
+              form={form}
+              models={models}
+              categories={categories}
+              onChange={set}
+            />
 
-        <Form.Group className="mt-3" controlId="listing-images">
-          <Form.Label>Photos</Form.Label>
-          <Form.Control
-            ref={fileInput}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            onChange={onFiles}
-          />
-          <Form.Text className="text-secondary">
-            JPEG, PNG ou WebP — 15 Mo max par fichier. La première photo servira
-            de couverture ; vous pourrez la changer ensuite.
-          </Form.Text>
-          {files.length > 0 && (
-            <div className="small mt-1">{files.length} fichier(s) sélectionné(s)</div>
-          )}
-        </Form.Group>
-
+            <Form.Group className="mt-3" controlId="listing-images">
+              <Form.Label>Photos</Form.Label>
+              <Form.Control
+                ref={fileInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={onFiles}
+              />
+              <Form.Text className="text-secondary">
+                JPEG, PNG ou WebP — 15 Mo max par fichier. La première photo servira
+                de couverture ; vous pourrez la changer ensuite.
+              </Form.Text>
+              {files.length > 0 && (
+                <div className="small mt-1">{files.length} fichier(s) sélectionné(s)</div>
+              )}
+            </Form.Group>
+          </Card.Body>
+        </Card>
         <div className="d-flex align-items-center gap-3 mt-4">
           <Button type="submit" disabled={submitting || models.length === 0}>
             {submitting && (

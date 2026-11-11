@@ -41,7 +41,7 @@ export default function AdminSalesPage() {
 
   return (
     <section>
-      <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <div className="d-flex flex-wrap align-items-center gap-3 mb-4">
         <p className="text-secondary mb-0 me-auto">
           Une avance génère le <strong>bon de commande</strong> ; le paiement du solde génère la{" "}
           <strong>facture</strong>.
@@ -57,7 +57,7 @@ export default function AdminSalesPage() {
         <Spinner animation="border" role="status" aria-label="Chargement" />
       ) : (
         <>
-          <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <div className="d-flex flex-wrap align-items-center gap-3 mb-4">
             <div className="chc-segmented" role="group" aria-label="Statut">
               {(["all", ...SALE_STATUSES] as Filter[]).map((key) => (
                 <button
@@ -84,7 +84,8 @@ export default function AdminSalesPage() {
               {sales.length === 0 ? "Aucun dossier pour le moment. Créez-en un avec « Nouveau dossier »." : "Aucun dossier ici."}
             </Alert>
           ) : (
-            <Table hover responsive className="align-middle chc-table-cards">
+            <div className="chc-admin-table">
+            <Table hover responsive className="align-middle mb-0 chc-table-cards">
               <thead>
                 <tr>
                   <th>N°</th>
@@ -105,8 +106,8 @@ export default function AdminSalesPage() {
                       </Link>
                     </td>
                     <td data-label="Acheteur">
-                      {sale.buyer.name}
-                      {sale.buyer.company && <span className="text-secondary small"> · {sale.buyer.company}</span>}
+                      <div>{sale.buyer.name}</div>
+                      {sale.buyer.company && <div className="text-secondary small">{sale.buyer.company}</div>}
                     </td>
                     <td data-label="Véhicule" className="text-truncate" style={{ maxWidth: 260 }}>
                       {sale.lines[0]?.description ?? "—"}
@@ -121,12 +122,19 @@ export default function AdminSalesPage() {
                       </Badge>
                     </td>
                     <td data-label="Documents" className="small text-secondary">
-                      {sale.documents.map((document) => document.number).join(" · ") || "—"}
+                      {sale.documents.length === 0
+                        ? "—"
+                        : sale.documents.map((document) => (
+                            <div key={document.id} className="text-nowrap">
+                              {document.number}
+                            </div>
+                          ))}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </Table>
+            </div>
           )}
         </>
       )}

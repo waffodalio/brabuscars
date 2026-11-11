@@ -8,6 +8,7 @@ import Navbar from "react-bootstrap/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { BrandLogo } from "@/components/BrandLogo";
+import { FavoritesNavLink } from "@/components/FavoritesNavLink";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
@@ -73,6 +74,7 @@ export function AppNavbar() {
             collapse so it stays on the brand's row on mobile (the collapse
             opens below), moved to the far right on desktop by `order-lg-last`. */}
         <div className="position-relative d-flex align-items-center gap-1 gap-sm-2 order-lg-last ms-auto ms-lg-3">
+          {!initializing && user && <FavoritesNavLink />}
           {!initializing && user && <UserMenu />}
           <LanguageSwitcher />
           <ThemeToggle />

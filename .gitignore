@@ -31,3 +31,6 @@ yarn-error.log*
 .DS_Store
 *.pem
 .vercel
+
+# Source brand assets (original logo image) — kept local, not versioned
+front/brand/

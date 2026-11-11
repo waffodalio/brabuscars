@@ -257,12 +257,12 @@ export default function AdminReservationsPage() {
 
   return (
     <section>
-      <p className="text-secondary">
+      <p className="text-secondary mb-4">
         Demandes de mise de côté et de rendez-vous d&apos;essai faites par les clients connectés. Le client
         est prévenu par e-mail de chaque décision.
       </p>
 
-      <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <div className="d-flex flex-wrap align-items-center gap-3 mb-4">
         <div className="chc-segmented" role="group" aria-label="Statut">
           {TABS.map((t) => (
             <button
@@ -293,7 +293,7 @@ export default function AdminReservationsPage() {
       <ErrorAlert message={error} />
 
       {conflicts > 0 && (
-        <Alert variant="danger" className="d-flex flex-wrap align-items-center gap-2">
+        <Alert variant="danger" className="d-flex flex-wrap align-items-center gap-2 mb-4">
           <strong>
             {conflicts} demande{conflicts > 1 ? "s" : ""} en cours concerne{conflicts > 1 ? "nt" : ""} un véhicule qui
             n&apos;est plus en vente
@@ -307,7 +307,7 @@ export default function AdminReservationsPage() {
           {tab === "pending" ? "Aucune demande à traiter." : "Aucune demande ici."}
         </Alert>
       ) : (
-        <div className="d-flex flex-column gap-3">
+        <div className="d-flex flex-column gap-4">
           {shown.map((r) => (
             <Card
               key={r.id}
@@ -319,7 +319,7 @@ export default function AdminReservationsPage() {
                     : undefined
               }
             >
-              <Card.Body className="d-flex flex-column flex-md-row gap-3">
+              <Card.Body className="d-flex flex-column flex-md-row gap-3 gap-md-4 p-3 p-md-4">
                 <div className="chc-stats-thumb d-none d-sm-block">
                   {r.listing.thumbnailUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -367,7 +367,7 @@ export default function AdminReservationsPage() {
                   </div>
 
                   {r.message && (
-                    <p className="small mt-2 mb-0 chc-resa-message" style={{ whiteSpace: "pre-line" }}>
+                    <p className="small mt-3 mb-0 chc-resa-message" style={{ whiteSpace: "pre-line" }}>
                       {r.message}
                     </p>
                   )}

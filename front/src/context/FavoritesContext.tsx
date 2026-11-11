@@ -19,8 +19,8 @@ interface FavoritesContextValue {
   loading: boolean;
   /** The favourites could not be loaded (the list is empty for that reason). */
   loadFailed: boolean;
-  /** True while a toggle request is in flight. */
-  pending: boolean;
+  /** True while this listing's toggle request is in flight. */
+  isPending: (listingId: number) => boolean;
   isFavorite: (listingId: number) => boolean;
   /** Rejects with the API error on failure: the caller shows it. */
   toggle: (listingId: number) => Promise<void>;
@@ -33,7 +33,8 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [pending, setPending] = useState(false);
+  /** Listings being toggled: each button is busy on its own, not all of them. */
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<number>>(new Set());
 
   useEffect(() => {
     setLoadFailed(false);
@@ -62,34 +63,53 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     [favoriteIds],
   );
 
+  const isPending = useCallback(
+    (listingId: number) => pendingIds.has(listingId),
+    [pendingIds],
+  );
+
+  const setPending = useCallback((listingId: number, busy: boolean) => {
+    setPendingIds((current) => {
+      const next = new Set(current);
+      if (busy) next.add(listingId);
+      else next.delete(listingId);
+      return next;
+    });
+  }, []);
+
   const toggle = useCallback(
     async (listingId: number) => {
-      setPending(true);
+      setPending(listingId, true);
       try {
         if (favoriteIds.has(listingId)) {
-          try {
-            await favoriteService.remove(listingId);
-          } catch (err) {
-            // 404: already removed (other tab / device) — just sync the list.
-            if (!(err instanceof ApiClientError && err.status === 404)) throw err;
-          }
+          // Optimistic: the star empties at once, put back if the call fails.
+          const removed = favorites.find((favorite) => favorite.listingId === listingId);
           setFavorites((current) =>
             current.filter((favorite) => favorite.listingId !== listingId),
           );
+          try {
+            await favoriteService.remove(listingId);
+          } catch (err) {
+            // 404: already removed (other tab / device) — nothing to undo.
+            if (!(err instanceof ApiClientError && err.status === 404)) {
+              if (removed) setFavorites((current) => [removed, ...current]);
+              throw err;
+            }
+          }
         } else {
           const created = await favoriteService.add(listingId);
           setFavorites((current) => [created, ...current]);
         }
       } finally {
-        setPending(false);
+        setPending(listingId, false);
       }
     },
-    [favoriteIds],
+    [favoriteIds, favorites, setPending],
   );
 
   const value = useMemo<FavoritesContextValue>(
-    () => ({ favorites, loading, loadFailed, pending, isFavorite, toggle }),
-    [favorites, loading, loadFailed, pending, isFavorite, toggle],
+    () => ({ favorites, loading, loadFailed, isPending, isFavorite, toggle }),
+    [favorites, loading, loadFailed, isPending, isFavorite, toggle],
   );
 
   return (

@@ -13,7 +13,8 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { ListingCard } from "@/components/ListingCard";
 import { ListingCardSkeleton } from "@/components/ListingCardSkeleton";
 import { useLanguage } from "@/context/LanguageContext";
-import { listingService } from "@/services/listingService";
+import { listingService, listingsKey } from "@/services/listingService";
+import { peekQuery } from "@/utils/queryCache";
 import type { Brand } from "@/types/brand";
 import type { CarModel } from "@/types/carModel";
 import type { Category } from "@/types/category";
@@ -37,7 +38,7 @@ export default function ListingsPage() {
   return (
     <Suspense
       fallback={
-        <Row xs={1} sm={2} lg={3} className="g-4">
+        <Row xs={2} lg={3} className="g-2 g-sm-3 g-lg-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <Col key={i}>
               <ListingCardSkeleton />
@@ -84,10 +85,15 @@ function ListingsBrowser() {
     setForm(applied);
   }
 
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading",
+  // Seen before in this tab (back from a listing…): shown at once, then refreshed.
+  const [listings, setListings] = useState<Listing[]>(
+    () => peekQuery<Listing[]>(listingsKey(toQuery(applied))) ?? [],
   );
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(() =>
+    peekQuery(listingsKey(toQuery(applied))) ? "ready" : "loading",
+  );
+  /** New filters applied: the current results stay, dimmed, until the new ones arrive. */
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -122,9 +128,18 @@ function ListingsBrowser() {
 
   useEffect(() => {
     let active = true;
-    setStatus("loading");
+    const query = toQuery(applied);
+    const known = peekQuery<Listing[]>(listingsKey(query));
+    if (known) {
+      setListings(known);
+      setStatus("ready");
+    } else {
+      // Keep what is on screen (dimmed) rather than flashing the skeletons.
+      setStatus((current) => (current === "ready" ? current : "loading"));
+      setRefreshing(true);
+    }
     listingService
-      .list(toQuery(applied))
+      .list(query)
       .then((data) => {
         if (!active) return;
         setListings(data);
@@ -134,6 +149,9 @@ function ListingsBrowser() {
         if (!active) return;
         setError(toMessage(err, t.common.unknownError));
         setStatus("error");
+      })
+      .finally(() => {
+        if (active) setRefreshing(false);
       });
     return () => {
       active = false;
@@ -190,14 +208,19 @@ function ListingsBrowser() {
             </p>
           )}
         </div>
-        {isAdmin && (
-          <Link
-            href={withLocale("/admin/annonces")}
-            className="btn btn-outline-secondary"
-          >
-            {t.listings.manage}
+        <div className="d-flex flex-wrap gap-2">
+          <Link href={withLocale("/trouver")} className="btn btn-outline-primary chc-finder-link">
+            ✦ {t.finder.cta}
           </Link>
-        )}
+          {isAdmin && (
+            <Link
+              href={withLocale("/admin/annonces")}
+              className="btn btn-outline-secondary"
+            >
+              {t.listings.manage}
+            </Link>
+          )}
+        </div>
       </div>
 
       <Form
@@ -423,7 +446,7 @@ function ListingsBrowser() {
       </Form>
 
       {status === "loading" && (
-        <Row xs={1} sm={2} lg={3} className="g-4">
+        <Row xs={2} lg={3} className="g-2 g-sm-3 g-lg-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Col key={i}>
               <ListingCardSkeleton />
@@ -443,7 +466,12 @@ function ListingsBrowser() {
       )}
 
       {status === "ready" && listings.length > 0 && (
-        <Row xs={1} sm={2} lg={3} className="g-4 chc-stagger">
+        <Row
+          xs={2}
+          lg={3}
+          className={`g-2 g-sm-3 g-lg-4 chc-stagger chc-results${refreshing ? " is-refreshing" : ""}`}
+          aria-busy={refreshing}
+        >
           {listings.map((listing) => (
             <Col key={listing.id}>
               <ListingCard listing={listing} />

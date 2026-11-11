@@ -152,10 +152,10 @@ export function SaleForm({
     <Form onSubmit={handleSubmit}>
       <ErrorAlert message={error} />
 
-      <Card className="mb-3">
-        <Card.Body>
-          <h2 className="h6 mb-3">Véhicule & TVA</h2>
-          <Row className="g-3">
+      <Card className="mb-4">
+        <Card.Body className="p-3 p-md-4">
+          <h2 className="h6 mb-4">Véhicule & TVA</h2>
+          <Row className="g-4">
             <Col md={7}>
               <Form.Group controlId="sale-listing">
                 <Form.Label>Annonce (facultatif)</Form.Label>
@@ -177,7 +177,7 @@ export function SaleForm({
               </Form.Group>
             </Col>
             <Col xs={12}>
-              <Form.Label className="d-block">Régime de TVA</Form.Label>
+              <Form.Label className="d-block mb-2">Régime de TVA</Form.Label>
               {(Object.keys(VAT_REGIME_LABELS) as VatRegime[]).map((regime) => (
                 <Form.Check
                   key={regime}
@@ -195,10 +195,10 @@ export function SaleForm({
         </Card.Body>
       </Card>
 
-      <Card className="mb-3">
-        <Card.Body>
-          <h2 className="h6 mb-3">Acheteur</h2>
-          <Row className="g-3">
+      <Card className="mb-4">
+        <Card.Body className="p-3 p-md-4">
+          <h2 className="h6 mb-4">Acheteur</h2>
+          <Row className="g-4">
             <Col md={6}>
               <Form.Group controlId="sale-buyer-name">
                 <Form.Label>Nom et prénom</Form.Label>
@@ -257,13 +257,13 @@ export function SaleForm({
         </Card.Body>
       </Card>
 
-      <Card className="mb-3">
-        <Card.Body>
-          <h2 className="h6 mb-1">Lignes</h2>
-          <p className="small text-secondary">Prix TVA comprise. La 1re ligne est le véhicule.</p>
-          <div className="d-flex flex-column gap-2">
+      <Card className="mb-4">
+        <Card.Body className="p-3 p-md-4">
+          <h2 className="h6 mb-2">Lignes</h2>
+          <p className="small text-secondary mb-4">Prix TVA comprise. La 1re ligne est le véhicule.</p>
+          <div className="d-flex flex-column gap-3">
             {lines.map((line, index) => (
-              <Row key={index} className="g-2 align-items-end chc-sale-line">
+              <Row key={index} className="g-3 align-items-center chc-sale-line">
                 <Col xs={12} md={6}>
                   <Form.Control
                     aria-label={`Désignation ligne ${index + 1}`}
@@ -311,7 +311,7 @@ export function SaleForm({
               </Row>
             ))}
           </div>
-          <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 pt-4 border-top">
             <Button
               size="sm"
               variant="outline-primary"
@@ -325,8 +325,8 @@ export function SaleForm({
         </Card.Body>
       </Card>
 
-      <Card className="mb-3">
-        <Card.Body>
+      <Card className="mb-4">
+        <Card.Body className="p-3 p-md-4">
           <Form.Group controlId="sale-notes">
             <Form.Label>Notes internes (facultatif, non imprimées)</Form.Label>
             <Form.Control as="textarea" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} />
@@ -334,7 +334,7 @@ export function SaleForm({
         </Card.Body>
       </Card>
 
-      <Button type="submit" disabled={submitting}>
+      <Button type="submit" size="lg" className="px-4" disabled={submitting}>
         {submitting ? "Enregistrement…" : submitLabel}
       </Button>
     </Form>

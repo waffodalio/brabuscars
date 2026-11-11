@@ -75,7 +75,7 @@ export default function AdminListingsPage() {
 
   return (
     <section>
-      <div className="d-flex justify-content-end mb-3">
+      <div className="d-flex justify-content-end mb-4">
         <Link href={withLocale("/admin/annonces/nouvelle")} className="btn btn-primary">
           Nouvelle annonce
         </Link>
@@ -101,7 +101,8 @@ export default function AdminListingsPage() {
               Aucune annonce. Créez-en une avec « Nouvelle annonce ».
             </Alert>
           ) : (
-            <Table striped hover responsive className="chc-table-cards">
+            <div className="chc-admin-table">
+            <Table hover responsive className="align-middle mb-0 chc-table-cards">
               <thead>
                 <tr>
                   <th>#</th>
@@ -191,6 +192,7 @@ export default function AdminListingsPage() {
                 ))}
               </tbody>
             </Table>
+            </div>
           )}
         </>
       )}

@@ -11,8 +11,8 @@ export default function NewSalePage() {
   const { withLocale } = useLanguage();
 
   return (
-    <section style={{ maxWidth: 900 }}>
-      <h1 className="h4 mb-3">Nouveau dossier de vente</h1>
+    <section style={{ maxWidth: 960 }}>
+      <h1 className="h4 mb-4">Nouveau dossier de vente</h1>
       <SaleForm
         submitLabel="Créer le dossier"
         onSubmit={async (input) => {

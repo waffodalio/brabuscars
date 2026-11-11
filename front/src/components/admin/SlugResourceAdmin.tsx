@@ -111,7 +111,7 @@ export function SlugResourceAdmin<T extends SlugRow>({
 
   return (
     <section>
-      <div className="d-flex justify-content-end mb-3">
+      <div className="d-flex justify-content-end mb-4">
         <Button onClick={openCreate}>Ajouter une {singular}</Button>
       </div>
 
@@ -126,7 +126,8 @@ export function SlugResourceAdmin<T extends SlugRow>({
           {rows.length === 0 ? (
             <Alert variant="info">Aucune {singular} enregistrée.</Alert>
           ) : (
-            <Table striped hover responsive className="chc-table-cards">
+            <div className="chc-admin-table">
+            <Table hover responsive className="align-middle mb-0 chc-table-cards">
               <thead>
                 <tr>
                   <th>#</th>
@@ -165,6 +166,7 @@ export function SlugResourceAdmin<T extends SlugRow>({
                 ))}
               </tbody>
             </Table>
+            </div>
           )}
         </>
       )}

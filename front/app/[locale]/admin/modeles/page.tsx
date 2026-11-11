@@ -88,7 +88,7 @@ export default function AdminCarModelsPage() {
 
   return (
     <section>
-      <div className="d-flex justify-content-end mb-3">
+      <div className="d-flex justify-content-end mb-4">
         <Button onClick={openCreate} disabled={status !== "ready"}>
           Ajouter un modèle
         </Button>
@@ -105,7 +105,8 @@ export default function AdminCarModelsPage() {
           {models.length === 0 ? (
             <Alert variant="info">Aucun modèle enregistré.</Alert>
           ) : (
-            <Table striped hover responsive className="chc-table-cards">
+            <div className="chc-admin-table">
+            <Table hover responsive className="align-middle mb-0 chc-table-cards">
               <thead>
                 <tr>
                   <th>#</th>
@@ -142,6 +143,7 @@ export default function AdminCarModelsPage() {
                 ))}
               </tbody>
             </Table>
+            </div>
           )}
         </>
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { fr, en, nl, type Dictionary } from "@/i18n/dictionaries";
 import { DEFAULT_LOCALE, isLocale, type Locale } from "@/i18n/locales";
@@ -43,20 +43,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const locale = localeFromPathname(pathname);
   const rest = pathAfterLocale(pathname);
 
-  function withLocale(path: string): string {
-    return `/${locale}${path}`;
-  }
-
-  function pathFor(target: Locale): string {
-    return rest ? `/${target}/${rest}` : `/${target}`;
-  }
+  // Stable until the locale changes: effects depending on it don't re-run
+  // on every navigation, and consumers skip needless re-renders.
+  const withLocale = useCallback((path: string) => `/${locale}${path}`, [locale]);
+  const pathFor = useCallback(
+    (target: Locale) => (rest ? `/${target}/${rest}` : `/${target}`),
+    [rest],
+  );
+  const value = useMemo<LanguageContextValue>(
+    () => ({ locale, t: DICTIONARIES[locale], withLocale, pathFor }),
+    [locale, withLocale, pathFor],
+  );
 
   return (
-    <LanguageContext.Provider
-      value={{ locale, t: DICTIONARIES[locale], withLocale, pathFor }}
-    >
-      {children}
-    </LanguageContext.Provider>
+    <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
   );
 }
 

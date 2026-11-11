@@ -83,7 +83,9 @@ export function toQuery(form: FilterForm): ListingFilters {
     maxYear: num(form.maxYear),
     maxMileage: num(form.maxMileage),
     search: form.search.trim() || undefined,
-    sort: form.sort,
+    // "recent" is the API default: left out, the unfiltered list shares its
+    // cache entry with the home page's.
+    sort: form.sort === "recent" ? undefined : form.sort,
   };
 }
 

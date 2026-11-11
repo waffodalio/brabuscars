@@ -36,7 +36,7 @@ export default function FavoritesPage() {
       <h1 className="h3 mb-4 chc-animate-in">{t.favorites.title}</h1>
 
       {loading && (
-        <Row xs={1} sm={2} lg={3} className="g-4">
+        <Row xs={2} lg={3} className="g-2 g-sm-3 g-lg-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <Col key={i}>
               <ListingCardSkeleton />
@@ -56,7 +56,7 @@ export default function FavoritesPage() {
       )}
 
       {!loading && favorites.length > 0 && (
-        <Row xs={1} sm={2} lg={3} className="g-4 chc-stagger">
+        <Row xs={2} lg={3} className="g-2 g-sm-3 g-lg-4 chc-stagger">
           {favorites.map((favorite) => (
             <Col key={favorite.id}>
               <ListingCard listing={favorite.listing} />

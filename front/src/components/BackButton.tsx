@@ -22,11 +22,18 @@ function parentOf(pathname: string, locale: string): string {
   return `/${locale}`;
 }
 
+/** Key of the page on screen: its path (listing slug ignored) and its filters. */
+function positionKey(pathname: string): string {
+  return pageKey(pathname) + window.location.search;
+}
+
 /**
  * Keeps track of the navigations made inside the app (mounted once, in
  * `MainLayout`), so {@link BackButton} knows whether it can go back. A new
  * page starts at the top (so its Back button is in view); going back / forward
- * in the history keeps the browser's restored position. Renders nothing.
+ * in the history returns to where that page was left — remembered here, as
+ * the browser's own restoration often lands short while the page re-renders.
+ * Renders nothing.
  */
 export function NavigationTracker() {
   const pathname = usePathname();
@@ -34,13 +41,29 @@ export function NavigationTracker() {
   // run twice on mount in development.
   const last = useRef(pageKey(pathname));
   const fromHistory = useRef(false);
+  /** Last scroll position of each page seen in this tab. */
+  const positions = useRef(new Map<string, number>());
+  const currentKey = useRef<string | null>(null);
 
   useEffect(() => {
+    currentKey.current = positionKey(window.location.pathname);
     const onPopState = () => {
       fromHistory.current = true;
     };
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (currentKey.current) positions.current.set(currentKey.current, window.scrollY);
+      });
+    };
     window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -48,9 +71,25 @@ export function NavigationTracker() {
     const key = pageKey(pathname);
     if (last.current === key) return;
     last.current = key;
+    currentKey.current = positionKey(pathname);
     recordNavigation();
-    if (!fromHistory.current) window.scrollTo({ top: 0 });
+
+    const saved = fromHistory.current ? positions.current.get(currentKey.current) : undefined;
     fromHistory.current = false;
+    if (saved === undefined) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
+    // Wait until the page is tall enough again (a few frames at most).
+    let tries = 0;
+    let frame = 0;
+    const restore = () => {
+      const reachable = document.documentElement.scrollHeight - window.innerHeight >= saved;
+      if (reachable || tries++ > 30) window.scrollTo({ top: saved, behavior: "instant" });
+      else frame = requestAnimationFrame(restore);
+    };
+    frame = requestAnimationFrame(restore);
+    return () => cancelAnimationFrame(frame);
   }, [pathname]);
   return null;
 }

@@ -99,25 +99,32 @@
 
 /* ------------------------------------------------------------- motion */
 
+/* Short and light: a page change should feel instant, not choreographed. */
 @media (prefers-reduced-motion: no-preference) {
   .chc-animate-in {
-    animation: chc-fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: chc-fade-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   .chc-stagger > * {
-    animation: chc-fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: chc-fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-  .chc-stagger > *:nth-child(1) { animation-delay: 0ms; }
-  .chc-stagger > *:nth-child(2) { animation-delay: 60ms; }
-  .chc-stagger > *:nth-child(3) { animation-delay: 120ms; }
-  .chc-stagger > *:nth-child(4) { animation-delay: 180ms; }
-  .chc-stagger > *:nth-child(5) { animation-delay: 240ms; }
-  .chc-stagger > *:nth-child(6) { animation-delay: 300ms; }
-  .chc-stagger > *:nth-child(n + 7) { animation-delay: 360ms; }
+  .chc-stagger > *:nth-child(2) { animation-delay: 35ms; }
+  .chc-stagger > *:nth-child(3) { animation-delay: 70ms; }
+  .chc-stagger > *:nth-child(4) { animation-delay: 105ms; }
+  .chc-stagger > *:nth-child(5) { animation-delay: 140ms; }
+  .chc-stagger > *:nth-child(n + 6) { animation-delay: 175ms; }
+}
+/* Results being replaced by a new search: stay visible, dimmed. */
+.chc-results {
+  transition: opacity 0.2s ease;
+}
+.chc-results.is-refreshing {
+  opacity: 0.55;
+  pointer-events: none;
 }
 @keyframes chc-fade-up {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -339,7 +346,11 @@ a:hover {
     border: 1px solid var(--bs-border-color);
     border-radius: var(--bs-border-radius-lg);
     box-shadow: var(--chc-shadow-sm);
-    padding: 0.7rem 0.9rem;
+    padding: 0.9rem 1.1rem;
+  }
+  /* tbody is a block here, so border-spacing no longer separates the cards. */
+  .chc-table-cards tr + tr {
+    margin-top: 1rem;
   }
   .chc-table-cards td {
     display: flex;
@@ -347,7 +358,7 @@ a:hover {
     align-items: baseline;
     justify-content: space-between;
     gap: 0.5rem 0.75rem;
-    padding: 0.4rem 0 !important;
+    padding: 0.55rem 0 !important;
     border: 0 !important;
     text-align: right;
   }
@@ -752,6 +763,242 @@ a:hover .chc-logo-word::after {
   position: relative;
   z-index: 2;
 }
+/* Favourite toggle: a round star button (no text), on photos and pages */
+.chc-fav-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 2.375rem;
+  height: 2.375rem;
+  padding: 0;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 50%;
+  color: var(--bs-secondary-color);
+  background: var(--bs-body-bg);
+  box-shadow: var(--chc-shadow-sm);
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.chc-fav-btn:hover,
+.chc-fav-btn:focus-visible {
+  color: #f5a524;
+  border-color: #f5a524;
+}
+.chc-fav-btn.is-active {
+  color: #f5a524;
+  border-color: rgba(245, 165, 36, 0.45);
+}
+.chc-fav-btn:active {
+  transform: scale(0.92);
+}
+.chc-fav-btn:disabled {
+  opacity: 0.65;
+}
+.chc-media__overlay .chc-fav-btn {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.92);
+  color: #4a5160;
+}
+.chc-media__overlay .chc-fav-btn.is-active {
+  color: #f5a524;
+}
+
+/* Sparkle burst when a listing is added to the favourites */
+.chc-fav-btn {
+  position: relative;
+}
+.chc-fav-burst {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  pointer-events: none;
+}
+.chc-fav-burst i {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: #f5a524;
+  opacity: 0;
+}
+.chc-fav-burst i:nth-child(even) {
+  width: 4px;
+  height: 4px;
+  background: #fb7185;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .chc-fav-burst i {
+    animation: chc-burst 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+@keyframes chc-burst {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--chc-angle)) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--chc-angle)) translateY(-22px) scale(0.4);
+  }
+}
+
+/* Navbar star with the favourites count */
+.chc-fav-nav {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: var(--bs-secondary-color);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.chc-fav-nav:hover,
+.chc-fav-nav:focus-visible {
+  color: #f5a524;
+  background: var(--bs-tertiary-bg);
+}
+.chc-fav-nav:has(.chc-fav-nav-count) {
+  color: #f5a524;
+}
+.chc-fav-nav-count {
+  position: absolute;
+  top: -1px;
+  right: -3px;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1.1rem;
+  text-align: center;
+  color: #fff;
+  background-image: var(--chc-primary-gradient);
+  box-shadow: 0 0 0 2px var(--bs-body-bg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .chc-fav-nav-count {
+    animation: chc-fav-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
+
+/* "New / Low mileage / Recent" badges at the bottom of a card photo */
+.chc-highlights {
+  position: absolute;
+  left: 0.6rem;
+  bottom: 0.6rem;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+.chc-highlight {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.chc-highlight--new {
+  background-image: var(--chc-primary-gradient);
+  box-shadow: 0 4px 12px -4px var(--chc-primary-glow);
+}
+.chc-highlight--lowMileage svg {
+  color: #6ee7b7;
+}
+.chc-highlight--recent svg {
+  color: #93c5fd;
+}
+/* The card adapts to its own width (2 per row on phones): container
+   queries shrink the text, padding and chips as the card narrows. */
+.chc-listing-card {
+  container-type: inline-size;
+}
+.chc-listing-card .card-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.chc-card-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@container (max-width: 320px) {
+  .chc-listing-card .card-body {
+    padding: 0.75rem;
+  }
+  .chc-listing-card .chc-price {
+    font-size: 1.15rem;
+  }
+  .chc-listing-card .card-title {
+    font-size: 0.9rem;
+  }
+  .chc-listing-card .chc-card-sub {
+    font-size: 0.75rem;
+  }
+  .chc-listing-card .chc-specs {
+    gap: 0.25rem;
+  }
+  .chc-listing-card .chc-spec {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.7rem;
+  }
+  /* Year, mileage and fuel only: the rest is on the listing page. */
+  .chc-listing-card .chc-spec:nth-child(n + 4) {
+    display: none;
+  }
+  .chc-listing-card .chc-media__overlay {
+    padding: 0.4rem;
+  }
+  .chc-listing-card .chc-fav-btn {
+    width: 2rem;
+    height: 2rem;
+  }
+  .chc-listing-card .chc-highlights {
+    left: 0.4rem;
+    bottom: 0.4rem;
+  }
+  .chc-listing-card .chc-highlight {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.65rem;
+  }
+  .chc-listing-card .chc-highlight:nth-child(n + 2) {
+    display: none;
+  }
+  .chc-listing-card .chc-media__nav {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+  .chc-listing-card .chc-media__nav--prev {
+    left: 0.35rem;
+  }
+  .chc-listing-card .chc-media__nav--next {
+    right: 0.35rem;
+  }
+}
+@container (max-width: 200px) {
+  .chc-listing-card .card-body {
+    padding: 0.6rem;
+  }
+  .chc-listing-card .chc-price {
+    font-size: 1rem;
+  }
+  .chc-listing-card .card-title {
+    font-size: 0.82rem;
+  }
+  .chc-listing-card .chc-spec:nth-child(n + 3) {
+    display: none;
+  }
+}
 
 /* Spec chips */
 .chc-specs {
@@ -835,6 +1082,13 @@ a:hover .chc-logo-word::after {
   max-width: 26rem;
   text-align: end;
 }
+.chc-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem 0.75rem;
+}
 .chc-hero-title {
   margin-bottom: 0.5rem;
   font-size: clamp(2rem, 4.5vw, 3.25rem);
@@ -890,6 +1144,27 @@ a:hover .chc-logo-word::after {
   background-image: var(--chc-primary-gradient);
   transition: transform 0.25s ease;
 }
+.chc-hero-cta-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.chc-hero-cta-ghost:hover,
+.chc-hero-cta-ghost:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.24);
+  transform: translateY(-2px);
+}
 .chc-hero-cta:hover .chc-hero-cta-arrow,
 .chc-hero-cta:focus-visible .chc-hero-cta-arrow {
   transform: translateX(3px);
@@ -916,6 +1191,9 @@ a:hover .chc-logo-word::after {
   }
   .chc-hero-content {
     text-align: start;
+  }
+  .chc-hero-actions {
+    justify-content: flex-start;
   }
   .chc-hero-title::after {
     margin-left: 0;
@@ -1512,13 +1790,12 @@ a:hover .chc-logo-word::after {
 }
 
 /* ---------------------------------------------------------------------------
-   Admin footer — system status, shortcuts, signed-in account
-   (rendered in the content column, next to the side menu)
+   Admin footer — one slim bar (rendered in the content column, next to the
+   side menu); the system details live on /admin/systeme (.chc-admin-system-*)
    --------------------------------------------------------------------------- */
 .chc-admin-footer {
   position: relative;
-  margin-top: 2rem;
-  padding-top: 1.75rem;
+  margin-top: 3rem;
   background: var(--bs-tertiary-bg);
   border-top: 1px solid var(--bs-border-color);
 }
@@ -1532,31 +1809,31 @@ a:hover .chc-logo-word::after {
   opacity: 0.8;
 }
 
-.chc-admin-footer-grid {
+.chc-admin-system-grid {
   display: grid;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 @media (min-width: 768px) {
-  .chc-admin-footer-grid {
+  .chc-admin-system-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (min-width: 1200px) {
-  .chc-admin-footer-grid {
+  .chc-admin-system-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-.chc-admin-footer-card {
+.chc-admin-system-card {
   display: flex;
   flex-direction: column;
-  padding: 1.1rem 1.2rem;
+  padding: 1.5rem;
   border: 1px solid var(--bs-border-color);
   border-radius: var(--bs-border-radius-lg);
   background: var(--bs-body-bg);
   box-shadow: var(--chc-shadow-sm);
 }
-.chc-admin-footer-title {
+.chc-admin-system-title {
   margin: 0;
   font-size: 0.7rem;
   font-weight: 700;
@@ -1564,13 +1841,13 @@ a:hover .chc-logo-word::after {
   text-transform: uppercase;
   color: var(--bs-secondary-color);
 }
-.chc-admin-footer-meta {
+.chc-admin-system-meta {
   margin-top: auto;
   padding-top: 0.75rem;
   font-size: 0.75rem;
   color: var(--bs-secondary-color);
 }
-.chc-admin-footer-link {
+.chc-admin-system-link {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -1582,8 +1859,8 @@ a:hover .chc-logo-word::after {
   text-decoration: none;
   color: var(--bs-secondary-color);
 }
-.chc-admin-footer-link:hover,
-.chc-admin-footer-link:focus-visible {
+.chc-admin-system-link:hover,
+.chc-admin-system-link:focus-visible {
   color: var(--bs-primary);
 }
 
@@ -1794,17 +2071,56 @@ a:hover .chc-logo-word::after {
   background: var(--bs-success-bg-subtle);
 }
 
-.chc-admin-footer-bottom {
+.chc-admin-footer-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem 1.5rem;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 1.5rem;
-  padding: 1rem 0 1.25rem;
-  border-top: 1px solid var(--bs-border-color);
+  padding-top: 1rem;
+  padding-bottom: 1rem;
   font-size: 0.8rem;
   color: var(--bs-secondary-color);
+}
+/* Compact live status, links to the details page */
+.chc-admin-footer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--bs-secondary-color);
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+}
+.chc-admin-footer-status.chc-admin-status--ok {
+  color: var(--bs-success-text-emphasis);
+}
+.chc-admin-footer-status.chc-admin-status--degraded {
+  color: var(--bs-warning-text-emphasis);
+}
+.chc-admin-footer-status.chc-admin-status--down {
+  color: var(--bs-danger-text-emphasis);
+}
+.chc-admin-footer-status:hover,
+.chc-admin-footer-status:focus-visible {
+  border-color: currentColor;
+}
+.chc-admin-footer-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--bs-secondary-color);
+}
+.chc-admin-footer-action:hover,
+.chc-admin-footer-action:focus-visible {
+  color: var(--bs-primary);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1853,6 +2169,51 @@ a:hover .chc-logo-word::after {
   }
 }
 
+/* Below lg: a narrow drawer that glides in over a soft, blurred backdrop
+   (the page stays visible on the right) instead of a full-width panel.
+   Open, react-bootstrap moves it under <body>: styled by its own class. */
+@media (max-width: 991.98px) {
+  .chc-admin-drawer {
+    --bs-offcanvas-width: min(82vw, 300px);
+    --bs-offcanvas-padding-x: 1.1rem;
+    --bs-offcanvas-padding-y: 0.9rem;
+    --bs-offcanvas-transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+    border-right: 0;
+    border-radius: 0 1.25rem 1.25rem 0;
+    box-shadow: 0 24px 60px -16px rgba(15, 23, 42, 0.45);
+  }
+  .chc-admin-drawer .offcanvas-header {
+    padding-bottom: 0.4rem;
+  }
+  .chc-admin-drawer .offcanvas-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  /* The links follow the panel in, a beat later, without bouncing. */
+  .chc-admin-drawer .offcanvas-body {
+    transition: opacity 0.3s ease 0.08s, transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .chc-admin-drawer:not(.show):not(.showing) .offcanvas-body,
+  .chc-admin-drawer.hiding .offcanvas-body {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  .offcanvas-backdrop {
+    --bs-backdrop-opacity: 0.3;
+    backdrop-filter: blur(3px);
+  }
+  .offcanvas-backdrop.fade {
+    transition: opacity 0.35s ease;
+  }
+}
+@media (max-width: 991.98px) and (prefers-reduced-motion: reduce) {
+  .chc-admin-drawer,
+  .chc-admin-drawer .offcanvas-body,
+  .offcanvas-backdrop.fade {
+    transition: none;
+  }
+}
+
 .chc-admin-sidebar-group + .chc-admin-sidebar-group {
   margin-top: 1.1rem;
 }
@@ -1881,6 +2242,11 @@ a:hover .chc-logo-word::after {
 .chc-admin-sidebar-link:focus-visible {
   color: var(--bs-primary);
   background: var(--bs-secondary-bg);
+  text-decoration: none;
+}
+.chc-admin-sidebar-link.active:hover,
+.chc-admin-sidebar-link.active:focus-visible {
+  color: #fff;
 }
 .chc-admin-sidebar-link.active {
   color: #fff;
@@ -2843,16 +3209,39 @@ a:hover .chc-logo-word::after {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.5rem 0;
+  gap: 1rem;
+  padding: 0.85rem 0;
   border-bottom: 1px solid var(--bs-border-color);
 }
 .chc-payments li:last-child {
   border-bottom: 0;
 }
 .chc-payment-form {
-  padding-top: 0.75rem;
+  padding-top: 1.5rem;
   border-top: 1px dashed var(--bs-border-color);
+}
+/* Admin lists in a card with airy rows; line table of a sale file */
+@media (min-width: 768px) {
+  .chc-admin-table {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius-lg);
+    background: var(--bs-body-bg);
+  }
+  .chc-admin-table th,
+  .chc-admin-table td {
+    padding: 1rem 0.85rem;
+  }
+  .chc-admin-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+}
+.chc-sale-lines th,
+.chc-sale-lines td {
+  padding: 0.75rem 0.5rem;
+}
+.chc-sale-lines tbody tr:last-child td {
+  border-bottom: 0;
 }
 /* Square icon-only button (e.g. download a PDF) */
 .chc-icon-btn {
@@ -2862,4 +3251,673 @@ a:hover .chc-logo-word::after {
   height: 2rem;
   padding: 0;
   border-radius: 0.6rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Sale settled — confetti canvas and the « Vendu ! » card
+   --------------------------------------------------------------------------- */
+.chc-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 1090;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+.chc-sold-card {
+  position: fixed;
+  top: 5.5rem;
+  left: 50%;
+  z-index: 1080;
+  display: flex;
+  gap: 1rem;
+  width: min(92vw, 420px);
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1.25rem;
+  background: var(--bs-body-bg);
+  box-shadow: var(--chc-shadow-lg);
+  transform: translateX(-50%);
+}
+.chc-sold-icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 10px 24px -8px rgba(16, 185, 129, 0.6);
+}
+.chc-sold-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background-image: var(--chc-primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .chc-sold-card {
+    animation: chc-sold-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .chc-sold-icon {
+    animation: chc-fav-pop 0.5s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+}
+@keyframes chc-sold-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -16px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Back-office quick search (Ctrl / ⌘ + K)
+   --------------------------------------------------------------------------- */
+.chc-cmdk {
+  max-width: 600px;
+  margin-top: 12vh;
+}
+.chc-cmdk .modal-content {
+  overflow: hidden;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1.1rem;
+  box-shadow: var(--chc-shadow-lg);
+}
+.chc-cmdk kbd,
+.chc-cmdk-trigger kbd {
+  display: inline-block;
+  min-width: 1.4rem;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--bs-border-color);
+  border-bottom-width: 2px;
+  border-radius: 0.4rem;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+}
+.chc-cmdk-search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid var(--bs-border-color);
+  color: var(--bs-secondary-color);
+}
+.chc-cmdk-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  font-size: 1.05rem;
+  color: var(--bs-body-color);
+  background: transparent;
+}
+.chc-cmdk-results {
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  padding: 0.4rem 0.5rem 0.6rem;
+}
+.chc-cmdk-group {
+  padding: 0.7rem 0.7rem 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+.chc-cmdk-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  border-radius: 0.65rem;
+  text-align: left;
+  color: var(--bs-body-color);
+  background: transparent;
+}
+.chc-cmdk-item.is-active {
+  background: var(--bs-primary-bg-subtle);
+}
+.chc-cmdk-icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.55rem;
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+}
+.chc-cmdk-item.is-active .chc-cmdk-icon {
+  color: #fff;
+  background-image: var(--chc-primary-gradient);
+}
+.chc-cmdk-label {
+  flex: none;
+  max-width: 55%;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chc-cmdk-hint {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--bs-secondary-color);
+}
+.chc-cmdk-empty {
+  margin: 0;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--bs-secondary-color);
+}
+.chc-cmdk-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  padding: 0.6rem 1.15rem;
+  border-top: 1px solid var(--bs-border-color);
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+}
+.chc-cmdk-footer kbd + kbd {
+  margin-left: 0.2rem;
+}
+.chc-cmdk-footer kbd {
+  margin-right: 0.3rem;
+}
+@media (max-width: 575.98px) {
+  .chc-cmdk {
+    margin: 0.75rem;
+  }
+  .chc-cmdk-footer {
+    display: none;
+  }
+}
+/* Search button at the top of the admin side menu */
+.chc-cmdk-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  margin-bottom: 1.1rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.7rem;
+  font-size: 0.85rem;
+  color: var(--bs-secondary-color);
+  background: var(--bs-body-bg);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.chc-cmdk-trigger:hover,
+.chc-cmdk-trigger:focus-visible {
+  border-color: var(--bs-primary);
+  color: var(--bs-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   Comparator — card toggle, floating tray, side-by-side table
+   --------------------------------------------------------------------------- */
+.chc-compare-btn:hover,
+.chc-compare-btn:focus-visible {
+  color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+.chc-compare-btn.is-active,
+.chc-media__overlay .chc-compare-btn.is-active {
+  color: #fff;
+  border-color: transparent;
+  background-image: var(--chc-primary-gradient);
+}
+.chc-compare-btn:disabled {
+  opacity: 0.45;
+}
+
+.chc-compare-tray {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 1040;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  padding: 0.5rem 0.55rem 0.5rem 0.6rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bs-body-bg) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: var(--chc-shadow-lg);
+  transform: translateX(-50%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .chc-compare-tray {
+    animation: chc-tray-in 0.45s cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+}
+@keyframes chc-tray-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 24px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.chc-compare-slots {
+  display: flex;
+  gap: 0.35rem;
+}
+.chc-compare-slot {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  overflow: visible;
+  background: var(--bs-tertiary-bg);
+}
+.chc-compare-slot img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px var(--bs-body-bg);
+}
+.chc-compare-slot.is-empty {
+  border: 2px dashed var(--bs-border-color);
+  background: transparent;
+}
+.chc-compare-slot-remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: #fff;
+  background: #475569;
+}
+.chc-compare-tray-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.chc-compare-tray-clear {
+  padding: 0;
+  border: 0;
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color);
+  background: none;
+}
+.chc-compare-tray-clear:hover {
+  color: var(--bs-danger);
+}
+.chc-compare-tray-go {
+  border-radius: 999px;
+  padding-inline: 1rem;
+}
+@media (max-width: 575.98px) {
+  .chc-compare-tray-label {
+    display: none;
+  }
+}
+
+.chc-compare-empty {
+  max-width: 520px;
+  margin: 2rem auto;
+  text-align: center;
+}
+.chc-compare-empty-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1rem;
+  border-radius: 1.2rem;
+  color: #fff;
+  background-image: var(--chc-primary-gradient);
+  box-shadow: 0 14px 30px -12px var(--chc-primary-glow);
+}
+.chc-compare-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius-lg);
+  background: var(--bs-body-bg);
+}
+.chc-compare-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.chc-compare-table th,
+.chc-compare-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+  vertical-align: middle;
+}
+.chc-compare-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.chc-compare-table tbody th {
+  width: 9.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+/* The labels stay in view while the columns scroll sideways (phones). */
+.chc-compare-table tbody th,
+.chc-compare-corner {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 9.5rem;
+  background: var(--bs-body-bg);
+}
+.chc-compare-car {
+  vertical-align: top !important;
+  font-weight: 400;
+}
+.chc-compare-photo {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 0.65rem;
+  overflow: hidden;
+  border-radius: 0.8rem;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  background: var(--bs-tertiary-bg);
+}
+.chc-compare-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.chc-compare-remove {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.9);
+}
+.chc-compare-title {
+  display: block;
+  font-weight: 700;
+  color: var(--bs-heading-color);
+  text-decoration: none;
+}
+.chc-compare-title:hover {
+  color: var(--bs-primary);
+}
+.chc-compare-sub {
+  font-size: 0.82rem;
+  color: var(--bs-secondary-color);
+}
+.chc-compare-add {
+  display: grid;
+  place-items: center;
+  gap: 0.35rem;
+  aspect-ratio: 4 / 3;
+  border: 2px dashed var(--bs-border-color);
+  border-radius: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--bs-secondary-color);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.chc-compare-add span {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.chc-compare-add:hover {
+  border-color: var(--bs-primary);
+  color: var(--bs-primary);
+}
+.chc-compare-table td.is-best {
+  font-weight: 700;
+  color: var(--bs-success-text-emphasis);
+  background: var(--bs-success-bg-subtle);
+}
+.chc-compare-best {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--bs-success);
+  vertical-align: middle;
+}
+
+/* ---------------------------------------------------------------------------
+   « Trouve ma voiture » — progress, answer tiles, scored results
+   --------------------------------------------------------------------------- */
+.chc-finder {
+  max-width: 980px;
+  margin-inline: auto;
+}
+.chc-finder-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+  max-width: 420px;
+  margin: 0 auto 2.25rem;
+}
+.chc-finder-progress span {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+  transition: background 0.35s ease;
+}
+.chc-finder-progress .is-done,
+.chc-finder-progress .is-current {
+  background-image: var(--chc-primary-gradient);
+}
+.chc-finder-progress .is-current {
+  opacity: 0.45;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .chc-finder-step {
+    animation: chc-finder-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+@keyframes chc-finder-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.chc-finder-count {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bs-primary);
+}
+.chc-finder-question {
+  margin: 0.35rem 0 1.5rem;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.chc-finder-step .d-flex .chc-finder-question {
+  text-align: left;
+}
+.chc-finder-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+  max-width: 860px;
+  margin-inline: auto;
+}
+.chc-finder-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 1.6rem 1rem 1.4rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1.1rem;
+  text-align: center;
+  color: var(--bs-body-color);
+  background: var(--bs-body-bg);
+  box-shadow: var(--chc-shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.chc-finder-tile:hover,
+.chc-finder-tile:focus-visible {
+  border-color: var(--bs-primary);
+  box-shadow: var(--chc-shadow-md);
+  transform: translateY(-4px);
+}
+.chc-finder-tile.is-selected {
+  border-color: var(--bs-primary);
+}
+.chc-finder-tile-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 0.95rem;
+  color: var(--bs-primary);
+  background: var(--bs-primary-bg-subtle);
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.chc-finder-tile:hover .chc-finder-tile-icon,
+.chc-finder-tile:focus-visible .chc-finder-tile-icon {
+  color: #fff;
+  background-image: var(--chc-primary-gradient);
+}
+.chc-finder-tile-label {
+  font-weight: 700;
+}
+.chc-finder-tile-hint {
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color);
+}
+.chc-finder-back {
+  display: block;
+  margin: 1.5rem auto 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  background: none;
+}
+.chc-finder-back:hover {
+  color: var(--bs-primary);
+}
+.chc-finder-chip {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--bs-primary-text-emphasis);
+  background: var(--bs-primary-bg-subtle);
+}
+.chc-finder-match {
+  position: relative;
+  height: 100%;
+}
+.chc-finder-score {
+  position: absolute;
+  top: -0.6rem;
+  right: 0.6rem;
+  z-index: 3;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fff;
+  background-image: var(--chc-primary-gradient);
+  box-shadow: 0 8px 18px -8px var(--chc-primary-glow);
+}
+.chc-finder-none {
+  padding: 2.5rem 1rem;
+  border: 1px dashed var(--bs-border-color);
+  border-radius: var(--bs-border-radius-lg);
+  text-align: center;
+  color: var(--bs-secondary-color);
+}
+@media (max-width: 575.98px) {
+  .chc-compare-table {
+    min-width: 500px;
+  }
+  .chc-compare-table th,
+  .chc-compare-table td {
+    padding: 0.65rem 0.6rem;
+    font-size: 0.85rem;
+  }
+  .chc-compare-table tbody th,
+  .chc-compare-corner {
+    width: 5.6rem;
+    font-size: 0.66rem;
+    letter-spacing: 0.02em;
+  }
+  .chc-finder-tiles {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+  .chc-finder-tile {
+    padding: 1.1rem 0.6rem 1rem;
+  }
+  .chc-finder-question {
+    font-size: 1.25rem;
+  }
+  .chc-finder-score {
+    font-size: 0.65rem;
+    right: 0.35rem;
+  }
 }

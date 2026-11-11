@@ -9,12 +9,16 @@
  * The frontend never talks to the database directly: every call goes through
  * this client to the backend REST API.
  */
+import { invalidateQueries } from "@/utils/queryCache";
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
 const CSRF_COOKIE = "chcars_csrf";
 const CSRF_HEADER = "X-CSRF-Token";
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+/** Writes that never change a cached read (page views, favourites, contact). */
+const CACHE_NEUTRAL_PATHS = ["/analytics", "/favorites", "/contact"];
 
 export interface ApiErrorBody {
   message: string;
@@ -94,6 +98,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       response.status,
       errorBody?.details,
     );
+  }
+
+  // A write may change what the cached reads show (status, photos, sold…).
+  if (UNSAFE_METHODS.has(method) && !CACHE_NEUTRAL_PATHS.some((prefix) => path.startsWith(prefix))) {
+    invalidateQueries();
   }
 
   return body as T;

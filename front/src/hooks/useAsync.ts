@@ -10,18 +10,23 @@ export type AsyncState<T> =
 
 /**
  * Runs an async function on mount (and whenever `deps` change) and exposes its
- * lifecycle as a discriminated union. Stale results are ignored when the
+ * lifecycle as a discriminated union. With `initialData` the result is shown
+ * straight away and the call only refreshes it. Stale results are ignored when the
  * component unmounts or the dependencies change mid-flight.
  */
 export function useAsync<T>(
   fn: () => Promise<T>,
   deps: readonly unknown[] = [],
+  /** Already known (e.g. `peekQuery`): rendered at once, refreshed in the background. */
+  initialData?: T,
 ): AsyncState<T> {
-  const [state, setState] = useState<AsyncState<T>>({ status: "loading" });
+  const [state, setState] = useState<AsyncState<T>>(() =>
+    initialData === undefined ? { status: "loading" } : { status: "ready", data: initialData },
+  );
 
   useEffect(() => {
     let active = true;
-    setState({ status: "loading" });
+    if (initialData === undefined) setState({ status: "loading" });
 
     fn()
       .then((data) => {

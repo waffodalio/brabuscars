@@ -13,6 +13,7 @@ const TITLES: Record<string, string> = {
   reservations: "Réservations",
   ventes: "Facturation",
   utilisateurs: "Utilisateurs",
+  systeme: "Système",
 };
 
 /** `<h1>` of the current admin page, derived from `/<locale>/admin/<section>`. */

@@ -102,7 +102,7 @@ export function ListingFormFields({
     <>
       <Row>
         <Col sm={7}>
-          <Form.Group className="mb-3" controlId="listing-model">
+          <Form.Group className="mb-4" controlId="listing-model">
             <Form.Label>Modèle</Form.Label>
             <Form.Select value={form.modelId} onChange={set("modelId")} required>
               <option value="">Sélectionner…</option>
@@ -116,7 +116,7 @@ export function ListingFormFields({
           </Form.Group>
         </Col>
         <Col sm={5}>
-          <Form.Group className="mb-3" controlId="listing-category">
+          <Form.Group className="mb-4" controlId="listing-category">
             <Form.Label>Catégorie</Form.Label>
             <Form.Select value={form.categoryId} onChange={set("categoryId")}>
               <option value="">—</option>
@@ -130,7 +130,7 @@ export function ListingFormFields({
         </Col>
       </Row>
 
-      <Form.Group className="mb-3" controlId="listing-title">
+      <Form.Group className="mb-4" controlId="listing-title">
         <Form.Label>Titre de l&apos;annonce</Form.Label>
         <Form.Control
           value={form.title}
@@ -143,7 +143,7 @@ export function ListingFormFields({
 
       <Row>
         <Col sm={4}>
-          <Form.Group className="mb-3" controlId="listing-price">
+          <Form.Group className="mb-4" controlId="listing-price">
             <Form.Label>Prix (€)</Form.Label>
             <Form.Control
               type="number"
@@ -156,7 +156,7 @@ export function ListingFormFields({
           </Form.Group>
         </Col>
         <Col sm={4}>
-          <Form.Group className="mb-3" controlId="listing-year">
+          <Form.Group className="mb-4" controlId="listing-year">
             <Form.Label>Année</Form.Label>
             <Form.Control
               type="number"
@@ -167,7 +167,7 @@ export function ListingFormFields({
           </Form.Group>
         </Col>
         <Col sm={4}>
-          <Form.Group className="mb-3" controlId="listing-mileage">
+          <Form.Group className="mb-4" controlId="listing-mileage">
             <Form.Label>Kilométrage</Form.Label>
             <Form.Control
               type="number"
@@ -182,7 +182,7 @@ export function ListingFormFields({
 
       <Row>
         <Col sm={6}>
-          <Form.Group className="mb-3" controlId="listing-fuel">
+          <Form.Group className="mb-4" controlId="listing-fuel">
             <Form.Label>Carburant</Form.Label>
             <Form.Select value={form.fuelType} onChange={set("fuelType")}>
               {FUEL_TYPES.map((value) => (
@@ -194,7 +194,7 @@ export function ListingFormFields({
           </Form.Group>
         </Col>
         <Col sm={6}>
-          <Form.Group className="mb-3" controlId="listing-transmission">
+          <Form.Group className="mb-4" controlId="listing-transmission">
             <Form.Label>Boîte</Form.Label>
             <Form.Select
               value={form.transmission}
@@ -212,7 +212,7 @@ export function ListingFormFields({
 
       <Row>
         <Col sm={4}>
-          <Form.Group className="mb-3" controlId="listing-power">
+          <Form.Group className="mb-4" controlId="listing-power">
             <Form.Label>Puissance (ch)</Form.Label>
             <Form.Control
               type="number"
@@ -223,7 +223,7 @@ export function ListingFormFields({
           </Form.Group>
         </Col>
         <Col sm={4}>
-          <Form.Group className="mb-3" controlId="listing-doors">
+          <Form.Group className="mb-4" controlId="listing-doors">
             <Form.Label>Portes</Form.Label>
             <Form.Control
               type="number"
@@ -235,7 +235,7 @@ export function ListingFormFields({
           </Form.Group>
         </Col>
         <Col sm={4}>
-          <Form.Group className="mb-3" controlId="listing-color">
+          <Form.Group className="mb-4" controlId="listing-color">
             <Form.Label>Couleur</Form.Label>
             <Form.Control value={form.color} onChange={set("color")} />
           </Form.Group>

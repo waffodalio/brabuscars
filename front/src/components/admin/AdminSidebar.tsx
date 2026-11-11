@@ -8,47 +8,8 @@ import Offcanvas from "react-bootstrap/Offcanvas";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { ADMIN_ICONS, AdminIcon } from "./AdminIcon";
-
-type NavItem = { href: string; label: string; icon: string };
-type NavGroup = { title: string; items: NavItem[] };
-
-const GROUPS: NavGroup[] = [
-  {
-    title: "Général",
-    items: [
-      { href: "/admin", label: "Tableau de bord", icon: ADMIN_ICONS.dashboard },
-      { href: "/admin/statistiques", label: "Statistiques", icon: ADMIN_ICONS.stats },
-    ],
-  },
-  {
-    title: "Catalogue",
-    items: [
-      { href: "/admin/marques", label: "Marques", icon: ADMIN_ICONS.brand },
-      { href: "/admin/modeles", label: "Modèles", icon: ADMIN_ICONS.model },
-      { href: "/admin/categories", label: "Catégories", icon: ADMIN_ICONS.category },
-    ],
-  },
-  {
-    title: "Ventes",
-    items: [
-      { href: "/admin/annonces", label: "Annonces", icon: ADMIN_ICONS.listing },
-      { href: "/admin/annonces/nouvelle", label: "Nouvelle annonce", icon: ADMIN_ICONS.plus },
-      { href: "/admin/ventes", label: "Facturation", icon: ADMIN_ICONS.invoice },
-    ],
-  },
-  {
-    title: "Relation client",
-    items: [
-      { href: "/admin/reservations", label: "Réservations", icon: ADMIN_ICONS.calendar },
-      { href: "/admin/messages", label: "Messages", icon: ADMIN_ICONS.mail },
-    ],
-  },
-];
-
-const SUPER_ADMIN_GROUP: NavGroup = {
-  title: "Comptes",
-  items: [{ href: "/admin/utilisateurs", label: "Utilisateurs", icon: ADMIN_ICONS.users }],
-};
+import { ADMIN_NAV_GROUPS, SUPER_ADMIN_NAV_GROUP } from "./adminNav";
+import { OPEN_PALETTE_EVENT, useShortcutLabel } from "./CommandPalette";
 
 const ROLE_LABELS = { user: "Utilisateur", admin: "Admin", super_admin: "Super admin" };
 
@@ -71,10 +32,11 @@ export function AdminSidebar() {
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const { withLocale } = useLanguage();
   const [show, setShow] = useState(false);
+  const shortcut = useShortcutLabel();
 
   if (!user || !isAdmin) return null;
 
-  const groups = isSuperAdmin ? [...GROUPS, SUPER_ADMIN_GROUP] : GROUPS;
+  const groups = isSuperAdmin ? [...ADMIN_NAV_GROUPS, SUPER_ADMIN_NAV_GROUP] : ADMIN_NAV_GROUPS;
   const activeHref = activeHrefOf(
     pathname,
     groups.flatMap((group) => group.items.map((item) => withLocale(item.href))),
@@ -99,6 +61,7 @@ export function AdminSidebar() {
       <aside className="chc-admin-sidebar">
         <Offcanvas
           id="admin-sidebar"
+          className="chc-admin-drawer"
           show={show}
           onHide={close}
           placement="start"
@@ -109,6 +72,18 @@ export function AdminSidebar() {
             <Offcanvas.Title id="admin-sidebar-title">Administration</Offcanvas.Title>
           </Offcanvas.Header>
           <Offcanvas.Body className="flex-column">
+            <button
+              type="button"
+              className="chc-cmdk-trigger"
+              onClick={() => {
+                close();
+                window.dispatchEvent(new Event(OPEN_PALETTE_EVENT));
+              }}
+            >
+              <AdminIcon d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35" size={15} />
+              <span className="flex-grow-1 text-start">Rechercher…</span>
+              <kbd>{shortcut}</kbd>
+            </button>
             <nav aria-label="Menu d'administration">
               {groups.map((group) => (
                 <div key={group.title} className="chc-admin-sidebar-group">

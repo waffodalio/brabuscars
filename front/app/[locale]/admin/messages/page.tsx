@@ -65,7 +65,7 @@ export default function AdminMessagesPage() {
 
   return (
     <section>
-      <p className="text-secondary">
+      <p className="text-secondary mb-4">
         Messages reçus via le formulaire de contact, les non-traités en premier.
       </p>
 
@@ -76,14 +76,14 @@ export default function AdminMessagesPage() {
           Aucun message pour le moment.
         </Alert>
       ) : (
-        <div className="d-flex flex-column gap-3">
+        <div className="d-flex flex-column gap-4">
           {messages.map((message) => (
             <Card
               key={message.id}
               className={message.handled ? "opacity-75" : "border-primary-subtle"}
             >
-              <Card.Body>
-                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+              <Card.Body className="p-3 p-md-4">
+                <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
                   <div className="text-break" style={{ minWidth: 0 }}>
                     <span className="fw-semibold">{message.name}</span>{" "}
                     <a href={`mailto:${message.email}`} className="small">
@@ -100,7 +100,7 @@ export default function AdminMessagesPage() {
                   )}
                 </div>
 
-                <p className="mt-2 mb-3" style={{ whiteSpace: "pre-line" }}>
+                <p className="mt-3 mb-4" style={{ whiteSpace: "pre-line" }}>
                   {message.message}
                 </p>
 

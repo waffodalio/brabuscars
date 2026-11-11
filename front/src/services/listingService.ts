@@ -1,4 +1,5 @@
 import { apiClient } from "./apiClient";
+import { cachedQuery, primeQuery } from "@/utils/queryCache";
 import type { ApiSuccess } from "@/types/api";
 import type {
   CreateListingInput,
@@ -26,24 +27,39 @@ export interface ListingFilters {
   sort?: ListingSort;
 }
 
-/** Access to the `/listings` endpoints. Write calls require the auth token. */
-export const listingService = {
-  async list(filters: ListingFilters = {}): Promise<Listing[]> {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== "") params.set(key, String(value));
-    }
-    const query = params.toString() ? `?${params.toString()}` : "";
+/** Cache keys (see `utils/queryCache`): every listing read starts with "listing". */
+export function listingsKey(filters: ListingFilters = {}): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  }
+  params.sort();
+  return `listings?${params.toString()}`;
+}
+export const listingKey = (id: number): string => `listing/${id}`;
 
-    const response = await apiClient.get<ApiSuccess<Listing[]>>(
-      `/listings${query}`,
-    );
-    return response.data;
+/**
+ * Access to the `/listings` endpoints. Reads go through the shared cache
+ * (instant back / forward navigation; `apiClient` clears it on any write);
+ * write calls require the auth token.
+ */
+export const listingService = {
+  list(filters: ListingFilters = {}): Promise<Listing[]> {
+    const key = listingsKey(filters);
+    return cachedQuery(key, async () => {
+      const response = await apiClient.get<ApiSuccess<Listing[]>>(`/${key.replace(/\?$/, "")}`);
+      // Each card's page then opens at once (refreshed in the background).
+      for (const listing of response.data) primeQuery(listingKey(listing.id), listing);
+      return response.data;
+    });
   },
 
-  async getById(id: number): Promise<Listing> {
-    const response = await apiClient.get<ApiSuccess<Listing>>(`/listings/${id}`);
-    return response.data;
+  getById(id: number): Promise<Listing> {
+    return cachedQuery(
+      listingKey(id),
+      async () => (await apiClient.get<ApiSuccess<Listing>>(`/listings/${id}`)).data,
+      0,
+    );
   },
 
   async create(input: CreateListingInput): Promise<Listing> {
