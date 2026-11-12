@@ -472,12 +472,31 @@ export const fr = {
     close: "Fermer",
     counter: (current: number, total: number) => `Photo ${current} sur ${total}`,
   },
+  meta: {
+    siteTitle: "BrabusCars — véhicules d'occasion",
+    siteDescription:
+      "Véhicules d'occasion sélectionnés et garantis par la concession BrabusCars : annonces détaillées, réservation en ligne, essai sur rendez-vous.",
+    listings: "Nos véhicules d'occasion",
+    listingsDescription: "Toutes les voitures d'occasion disponibles chez BrabusCars, avec photos, équipements et garantie.",
+    compare: "Comparer des véhicules",
+    finder: "Trouve ma voiture",
+    finderDescription: "Quatre questions pour trouver la voiture d'occasion qui vous correspond.",
+    contact: "Contact et accès",
+    contactDescription: "Adresse, horaires et formulaire de contact de la concession BrabusCars.",
+    favorites: "Mes favoris",
+    login: "Connexion",
+    register: "Créer un compte",
+    account: "Mon compte",
+    forgotPassword: "Mot de passe oublié",
+    resetPassword: "Nouveau mot de passe",
+    admin: "Administration",
+  },
   cookies: {
     message:
       "Nous utilisons des cookies essentiels au fonctionnement du site et, avec votre accord, un cookie de mesure d'audience interne. Seule la carte de la page Contact (Google Maps) provient d'un tiers.",
     essential: "Cookies essentiels",
     essentialDesc:
-      "Toujours actifs : connexion, sécurité (CSRF) et thème choisi.",
+      "Toujours actifs : connexion, sécurité (CSRF), thème et langue choisis.",
     analytics: "Cookies de traçabilité",
     analyticsDesc:
       "Nous aident à mesurer la fréquentation du site. Désactivables à tout moment.",
@@ -493,6 +512,7 @@ export const fr = {
     cookieToken: "Session de connexion",
     cookieCsrf: "Protection contre les attaques CSRF",
     cookieTheme: "Thème choisi",
+    cookieLocale: "Langue choisie",
     cookieVisitor: "Identifiant anonyme de mesure d'audience",
   },
   theme: {
@@ -975,11 +995,30 @@ export const en: Dictionary = {
     close: "Close",
     counter: (current: number, total: number) => `Photo ${current} of ${total}`,
   },
+  meta: {
+    siteTitle: "BrabusCars — used vehicles",
+    siteDescription:
+      "Used vehicles selected and guaranteed by the BrabusCars dealership: detailed listings, online booking, test drives by appointment.",
+    listings: "Our used vehicles",
+    listingsDescription: "Every used car available at BrabusCars, with photos, equipment and warranty.",
+    compare: "Compare vehicles",
+    finder: "Find my car",
+    finderDescription: "Four questions to find the used car that suits you.",
+    contact: "Contact and directions",
+    contactDescription: "Address, opening hours and contact form of the BrabusCars dealership.",
+    favorites: "My favourites",
+    login: "Sign in",
+    register: "Create an account",
+    account: "My account",
+    forgotPassword: "Forgot password",
+    resetPassword: "New password",
+    admin: "Administration",
+  },
   cookies: {
     message:
       "We use cookies essential to the site, and, with your consent, an internal audience-measurement cookie. Only the map on the Contact page (Google Maps) comes from a third party.",
     essential: "Essential cookies",
-    essentialDesc: "Always active: sign-in, security (CSRF) and chosen theme.",
+    essentialDesc: "Always active: sign-in, security (CSRF), chosen theme and language.",
     analytics: "Tracking cookies",
     analyticsDesc:
       "Help us measure site traffic. Can be disabled at any time.",
@@ -995,6 +1034,7 @@ export const en: Dictionary = {
     cookieToken: "Sign-in session",
     cookieCsrf: "CSRF attack protection",
     cookieTheme: "Chosen theme",
+    cookieLocale: "Chosen language",
     cookieVisitor: "Anonymous audience-measurement id",
   },
   theme: {
@@ -1478,12 +1518,31 @@ export const nl: Dictionary = {
     close: "Sluiten",
     counter: (current: number, total: number) => `Foto ${current} van ${total}`,
   },
+  meta: {
+    siteTitle: "BrabusCars — tweedehandsvoertuigen",
+    siteDescription:
+      "Tweedehandsvoertuigen geselecteerd en gewaarborgd door de concessie BrabusCars: uitgebreide advertenties, online reserveren, proefrit op afspraak.",
+    listings: "Onze tweedehandsvoertuigen",
+    listingsDescription: "Alle tweedehandswagens die beschikbaar zijn bij BrabusCars, met foto's, uitrusting en garantie.",
+    compare: "Voertuigen vergelijken",
+    finder: "Vind mijn wagen",
+    finderDescription: "Vier vragen om de tweedehandswagen te vinden die bij u past.",
+    contact: "Contact en route",
+    contactDescription: "Adres, openingsuren en contactformulier van de concessie BrabusCars.",
+    favorites: "Mijn favorieten",
+    login: "Aanmelden",
+    register: "Account aanmaken",
+    account: "Mijn account",
+    forgotPassword: "Wachtwoord vergeten",
+    resetPassword: "Nieuw wachtwoord",
+    admin: "Beheer",
+  },
   cookies: {
     message:
       "We gebruiken cookies die nodig zijn voor de werking van de site en, met uw toestemming, een interne cookie voor bezoekersmetingen. Alleen de kaart op de pagina Contact (Google Maps) is afkomstig van een derde partij.",
     essential: "Noodzakelijke cookies",
     essentialDesc:
-      "Altijd actief: aanmelding, beveiliging (CSRF) en gekozen thema.",
+      "Altijd actief: aanmelding, beveiliging (CSRF), gekozen thema en taal.",
     analytics: "Meetcookies",
     analyticsDesc:
       "Helpen ons het bezoek aan de site te meten. Kunnen op elk moment worden uitgeschakeld.",
@@ -1499,6 +1558,7 @@ export const nl: Dictionary = {
     cookieToken: "Aanmeldsessie",
     cookieCsrf: "Bescherming tegen CSRF-aanvallen",
     cookieTheme: "Gekozen thema",
+    cookieLocale: "Gekozen taal",
     cookieVisitor: "Anonieme id voor bezoekersmetingen",
   },
   theme: {

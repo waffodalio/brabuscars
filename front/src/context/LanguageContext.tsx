@@ -1,9 +1,9 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { fr, en, nl, type Dictionary } from "@/i18n/dictionaries";
-import { DEFAULT_LOCALE, isLocale, type Locale } from "@/i18n/locales";
+import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale, type Locale } from "@/i18n/locales";
 
 export type { Locale } from "@/i18n/locales";
 
@@ -50,6 +50,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     (target: Locale) => (rest ? `/${target}/${rest}` : `/${target}`),
     [rest],
   );
+  // Remember the language actually shown (switcher, shared link…) for the
+  // next visit to an address without one, e.g. `brabuscars.be` (`proxy.ts`).
+  // Set here rather than in the proxy, which also sees link prefetches.
+  useEffect(() => {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${LOCALE_COOKIE}=${locale}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+  }, [locale]);
+
   const value = useMemo<LanguageContextValue>(
     () => ({ locale, t: DICTIONARIES[locale], withLocale, pathFor }),
     [locale, withLocale, pathFor],

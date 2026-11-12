@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
+/** No `hreflang` links on an error page (they would point to the home page). */
+export const metadata: Metadata = { alternates: {} };
 
 /**
  * Catches every URL under a locale that matches no page, so it gets the

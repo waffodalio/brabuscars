@@ -10,6 +10,7 @@ import { FavoritesProvider } from "@/context/FavoritesContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { ThemeProvider, type Theme } from "@/context/ThemeContext";
 import { MainLayout } from "@/layouts/MainLayout";
+import { SITE_NAME, TITLE_TEMPLATE, localeAlternates, resolveLocale, siteOrigin } from "@/i18n/metadata";
 import { LOCALES, isLocale, type Locale } from "@/i18n/locales";
 import { cookies } from "next/headers";
 import { INTL_LOCALES } from "@/i18n/locales";
@@ -28,29 +29,25 @@ export function generateStaticParams(): { locale: Locale }[] {
 
 type Params = Promise<{ locale: string }>;
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Params;
-}): Promise<Metadata> {
-  const { locale } = await params;
-  return METADATA[isLocale(locale) ? locale : "fr"];
+/**
+ * Site-wide metadata: home title, description, `hreflang` links of the home
+ * page, and the « · BrabusCars » template completing every section's title
+ * (`sectionMetadata` in each section's `layout.tsx`).
+ */
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { locale, t } = await resolveLocale(params);
+  return {
+    metadataBase: await siteOrigin(),
+    title: { default: t.meta.siteTitle, template: TITLE_TEMPLATE },
+    description: t.meta.siteDescription,
+    alternates: localeAlternates(locale, ""),
+    openGraph: {
+      siteName: SITE_NAME,
+      locale: INTL_LOCALES[locale].replace("-", "_"),
+      type: "website",
+    },
+  };
 }
-
-const METADATA: Record<Locale, Metadata> = {
-  fr: {
-    title: "BrabusCars — véhicules d'occasion",
-    description: "Plateforme de consultation et de vente de véhicules",
-  },
-  en: {
-    title: "BrabusCars — used vehicles",
-    description: "Platform to browse and buy vehicles",
-  },
-  nl: {
-    title: "BrabusCars — tweedehandsvoertuigen",
-    description: "Platform om voertuigen te bekijken en te kopen",
-  },
-};
 
 async function readThemeCookie(): Promise<Theme> {
   const cookieStore = await cookies();

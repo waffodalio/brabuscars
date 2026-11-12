@@ -1,22 +1,23 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { DEFAULT_LOCALE, LOCALES } from "@/i18n/locales";
+import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale, negotiateLocale, type Locale } from "@/i18n/locales";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-/** True for `/fr`, `/fr/...`, `/en/...`, `/nl/...` (any supported locale). */
-function hasLocalePrefix(pathname: string): boolean {
-  return LOCALES.some(
-    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
-  );
+/** The locale at the start of the path (`/nl/annonces` → "nl"), or `null`. */
+function localeOfPath(pathname: string): Locale | null {
+  const segment = pathname.split("/")[1] ?? "";
+  return isLocale(segment) ? segment : null;
 }
 
-/** Picks a locale from the `Accept-Language` header, falling back to French. */
-function preferredLocale(request: NextRequest): (typeof LOCALES)[number] {
-  const header = request.headers.get("accept-language") ?? "";
-  const first = header.split(",")[0]?.split("-")[0]?.toLowerCase();
-  return (LOCALES as readonly string[]).includes(first ?? "")
-    ? (first as (typeof LOCALES)[number])
-    : DEFAULT_LOCALE;
+/**
+ * Language for an address without one: the last language used on this
+ * browser (cookie), else the browser's preferred supported language, else
+ * French.
+ */
+function preferredLocale(request: NextRequest): Locale {
+  const remembered = request.cookies.get(LOCALE_COOKIE)?.value ?? "";
+  if (isLocale(remembered)) return remembered;
+  return negotiateLocale(request.headers.get("accept-language")) ?? DEFAULT_LOCALE;
 }
 
 /**
@@ -43,7 +44,8 @@ const apiOrigin = (() => {
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (!hasLocalePrefix(pathname)) {
+  const locale = localeOfPath(pathname);
+  if (!locale) {
     const url = request.nextUrl.clone();
     url.pathname = `/${preferredLocale(request)}${pathname}`;
     return NextResponse.redirect(url);

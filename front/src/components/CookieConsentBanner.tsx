@@ -96,6 +96,9 @@ export function CookieConsentBanner() {
               <span className="chc-cookie-chip" title={t.cookies.cookieTheme}>
                 chcars_theme
               </span>
+              <span className="chc-cookie-chip" title={t.cookies.cookieLocale}>
+                chcars_locale
+              </span>
             </div>
           </div>
 

@@ -33,6 +33,8 @@ export function LanguageSwitcher() {
             key={value}
             as={Link}
             href={pathFor(value)}
+            // Opening the menu must not preload (nor remember) the other languages.
+            prefetch={false}
             onClick={(event: React.MouseEvent) => {
               // Keep the query string (e.g. the /annonces filters).
               const search = window.location.search;

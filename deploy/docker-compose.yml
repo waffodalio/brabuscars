@@ -96,6 +96,10 @@ services:
     depends_on:
       back:
         condition: service_healthy
+    environment:
+      # Server-side reads of the API (page titles / link previews of the
+      # listings), straight over the compose network instead of via nginx.
+      API_INTERNAL_URL: http://back:4000/api
     ports:
       - "127.0.0.1:${FRONT_PORT:-3010}:3000"
 
