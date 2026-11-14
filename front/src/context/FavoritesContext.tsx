@@ -13,6 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ApiClientError } from "@/services/apiClient";
 import { favoriteService } from "@/services/favoriteService";
 import type { Favorite } from "@/types/favorite";
+import { takeFavoriteIntent } from "@/utils/favoriteIntent";
 
 interface FavoritesContextValue {
   favorites: Favorite[];
@@ -45,7 +46,19 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     favoriteService
       .list()
-      .then(setFavorites)
+      .then(async (list) => {
+        setFavorites(list);
+        // Starred before signing in (`FavoriteButton`): added now. A listing
+        // gone offline meanwhile is simply skipped.
+        const intent = takeFavoriteIntent();
+        if (intent === null || list.some((favorite) => favorite.listingId === intent)) return;
+        try {
+          const created = await favoriteService.add(intent);
+          setFavorites((current) => [created, ...current]);
+        } catch {
+          // ignore
+        }
+      })
       .catch(() => {
         setFavorites([]);
         setLoadFailed(true);

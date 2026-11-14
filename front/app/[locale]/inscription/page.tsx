@@ -8,6 +8,7 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -118,6 +119,8 @@ export default function RegisterPage() {
       </Form>
 
       <GoogleSignInButton />
+
+      <PrivacyNotice kind="account" className="mt-3" />
 
       <p className="mt-3 mb-0 small text-secondary">
         {t.auth.register.hasAccount}{" "}

@@ -8,6 +8,7 @@ import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { useCompany } from "@/context/CompanyContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { contactService } from "@/services/contactService";
@@ -28,6 +29,8 @@ export default function ContactPage() {
     "idle",
   );
   const [error, setError] = useState("");
+  /** The Google Maps iframe is loaded only on request (GDPR). */
+  const [showMap, setShowMap] = useState(false);
 
   function update(field: keyof typeof form) {
     return (
@@ -104,12 +107,27 @@ export default function ContactPage() {
                     className="rounded-3 overflow-hidden border"
                     style={{ aspectRatio: "4 / 3" }}
                   >
-                    <iframe
-                      src={googleMapsEmbedUrl(company)}
-                      title={t.contact.mapTitle}
-                      loading="lazy"
-                      className="w-100 h-100 border-0"
-                    />
+                    {showMap ? (
+                      <iframe
+                        src={googleMapsEmbedUrl(company)}
+                        title={t.contact.mapTitle}
+                        loading="lazy"
+                        className="w-100 h-100 border-0"
+                      />
+                    ) : (
+                      // GDPR: Google only receives the visitor's IP (and sets
+                      // its cookies) once they ask for the map.
+                      <div className="chc-map-placeholder">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+                          <circle cx="12" cy="9.5" r="2.5" />
+                        </svg>
+                        <p className="small mb-0">{t.contact.mapConsent}</p>
+                        <Button size="sm" variant="outline-primary" onClick={() => setShowMap(true)}>
+                          {t.contact.showMap}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div className="d-flex justify-content-between align-items-baseline mt-2">
                     <a
@@ -192,9 +210,12 @@ export default function ContactPage() {
                   />
                 </Form.Group>
 
-                <Button type="submit" disabled={status === "sending"}>
-                  {status === "sending" ? t.contact.sending : t.contact.send}
-                </Button>
+                <div className="d-flex justify-content-end">
+                  <Button type="submit" disabled={status === "sending"}>
+                    {status === "sending" ? t.contact.sending : t.contact.send}
+                  </Button>
+                </div>
+                <PrivacyNotice kind="contact" className="mt-3" />
               </Form>
             </Card.Body>
           </Card>

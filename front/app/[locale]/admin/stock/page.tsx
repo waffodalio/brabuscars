@@ -12,6 +12,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { stockService } from "@/services/stockService";
 import { STOCK_STATUSES, type StockStatus, type StockVehicle } from "@/types/stock";
 import { errorMessage } from "@/utils/errors";
+import { durationDays, sinceDays } from "@/utils/dayCount";
 import { formatDay, formatEuros, todayIso } from "@/utils/saleLabels";
 import { STOCK_STATUS_LABELS, STOCK_STATUS_VARIANTS, isInGarage, stockMatches } from "@/utils/stockLabels";
 
@@ -44,7 +45,7 @@ export default function AdminStockPage() {
   const soldThisMonth = all.filter((vehicle) => vehicle.status === "sold" && vehicle.exitDate?.startsWith(month)).length;
   const stockValue = inGarage.reduce((sum, vehicle) => sum + (vehicle.totals.costPrice ?? 0), 0);
   const averageDays = inGarage.length
-    ? Math.round(inGarage.reduce((sum, vehicle) => sum + vehicle.daysInStock, 0) / inGarage.length)
+    ? inGarage.reduce((sum, vehicle) => sum + vehicle.daysInStock, 0) / inGarage.length
     : 0;
 
   const counts: Partial<Record<Filter, number>> = { garage: inGarage.length, all: all.length };
@@ -68,7 +69,7 @@ export default function AdminStockPage() {
         <p className="text-secondary mb-0 me-auto">
           Les véhicules gérés par le garage, avec ou sans annonce : entrées, frais, sorties.
         </p>
-        <Link href={withLocale("/admin/stock/nouveau")} className="btn btn-primary">
+        <Link href={withLocale("/admin/stock/nouveau")} className="btn btn-primary ms-auto">
           Entrer un véhicule
         </Link>
       </div>
@@ -92,7 +93,7 @@ export default function AdminStockPage() {
             <div className="chc-stock-kpi">
               <span>Ancienneté moyenne</span>
               <strong>
-                {averageDays} <small>j</small>
+                {inGarage.length === 0 ? "—" : durationDays(averageDays)}
               </strong>
             </div>
             <div className="chc-stock-kpi">
@@ -170,7 +171,9 @@ export default function AdminStockPage() {
                           }`}
                         >
                           {isInGarage(vehicle.status)
-                            ? `${vehicle.daysInStock} j au garage`
+                            ? vehicle.daysInStock <= 1
+                              ? `entré ${sinceDays(vehicle.daysInStock)}`
+                              : `${sinceDays(vehicle.daysInStock)} au garage`
                             : `sorti le ${formatDay(vehicle.exitDate ?? vehicle.entryDate)}`}
                         </div>
                       </td>

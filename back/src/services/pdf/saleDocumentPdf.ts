@@ -25,8 +25,10 @@ export interface SaleDocumentPdfInput {
   vatRegime: VatRegime;
   totals: VatBreakdown;
   paidCents: number;
-  /** Listed on the invoice. */
-  payments: { paidOn: string; method: PaymentMethod; amountCents: number }[];
+  /** Listed on the invoice; `note` names the advance of the purchase order. */
+  payments: { paidOn: string; method: PaymentMethod; amountCents: number; note?: string | null }[];
+  /** Invoice of a sale that went through a purchase order: its number, as a reference. */
+  orderNumber?: string | null;
 }
 
 const TITLES: Record<SaleDocumentKind, string> = { order: "BON DE COMMANDE", invoice: "FACTURE" };
@@ -99,6 +101,9 @@ export function renderSaleDocumentPdf(input: SaleDocumentPdfInput): Promise<Buff
     doc.font("Helvetica").fontSize(10).fillColor(INK);
     doc.text(`N° ${input.number}`, { width: width / 2, align: "right" });
     doc.text(`Date : ${longDate(input.issuedAt)}`, { width: width / 2, align: "right" });
+    if (input.orderNumber) {
+      doc.text(`Réf. bon de commande : ${input.orderNumber}`, { width: width / 2, align: "right" });
+    }
 
     // --- Buyer -----------------------------------------------------------------
     let y = 165;
@@ -169,7 +174,8 @@ export function renderSaleDocumentPdf(input: SaleDocumentPdfInput): Promise<Buff
       y += 14;
       doc.font("Helvetica").fontSize(9).fillColor(INK);
       for (const payment of input.payments) {
-        doc.text(`${shortDay(payment.paidOn)} · ${METHOD_LABELS[payment.method]}`, left, y, { width: width * 0.5 });
+        const label = [shortDay(payment.paidOn), METHOD_LABELS[payment.method], payment.note].filter(Boolean).join(" · ");
+        doc.text(label, left, y, { width: width * 0.5 });
         doc.text(euros(payment.amountCents), left + width * 0.5, y, { width: width * 0.2, align: "right" });
         y += 13;
       }

@@ -176,6 +176,10 @@ const envSchema = z.object({
   COMPANY_VAT_NUMBER: optionalText,
   COMPANY_IBAN: optionalText,
   COMPANY_BIC: optionalText,
+  /** Legal notice page: registered name with its legal form (« BrabusCars SRL »),
+   * defaults to COMPANY_NAME; and the hosting provider (name + address). */
+  COMPANY_LEGAL_NAME: optionalText,
+  COMPANY_HOSTING: optionalText,
 }).refine(
   (value) => Boolean(value.GOOGLE_CLIENT_ID) === Boolean(value.GOOGLE_CLIENT_SECRET),
   {

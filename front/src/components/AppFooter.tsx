@@ -232,6 +232,8 @@ export function AppFooter() {
           <div className="d-flex flex-wrap align-items-center gap-3">
             <span>{t.footer.rights(new Date().getFullYear())}</span>
             {company?.vatNumber && <span>{t.footer.vat(company.vatNumber)}</span>}
+            <Link href={withLocale("/mentions-legales")} className="chc-footer-linkbtn text-decoration-none">{t.footer.legalNotice}</Link>
+            <Link href={withLocale("/confidentialite")} className="chc-footer-linkbtn text-decoration-none">{t.footer.privacy}</Link>
             <button type="button" onClick={reopen} className="chc-footer-linkbtn">
               {t.footer.manageCookies}
             </button>

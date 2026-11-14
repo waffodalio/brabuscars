@@ -8,6 +8,7 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { listingImageService } from "@/services/listingImageService";
 import type { ListingImage } from "@/types/listing";
 import { errorMessage } from "@/utils/errors";
+import { IMAGE_ACCEPT } from "@/utils/imageUpload";
 
 /** Where the gallery lives: a listing's photos, or a garage-register car's. */
 export interface ImageGalleryApi {
@@ -41,7 +42,7 @@ interface ListingImagePanelProps {
 }
 
 /**
- * Admin gallery editor for a listing: upload (JPEG/PNG/WebP, re-encoded
+ * Admin gallery editor for a listing: upload (JPEG/PNG/WebP/HEIC, re-encoded
  * server-side), set the cover, delete. When `canManage` is false it is a
  * plain read-only gallery.
  */
@@ -151,15 +152,18 @@ export function ListingImagePanel({
       )}
 
       {canManage && (
-        <div className="mt-3 d-flex align-items-center gap-2">
+        <div className="mt-3 d-flex flex-wrap justify-content-end align-items-center gap-2">
           <input
             ref={inputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept={IMAGE_ACCEPT}
             multiple
             hidden
             onChange={handleFiles}
           />
+          <span className="small text-secondary">
+            JPEG, PNG, WebP ou HEIC (iPhone) — 15 Mo max
+          </span>
           <Button
             variant="outline-primary"
             disabled={busy}
@@ -175,9 +179,6 @@ export function ListingImagePanel({
             )}
             Ajouter des photos
           </Button>
-          <span className="small text-secondary">
-            JPEG, PNG ou WebP — 15 Mo max
-          </span>
         </div>
       )}
     </section>

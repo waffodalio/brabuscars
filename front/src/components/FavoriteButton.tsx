@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Overlay from "react-bootstrap/Overlay";
 import Tooltip from "react-bootstrap/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { usePublicErrorMessage } from "@/hooks/usePublicErrorMessage";
+import { setFavoriteIntent } from "@/utils/favoriteIntent";
+import { setReturnPath } from "@/utils/returnPath";
 
 /** How long a failed toggle's message stays visible. */
 const ERROR_VISIBLE_MS = 4000;
@@ -17,15 +20,17 @@ interface FavoriteButtonProps {
 }
 
 /**
- * Toggle a listing in the current user's favourites. Renders nothing when
- * no one is signed in. A failure (expired session, advert taken offline,
+ * Toggle a listing in the current user's favourites. Shown to visitors too:
+ * for them it leads to the login page, then back to the same page with the
+ * listing added (`favoriteIntent`, like the reservation). A failure (expired session, advert taken offline,
  * API unreachable…) is shown in a tooltip anchored on the button — it sits
  * over the card photo, where inline text would not fit.
  */
 export function FavoriteButton({ listingId, className }: FavoriteButtonProps) {
-  const { user } = useAuth();
+  const { user, initializing } = useAuth();
+  const router = useRouter();
   const { isFavorite, toggle, isPending } = useFavorites();
-  const { t } = useLanguage();
+  const { t, withLocale } = useLanguage();
   const toMessage = usePublicErrorMessage();
   const target = useRef<HTMLButtonElement>(null);
   const [error, setError] = useState("");
@@ -38,12 +43,17 @@ export function FavoriteButton({ listingId, className }: FavoriteButtonProps) {
     return () => window.clearTimeout(timer);
   }, [error]);
 
-  if (!user) return null;
-
-  const active = isFavorite(listingId);
+  const active = Boolean(user) && isFavorite(listingId);
   const label = active ? t.favorites.remove : t.favorites.add;
 
   async function handleClick() {
+    if (initializing) return; // session not known yet
+    if (!user) {
+      setReturnPath(window.location.pathname + window.location.search);
+      setFavoriteIntent(listingId);
+      router.push(withLocale("/connexion"));
+      return;
+    }
     setError("");
     try {
       if (!active) setBurst((count) => count + 1);

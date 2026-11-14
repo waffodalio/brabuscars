@@ -193,7 +193,8 @@ et vivre dans `back/.env.production.local`.
 | `MAX_UPLOAD_BYTES` / `MAX_IMAGES_PER_LISTING` | limites d'upload (défaut 15 Mo / 20 images) |
 | `COMPANY_*` | coordonnées de la concession (nom, adresse, CP, ville, pays, téléphone, e-mail, horaires) — l'adresse suffit, la carte (Google Maps) géolocalise automatiquement |
 | `COMPANY_HOURS_EN` / `COMPANY_HOURS_NL` | horaires affichés sur le site en anglais / néerlandais (optionnels ; à défaut, `COMPANY_HOURS` en français) |
-| `COMPANY_VAT_NUMBER` / `COMPANY_IBAN` / `COMPANY_BIC` | n° de TVA, IBAN et BIC de la concession, imprimés sur les bons de commande et factures (pied de page) ; facultatifs mais recommandés |
+| `COMPANY_VAT_NUMBER` / `COMPANY_IBAN` / `COMPANY_BIC` | n° de TVA, IBAN et BIC de la concession, imprimés sur les bons de commande et factures (pied de page) ; facultatifs mais recommandés. Le n° de TVA sert aussi de n° d'entreprise (BCE) dans les mentions légales |
+| `COMPANY_LEGAL_NAME` / `COMPANY_HOSTING` | pages Mentions légales / Confidentialité : raison sociale avec sa forme (« BrabusCars SRL », défaut `COMPANY_NAME`) et hébergeur du serveur (nom + adresse, ex. « OVH SAS, 2 rue Kellermann, 59100 Roubaix, France ») ; facultatifs, mais l'hébergeur est attendu dans les mentions légales |
 | `COMPANY_INSTAGRAM_URL` / `COMPANY_FACEBOOK_URL` | pages Instagram / Facebook affichées dans le pied de page (optionnelles, `https://` uniquement ; icône masquée si vide) |
 
 ### Frontend

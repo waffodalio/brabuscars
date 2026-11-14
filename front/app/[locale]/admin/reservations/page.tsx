@@ -378,7 +378,7 @@ export default function AdminReservationsPage() {
                   )}
                 </div>
 
-                <div className="d-flex flex-md-column gap-2 flex-wrap align-items-start align-items-md-end">
+                <div className="d-flex flex-md-column gap-2 flex-wrap justify-content-end align-items-start align-items-md-end">
                   {r.status === "pending" && (
                     <>
                       {!unavailableLabel(r.listing.status) && (

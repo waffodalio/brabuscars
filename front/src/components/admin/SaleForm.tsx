@@ -375,9 +375,11 @@ export function SaleForm({
         </Card.Body>
       </Card>
 
-      <Button type="submit" size="lg" className="px-4" disabled={submitting}>
-        {submitting ? "Enregistrement…" : submitLabel}
-      </Button>
+      <div className="d-flex justify-content-end">
+        <Button type="submit" size="lg" className="px-4" disabled={submitting}>
+          {submitting ? "Enregistrement…" : submitLabel}
+        </Button>
+      </div>
     </Form>
   );
 }

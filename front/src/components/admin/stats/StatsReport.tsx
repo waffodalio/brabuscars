@@ -11,6 +11,7 @@ import { DailyViewsChart } from "@/components/admin/DailyViewsChart";
 import { useLanguage } from "@/context/LanguageContext";
 import type { AnalyticsSummary, Compared, SiteSection } from "@/types/analytics";
 import { LISTING_STATUSES } from "@/types/listing";
+import { durationDays, sinceDays } from "@/utils/dayCount";
 import { LISTING_STATUS_LABELS, LISTING_STATUS_VARIANTS } from "@/utils/listingLabels";
 import { AdminIcon } from "../AdminIcon";
 import { BarList } from "./BarList";
@@ -578,8 +579,12 @@ function ActivitySection({ data }: { data: AnalyticsSummary }) {
             <MiniFigure label="Valeur du stock" value={stock.count > 0 ? formatEuros(stock.totalValue, true) : "—"} />
             <MiniFigure
               label="En ligne depuis"
-              value={stock.count > 0 ? `${formatNumber(stock.averageDaysOnline)} j` : "—"}
-              hint={stock.count > 0 ? `en moyenne · max. ${formatNumber(stock.maxDaysOnline)} j` : undefined}
+              value={stock.count > 0 ? durationDays(stock.averageDaysOnline) : "—"}
+              hint={
+                stock.count > 0
+                  ? `en moyenne · la plus ancienne depuis ${sinceDays(stock.maxDaysOnline)}`
+                  : undefined
+              }
             />
           </div>
           <div className="small fw-medium mb-2">Toutes les annonces par statut</div>

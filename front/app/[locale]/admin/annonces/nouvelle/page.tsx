@@ -232,14 +232,14 @@ export default function NewListingPage() {
           </Card.Body>
         </Card>
 
-        <div className="d-flex align-items-center gap-3 mt-4">
+        <div className="d-flex flex-wrap justify-content-end align-items-center gap-3 mt-4">
+          {progress && <span className="small text-secondary">{progress}</span>}
           <Button type="submit" disabled={submitting}>
             {submitting && <Spinner as="span" size="sm" animation="border" className="me-2" />}
             Créer l&apos;annonce
           </Button>
-          {progress && <span className="small text-secondary">{progress}</span>}
         </div>
-        <p className="small text-secondary mt-2 mb-0">
+        <p className="small text-secondary text-end mt-2 mb-0">
           L&apos;annonce est créée en brouillon et liée au véhicule {car.reference} ; elle affiche ses photos. Publiez-la
           depuis sa page.
         </p>

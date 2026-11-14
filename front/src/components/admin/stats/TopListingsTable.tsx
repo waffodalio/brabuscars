@@ -5,6 +5,7 @@ import Badge from "react-bootstrap/Badge";
 import Table from "react-bootstrap/Table";
 import { useLanguage } from "@/context/LanguageContext";
 import type { TopListing } from "@/types/analytics";
+import { sinceDays } from "@/utils/dayCount";
 import { LISTING_STATUS_LABELS, LISTING_STATUS_VARIANTS, formatPrice } from "@/utils/listingLabels";
 import { AdminIcon } from "../AdminIcon";
 import { listingPath } from "@/utils/listingPath";
@@ -61,7 +62,7 @@ export function TopListingsTable({ rows }: { rows: TopListing[] }) {
                   <div className="small text-secondary text-truncate">
                     {row.brand} {row.model} · {formatPrice(row.price)}
                     {daysSince(row.publishedAt) !== null && (
-                      <span className="d-none d-lg-inline"> · en ligne depuis {formatNumber(daysSince(row.publishedAt) ?? 0)} j</span>
+                      <span className="d-none d-lg-inline"> · en ligne depuis {sinceDays(daysSince(row.publishedAt) ?? 0)}</span>
                     )}
                     {row.status !== "published" && (
                       <Badge bg={LISTING_STATUS_VARIANTS[row.status]} className="ms-2">

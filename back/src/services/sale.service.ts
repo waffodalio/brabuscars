@@ -101,6 +101,7 @@ async function issueDocument(
   const issuedAt = new Date();
   const lines = [...sale.lines].sort((a, b) => a.position - b.position);
   const total = totalCents(lines);
+  const order = sale.documents?.find((document) => document.kind === "order");
 
   const pdf = await renderSaleDocumentPdf({
     kind,
@@ -142,7 +143,10 @@ async function issueDocument(
       paidOn: payment.paidOn,
       method: payment.method,
       amountCents: toCents(payment.amount),
+      note: order && payment.documentId === order.id ? `acompte ${order.number}` : null,
     })),
+    // The final invoice refers to the purchase order it settles.
+    orderNumber: kind === "invoice" ? (order?.number ?? null) : null,
   });
 
   const storageKey = `sales/${sale.id}/${number}.pdf`;

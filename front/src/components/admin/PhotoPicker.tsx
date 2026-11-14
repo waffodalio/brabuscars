@@ -1,23 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { IMAGE_ACCEPT } from "@/utils/imageUpload";
 
 /**
  * Photos chosen before the record exists (uploaded right after it is saved):
- * previews, the first one as cover, each removable. JPEG / PNG / WebP.
+ * previews, the first one as cover, each removable. JPEG / PNG / WebP /
+ * HEIC — a browser that cannot show an HEIC preview (all but Safari) gets
+ * its file name instead; the server converts it anyway.
  */
 export function PhotoPicker({ files, onChange }: { files: File[]; onChange: (files: File[]) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
+  const [unpreviewable, setUnpreviewable] = useState<ReadonlySet<string>>(new Set());
 
   return (
     <div>
       <div className="chc-photo-grid">
         {previews.map((url, index) => (
           <figure key={url} className="chc-photo-thumb">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt="" />
+            {unpreviewable.has(url) ? (
+              <span className="chc-photo-noprev">
+                <strong>HEIC</strong>
+                <span className="text-truncate">{files[index]?.name}</span>
+              </span>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={url} alt="" onError={() => setUnpreviewable((prev) => new Set(prev).add(url))} />
+            )}
             {index === 0 && <span className="chc-photo-cover">Couverture</span>}
             <button
               type="button"
@@ -37,7 +48,7 @@ export function PhotoPicker({ files, onChange }: { files: File[]; onChange: (fil
       <input
         ref={input}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept={IMAGE_ACCEPT}
         multiple
         hidden
         onChange={(event) => {
@@ -47,7 +58,7 @@ export function PhotoPicker({ files, onChange }: { files: File[]; onChange: (fil
         }}
       />
       <div className="small text-secondary mt-2">
-        JPEG, PNG ou WebP — 15 Mo max par photo. La première sert de couverture ; ces photos seront celles de
+        JPEG, PNG, WebP ou HEIC (iPhone) — 15 Mo max par photo. La première sert de couverture ; ces photos seront celles de
         l&apos;annonce.
       </div>
     </div>

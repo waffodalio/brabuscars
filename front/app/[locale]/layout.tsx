@@ -40,6 +40,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     metadataBase: await siteOrigin(),
     title: { default: t.meta.siteTitle, template: TITLE_TEMPLATE },
     description: t.meta.siteDescription,
+    other: { google: "notranslate" },
     alternates: localeAlternates(locale, ""),
     openGraph: {
       siteName: SITE_NAME,
@@ -70,8 +71,12 @@ export default async function LocaleLayout({
     // suppressHydrationWarning: browser extensions (Google Translate, Dark
     // Reader, Grammarly…) rewrite <html> attributes before React hydrates.
     // It only covers this element's own attributes, not its children.
+    // translate="no" (+ the `google: notranslate` meta): the site has its own
+    // fr / en / nl versions; browser translation rewrites the text React
+    // manages, mixing languages and breaking the next updates of the page.
     <html
       lang={INTL_LOCALES[locale]}
+      translate="no"
       className={manrope.variable}
       data-bs-theme={theme}
       data-scroll-behavior="smooth"

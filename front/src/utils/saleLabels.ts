@@ -109,3 +109,56 @@ export function saleMatches(
   );
   return words.every((word) => text.includes(word));
 }
+
+/** One issued document in a register (« Factures » / « Bons de commande »), with its sale file. */
+export interface RegisterEntry<S> {
+  sale: S;
+  document: { id: number; kind: SaleDocumentKind; number: string; filename: string; issuedAt: string; total: number; paid: number };
+  /** Purchase orders: the invoice that followed, if the balance was paid. */
+  invoiceNumber: string | null;
+  /** Invoices: the purchase order they settle (none for a sale paid in full at once). */
+  orderNumber: string | null;
+}
+
+/**
+ * Every document of one kind across the sale files, most recent number
+ * first (numbers are continuous per kind and year: `F-2026-0007` sorts
+ * after `F-2026-0006` and after `F-2025-0120`).
+ */
+export function documentRegister<
+  S extends { documents: RegisterEntry<unknown>["document"][] },
+>(sales: S[], kind: SaleDocumentKind): RegisterEntry<S>[] {
+  return sales
+    .flatMap((sale) =>
+      sale.documents
+        .filter((document) => document.kind === kind)
+        .map((document) => ({
+          sale,
+          document,
+          invoiceNumber: sale.documents.find((other) => other.kind === "invoice")?.number ?? null,
+          orderNumber: sale.documents.find((other) => other.kind === "order")?.number ?? null,
+        })),
+    )
+    .sort((a, b) => b.document.number.localeCompare(a.document.number));
+}
+
+/** Calendar year of an issued document (`issuedAt` is an ISO timestamp), in Brussels time. */
+export function documentYear(issuedAt: string): number {
+  return Number(new Intl.DateTimeFormat("en", { year: "numeric", timeZone: "Europe/Brussels" }).format(new Date(issuedAt)));
+}
+
+/** `YYYY-MM` of an issued document, in Brussels time. */
+export function documentMonth(issuedAt: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: "Europe/Brussels" })
+    .formatToParts(new Date(issuedAt));
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}`;
+}
+
+/** « novembre 2026 » from `2026-11`. */
+export function monthLabel(month: string): string {
+  const [year, m] = month.split("-").map(Number);
+  return new Intl.DateTimeFormat("fr-BE", { month: "long", year: "numeric", timeZone: "UTC" }).format(
+    new Date(Date.UTC(year, m - 1, 15)),
+  );
+}

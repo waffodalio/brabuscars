@@ -15,4 +15,8 @@ export interface Company {
   facebookUrl: string | null;
   /** VAT number (« BE 0123.456.789 »), shown in the footer — `null` when not configured. */
   vatNumber: string | null;
+  /** Registered name with its legal form (legal notice). */
+  legalName: string;
+  /** Hosting provider, name + address — `null` when not configured. */
+  hosting: string | null;
 }

@@ -44,6 +44,8 @@ export const fr = {
     facebook: (name: string) => `${name} sur Facebook`,
     newTab: "(nouvel onglet)",
     backToTop: "Retour en haut",
+    legalNotice: "Mentions légales",
+    privacy: "Confidentialité",
   },
   home: {
     title: "Trouvez le véhicule qu'il vous faut",
@@ -136,6 +138,9 @@ export const fr = {
     hours: "Horaires",
     mapTitle: "Carte du garage",
     mapProvider: "Carte fournie par Google Maps.",
+    showMap: "Afficher la carte",
+    mapConsent:
+      "La carte est fournie par Google Maps : en l'affichant, Google reçoit votre adresse IP et peut déposer des cookies.",
     directions: "Itinéraire",
     formTitle: "Nous écrire",
     name: "Nom",
@@ -490,10 +495,19 @@ export const fr = {
     forgotPassword: "Mot de passe oublié",
     resetPassword: "Nouveau mot de passe",
     admin: "Administration",
+    legalNotice: "Mentions légales",
+    privacy: "Politique de confidentialité",
+  },
+  privacyNotice: {
+    account: "Vos données servent uniquement à gérer votre compte, vos favoris et vos réservations.",
+    reservation: "Vos coordonnées servent uniquement à traiter cette demande et à vous en informer par e-mail.",
+    contact: "Vos données servent uniquement à vous répondre.",
+    more: "En savoir plus :",
+    link: "politique de confidentialité",
   },
   cookies: {
     message:
-      "Nous utilisons des cookies essentiels au fonctionnement du site et, avec votre accord, un cookie de mesure d'audience interne. Seule la carte de la page Contact (Google Maps) provient d'un tiers.",
+      "Nous utilisons des cookies essentiels au fonctionnement du site et, avec votre accord, un cookie de mesure d'audience interne. La carte Google Maps de la page Contact ne se charge que si vous la demandez.",
     essential: "Cookies essentiels",
     essentialDesc:
       "Toujours actifs : connexion, sécurité (CSRF), thème et langue choisis.",
@@ -569,6 +583,8 @@ export const en: Dictionary = {
     facebook: (name: string) => `${name} on Facebook`,
     newTab: "(new tab)",
     backToTop: "Back to top",
+    legalNotice: "Legal notice",
+    privacy: "Privacy",
   },
   home: {
     title: "Find the vehicle that's right for you",
@@ -660,6 +676,9 @@ export const en: Dictionary = {
     hours: "Hours",
     mapTitle: "Garage location map",
     mapProvider: "Map provided by Google Maps.",
+    showMap: "Show the map",
+    mapConsent:
+      "The map is provided by Google Maps: when you show it, Google receives your IP address and may set cookies.",
     directions: "Get directions",
     formTitle: "Write to us",
     name: "Name",
@@ -1013,10 +1032,19 @@ export const en: Dictionary = {
     forgotPassword: "Forgot password",
     resetPassword: "New password",
     admin: "Administration",
+    legalNotice: "Legal notice",
+    privacy: "Privacy policy",
+  },
+  privacyNotice: {
+    account: "Your data is only used to manage your account, favourites and bookings.",
+    reservation: "Your details are only used to handle this request and keep you informed by e-mail.",
+    contact: "Your data is only used to reply to you.",
+    more: "Learn more:",
+    link: "privacy policy",
   },
   cookies: {
     message:
-      "We use cookies essential to the site, and, with your consent, an internal audience-measurement cookie. Only the map on the Contact page (Google Maps) comes from a third party.",
+      "We use cookies essential to the site, and, with your consent, an internal audience-measurement cookie. The Google Maps map on the Contact page only loads if you ask for it.",
     essential: "Essential cookies",
     essentialDesc: "Always active: sign-in, security (CSRF), chosen theme and language.",
     analytics: "Tracking cookies",
@@ -1090,6 +1118,8 @@ export const nl: Dictionary = {
     facebook: (name: string) => `${name} op Facebook`,
     newTab: "(nieuw tabblad)",
     backToTop: "Terug naar boven",
+    legalNotice: "Wettelijke vermeldingen",
+    privacy: "Privacy",
   },
   home: {
     title: "Vind het voertuig dat bij u past",
@@ -1182,6 +1212,9 @@ export const nl: Dictionary = {
     hours: "Openingsuren",
     mapTitle: "Kaart met de locatie van de garage",
     mapProvider: "Kaart aangeboden door Google Maps.",
+    showMap: "Kaart tonen",
+    mapConsent:
+      "De kaart wordt aangeboden door Google Maps: als u ze toont, ontvangt Google uw IP-adres en kan het cookies plaatsen.",
     directions: "Routebeschrijving",
     formTitle: "Schrijf ons",
     name: "Naam",
@@ -1536,10 +1569,19 @@ export const nl: Dictionary = {
     forgotPassword: "Wachtwoord vergeten",
     resetPassword: "Nieuw wachtwoord",
     admin: "Beheer",
+    legalNotice: "Wettelijke vermeldingen",
+    privacy: "Privacybeleid",
+  },
+  privacyNotice: {
+    account: "Uw gegevens dienen alleen om uw account, favorieten en reserveringen te beheren.",
+    reservation: "Uw gegevens dienen alleen om deze aanvraag te behandelen en u per e-mail op de hoogte te houden.",
+    contact: "Uw gegevens dienen alleen om u te antwoorden.",
+    more: "Meer info:",
+    link: "privacybeleid",
   },
   cookies: {
     message:
-      "We gebruiken cookies die nodig zijn voor de werking van de site en, met uw toestemming, een interne cookie voor bezoekersmetingen. Alleen de kaart op de pagina Contact (Google Maps) is afkomstig van een derde partij.",
+      "We gebruiken cookies die nodig zijn voor de werking van de site en, met uw toestemming, een interne cookie voor bezoekersmetingen. De Google Maps-kaart op de pagina Contact wordt alleen geladen als u erom vraagt.",
     essential: "Noodzakelijke cookies",
     essentialDesc:
       "Altijd actief: aanmelding, beveiliging (CSRF), gekozen thema en taal.",

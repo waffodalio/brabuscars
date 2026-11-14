@@ -23,6 +23,7 @@ import type { CarModel } from "@/types/carModel";
 import type { Listing } from "@/types/listing";
 import { EXIT_REASONS, type ExitReason, type StockVehicle, type StockVehicleInput } from "@/types/stock";
 import { errorMessage } from "@/utils/errors";
+import { daysWord } from "@/utils/dayCount";
 import { LISTING_STATUS_LABELS } from "@/utils/listingLabels";
 import { listingPath } from "@/utils/listingPath";
 import { SALE_STATUS_LABELS, formatDay, formatEuros, todayIso } from "@/utils/saleLabels";
@@ -191,8 +192,19 @@ export default function StockVehiclePage() {
         </div>
         <div className="chc-sale-hero-side">
           <div className="chc-stock-days">
-            <strong>{vehicle.daysInStock}</strong>
-            <span>{inGarage ? "jours au garage" : "jours au total"}</span>
+            {vehicle.daysInStock === 0 ? (
+              <>
+                <strong className="chc-stock-days-word">Aujourd&apos;hui</strong>
+                <span>{inGarage ? "entré au garage" : "entré et sorti le même jour"}</span>
+              </>
+            ) : (
+              <>
+                <strong>{vehicle.daysInStock}</strong>
+                <span>
+                  {daysWord(vehicle.daysInStock)} {inGarage ? "au garage" : "au total"}
+                </span>
+              </>
+            )}
           </div>
           {!editing && (
             <div className="d-flex gap-2">
@@ -345,7 +357,7 @@ export default function StockVehiclePage() {
                       <Form.Label className="small">Date</Form.Label>
                       <Form.Control type="date" value={cost.spentOn} onChange={(event) => setCost({ ...cost, spentOn: event.target.value })} />
                     </Col>
-                    <Col xs={12}>
+                    <Col xs={12} className="text-end">
                       <Button type="submit" variant="outline-primary" size="sm">
                         + Ajouter le frais
                       </Button>
@@ -440,9 +452,11 @@ export default function StockVehiclePage() {
                   ) : (
                     <>
                       {inGarage && (
-                        <Link href={withLocale(`/admin/annonces/nouvelle?stock=${vehicle.id}`)} className="btn btn-primary w-100 mb-3">
-                          Créer l&apos;annonce depuis ce véhicule
-                        </Link>
+                        <div className="d-flex justify-content-end mb-3">
+                          <Link href={withLocale(`/admin/annonces/nouvelle?stock=${vehicle.id}`)} className="btn btn-primary">
+                            Créer l&apos;annonce depuis ce véhicule
+                          </Link>
+                        </div>
                       )}
                       {listings.length > 0 && (
                         <div className="d-flex gap-2">
@@ -497,9 +511,9 @@ export default function StockVehiclePage() {
                           </Form.Select>
                         </Col>
                       </Row>
+                      <div className="d-flex justify-content-end">
                       <ConfirmButton
                         variant="outline-primary"
-                        className="w-100"
                         message={`Enregistrer la sortie (${EXIT_REASON_LABELS[exitReason].toLowerCase()}) ?${
                           vehicle.listing ? ` Son annonce passera « ${exitReason === "sale" ? "Vendue" : "Archivée"} ».` : ""
                         }`}
@@ -509,6 +523,7 @@ export default function StockVehiclePage() {
                       >
                         Enregistrer la sortie
                       </ConfirmButton>
+                      </div>
                       <p className="small text-secondary mt-2 mb-0">
                         Une vente facturée (ou l&apos;annonce passée « Vendue ») la fait automatiquement.
                       </p>

@@ -182,7 +182,7 @@ export default function EditListingPage() {
           </Card.Body>
         </Card>
 
-        <div className="mt-4">
+        <div className="d-flex justify-content-end mt-4">
           <Button type="submit" disabled={submitting}>
             {submitting && (
               <Spinner as="span" size="sm" animation="border" className="me-2" />

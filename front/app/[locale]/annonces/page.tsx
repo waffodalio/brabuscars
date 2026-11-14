@@ -425,7 +425,12 @@ function ListingsBrowser() {
           </Col>
         </Row>
 
-        <div className="d-flex gap-2 mt-3">
+        <div className="d-flex flex-wrap justify-content-end gap-2 mt-3">
+          {(hasFilters || dirty) && (
+            <Button type="button" variant="outline-secondary" onClick={reset}>
+              {t.listings.reset}
+            </Button>
+          )}
           <div className="position-relative d-inline-block">
             <Button type="submit" disabled={!dirty}>
               {t.listings.filter}
@@ -436,11 +441,6 @@ function ListingsBrowser() {
               </div>
             )}
           </div>
-          {(hasFilters || dirty) && (
-            <Button type="button" variant="outline-secondary" onClick={reset}>
-              {t.listings.reset}
-            </Button>
-          )}
         </div>
         </div>
       </Form>

@@ -17,6 +17,7 @@ import { ApiClientError } from "@/services/apiClient";
 import { reservationService } from "@/services/reservationService";
 import type { Listing } from "@/types/listing";
 import type { ReservationType } from "@/types/reservation";
+import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { setReservationIntent } from "@/utils/reservationIntent";
 import { listingPath } from "@/utils/listingPath";
 import { setReturnPath } from "@/utils/returnPath";
@@ -251,6 +252,7 @@ export function ReservationPanel({
                   placeholder={t.reservation.messagePlaceholder}
                 />
               </Form.Group>
+              <PrivacyNotice kind="reservation" className="mt-3" />
             </Modal.Body>
             <Modal.Footer>
               <Button variant="outline-secondary" onClick={close} disabled={submitting}>

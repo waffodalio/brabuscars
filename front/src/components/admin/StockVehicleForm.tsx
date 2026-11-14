@@ -384,10 +384,7 @@ export function StockVehicleForm({
         </Card.Body>
       </Card>
 
-      <div className="d-flex flex-wrap align-items-center gap-3">
-        <Button type="submit" size="lg" className="px-4" disabled={submitting}>
-          {submitting ? "Enregistrement…" : thenListing && offerListing ? `${submitLabel} et créer l'annonce` : submitLabel}
-        </Button>
+      <div className="d-flex flex-wrap justify-content-end align-items-center gap-3">
         {offerListing && (
           <Form.Check
             type="switch"
@@ -397,6 +394,9 @@ export function StockVehicleForm({
             onChange={(event) => setThenListing(event.target.checked)}
           />
         )}
+        <Button type="submit" size="lg" className="px-4" disabled={submitting}>
+          {submitting ? "Enregistrement…" : thenListing && offerListing ? `${submitLabel} et créer l'annonce` : submitLabel}
+        </Button>
       </div>
     </Form>
   );

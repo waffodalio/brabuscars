@@ -121,8 +121,8 @@ function PaymentForm({ sale, onDone }: { sale: Sale; onDone: (sale: Sale) => voi
             <Form.Control value={reference} onChange={(e) => setReference(e.target.value)} maxLength={100} placeholder="facultatif" />
           </Form.Group>
         </Col>
-        <Col xs={12}>
-          <Button type="submit" className="w-100" disabled={busy}>
+        <Col xs={12} className="text-end">
+          <Button type="submit" disabled={busy}>
             {busy ? "Enregistrement…" : "Encaisser ce paiement"}
           </Button>
         </Col>

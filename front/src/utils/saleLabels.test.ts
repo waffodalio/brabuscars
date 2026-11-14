@@ -50,3 +50,65 @@ describe("salesByListing", () => {
     expect(map.size).toBe(1);
   });
 });
+
+import { documentRegister, documentYear } from "./saleLabels";
+
+describe("documentRegister", () => {
+  const doc = (id: number, kind: "order" | "invoice", number: string) => ({
+    id,
+    kind,
+    number,
+    filename: `${number}.pdf`,
+    issuedAt: "2026-03-01T10:00:00.000Z",
+    total: 1000,
+    paid: 1000,
+  });
+  const sales = [
+    { id: 1, documents: [doc(1, "order", "BC-2026-0001"), doc(2, "invoice", "F-2026-0002")] },
+    { id: 2, documents: [doc(3, "order", "BC-2026-0002")] },
+    { id: 3, documents: [doc(4, "invoice", "F-2026-0001")] },
+    { id: 4, documents: [] },
+    { id: 5, documents: [doc(5, "invoice", "F-2025-0040")] },
+  ];
+
+  it("lists invoices only, most recent number first", () => {
+    expect(documentRegister(sales, "invoice").map((entry) => entry.document.number)).toEqual([
+      "F-2026-0002",
+      "F-2026-0001",
+      "F-2025-0040",
+    ]);
+  });
+
+  it("gives each invoice the purchase order it settles, if any", () => {
+    expect(documentRegister(sales, "invoice").map((entry) => [entry.document.number, entry.orderNumber])).toEqual([
+      ["F-2026-0002", "BC-2026-0001"],
+      ["F-2026-0001", null],
+      ["F-2025-0040", null],
+    ]);
+  });
+
+  it("lists purchase orders with the invoice that followed, if any", () => {
+    expect(
+      documentRegister(sales, "order").map((entry) => [entry.document.number, entry.invoiceNumber, entry.sale.id]),
+    ).toEqual([
+      ["BC-2026-0002", null, 2],
+      ["BC-2026-0001", "F-2026-0002", 1],
+    ]);
+  });
+});
+
+describe("documentYear", () => {
+  it("uses the Brussels calendar (New Year's Eve late evening UTC is already next year)", () => {
+    expect(documentYear("2026-12-31T23:30:00.000Z")).toBe(2027);
+    expect(documentYear("2026-06-15T10:00:00.000Z")).toBe(2026);
+  });
+});
+
+import { documentMonth, monthLabel } from "./saleLabels";
+
+describe("documentMonth / monthLabel", () => {
+  it("files a document under its Brussels month", () => {
+    expect(documentMonth("2026-10-31T23:30:00.000Z")).toBe("2026-11");
+    expect(monthLabel("2026-11")).toBe("novembre 2026");
+  });
+});

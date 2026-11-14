@@ -378,6 +378,10 @@ a:hover {
   .chc-table-cards td[data-label=""]::before {
     content: none;
   }
+  /* Action cell (no label): its buttons on the right of the card. */
+  .chc-table-cards td[data-label=""] {
+    justify-content: flex-end;
+  }
   /* The card is the row: drop Bootstrap's striped / hover cell tint. */
   .chc-table-cards > :not(caption) > * > * {
     box-shadow: none !important;
@@ -4462,10 +4466,9 @@ a:hover .chc-logo-word::after {
     display: none;
   }
   .chc-sale-hero-side > .d-flex {
+    width: 100%;
+    justify-content: flex-end;
     margin-top: 1rem;
-  }
-  .chc-sale-hero-side > .d-flex > * {
-    flex: 1;
   }
   .chc-timeline {
     padding-left: 1.5rem;
@@ -4553,6 +4556,176 @@ a:hover .chc-logo-word::after {
 }
 .chc-doc-chip--invoice {
   color: var(--bs-primary-text-emphasis);
+  background: var(--bs-primary-bg-subtle);
+}
+.chc-doc-chip--draft {
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+  border: 1px dashed var(--bs-border-color);
+}
+.chc-doc-chip--lg {
+  display: inline-block;
+  padding: 0.22rem 0.7rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Billing page */
+/* « Nouveau dossier »: pill like the tabs and the search, with a + badge */
+.chc-new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 1.1rem 0.45rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+}
+.chc-new-btn-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  transition: transform 0.2s ease;
+}
+.chc-new-btn:hover .chc-new-btn-icon {
+  transform: rotate(90deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chc-new-btn:hover .chc-new-btn-icon {
+    transform: none;
+  }
+}
+.chc-search-field {
+  position: relative;
+  width: min(100%, 320px);
+  display: flex;
+  align-items: center;
+  color: var(--bs-secondary-color);
+}
+.chc-search-field > svg {
+  position: absolute;
+  left: 0.75rem;
+  pointer-events: none;
+}
+.chc-search-field .chc-sales-search {
+  width: 100%;
+  padding-left: 2rem;
+}
+.chc-initials {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--bs-primary-text-emphasis);
+  background: var(--bs-primary-bg-subtle);
+}
+.chc-row-link {
+  cursor: pointer;
+}
+.chc-sales-table .chc-col-progress {
+  width: 15rem;
+}
+.chc-col-vehicle {
+  max-width: 280px;
+}
+.chc-pay-progress {
+  height: 6px;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+}
+.chc-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.chc-status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+}
+.chc-register-total {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  background: var(--bs-body-bg);
+}
+.chc-register-month td {
+  padding-top: 0.9rem !important;
+  padding-bottom: 0.35rem !important;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  background: transparent;
+}
+@media (max-width: 575.98px) {
+  /* Phone: the month is a heading between the cards, not a card itself. */
+  .chc-table-cards tr.chc-register-month {
+    padding: 0.4rem 0.2rem 0;
+    border: 0;
+    box-shadow: none;
+    background: none;
+  }
+  .chc-table-cards tr.chc-register-month td {
+    display: block;
+    padding: 0 !important;
+  }
+  .chc-table-cards tr.chc-register-month td::before {
+    content: none;
+  }
+  .chc-table-cards td.chc-col-vehicle,
+  .chc-register-table .chc-col-vehicle {
+    max-width: none;
+  }
+  .chc-sales-table .chc-col-progress {
+    width: auto;
+  }
+  .chc-sales-table td.chc-col-progress {
+    display: block;
+    text-align: left;
+  }
+}
+.chc-register-month-total {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.8rem;
+}
+.chc-register-table .chc-col-vehicle {
+  max-width: 220px;
+}
+.chc-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 50%;
+  color: var(--bs-secondary-color);
+  background: var(--bs-body-bg);
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.chc-icon-btn:hover,
+.chc-icon-btn:focus-visible {
+  color: var(--bs-primary);
+  border-color: var(--bs-primary);
   background: var(--bs-primary-bg-subtle);
 }
 .chc-sale-payment-box {
@@ -4764,6 +4937,10 @@ a:hover .chc-logo-word::after {
   text-transform: uppercase;
   opacity: 0.8;
 }
+/* « Aujourd'hui » instead of a number: smaller, it has to fit the circle */
+.chc-stock-days strong.chc-stock-days-word {
+  font-size: 1.15rem;
+}
 .chc-sale-hero--paid .chc-stock-days {
   border-color: rgba(99, 102, 241, 0.35);
 }
@@ -4793,6 +4970,9 @@ a:hover .chc-logo-word::after {
   }
   .chc-stock-days strong {
     font-size: 1.2rem;
+  }
+  .chc-stock-days strong.chc-stock-days-word {
+    font-size: 0.62rem;
   }
   .chc-stock-days span {
     font-size: 0.45rem;
@@ -5056,6 +5236,22 @@ a:hover .chc-logo-word::after {
   height: 100%;
   object-fit: cover;
 }
+/* HEIC chosen in a browser that cannot preview it: its name instead */
+.chc-photo-noprev {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  height: 100%;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+  text-align: center;
+}
+.chc-photo-noprev > span {
+  max-width: 100%;
+}
 .chc-photo-cover {
   position: absolute;
   left: 0.4rem;
@@ -5195,4 +5391,31 @@ a:hover .chc-logo-word::after {
     transform: scale(0.98);
     transition-duration: 0.08s;
   }
+}
+
+/* Contact page: Google Maps placeholder, the map loads on click (GDPR). */
+.chc-map-placeholder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  text-align: center;
+  color: var(--bs-secondary-color);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(var(--bs-primary-rgb), 0.08), transparent 60%),
+    var(--bs-tertiary-bg);
+}
+.chc-map-placeholder svg {
+  color: var(--bs-primary);
+}
+
+/* Legal notice / privacy policy */
+.chc-legal h2 {
+  margin-top: 1.5rem;
+}
+.chc-legal li + li {
+  margin-top: 0.35rem;
 }
