@@ -138,12 +138,52 @@
 
     # Images « pendantes » seulement (sans tag, comme deploy.sh) : le serveur
     # héberge d'autres projets, dont les images ne doivent jamais disparaître.
-    - name: Nettoyage hebdomadaire des images pendantes
-      ansible.builtin.cron:
-        name: chcars docker prune
-        special_time: weekly
-        job: "docker image prune -f >/dev/null 2>&1"
-        state: "{{ 'present' if docker_prune_weekly else 'absent' }}"
+    # Timer systemd (pas cron : absent du serveur, comme sur toute
+    # installation minimale ; c'est aussi ainsi que certbot se renouvelle).
+    - name: Nettoyage hebdomadaire des images pendantes — service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/chcars-docker-prune.service
+        content: |
+          # Géré par Ansible (deploy/ansible)
+          [Unit]
+          Description=CHCars — suppression des images Docker pendantes
+          After=docker.service
+          Requires=docker.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/bin/docker image prune -f
+        mode: "0644"
+      register: prune_service
+      tags: docker
+
+    - name: Nettoyage hebdomadaire des images pendantes — timer
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/chcars-docker-prune.timer
+        content: |
+          # Géré par Ansible (deploy/ansible)
+          [Unit]
+          Description=CHCars — nettoyage Docker hebdomadaire
+
+          [Timer]
+          OnCalendar=weekly
+          Persistent=true
+          RandomizedDelaySec=1h
+
+          [Install]
+          WantedBy=timers.target
+        mode: "0644"
+      register: prune_timer
+      tags: docker
+
+    # En --check, les fichiers ne sont pas encore écrits : rien à activer.
+    - name: Nettoyage hebdomadaire des images pendantes — activé
+      ansible.builtin.systemd_service:
+        name: chcars-docker-prune.timer
+        state: "{{ 'started' if docker_prune_weekly else 'stopped' }}"
+        enabled: "{{ docker_prune_weekly }}"
+        daemon_reload: "{{ prune_service is changed or prune_timer is changed }}"
+      when: not (ansible_check_mode and (prune_service is changed or prune_timer is changed))
       tags: docker
 
     # ── Utilisateur et dossiers de déploiement ─────────────────────────────
