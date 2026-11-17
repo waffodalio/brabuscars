@@ -22,7 +22,7 @@
     - name: Vérifier les variables obligatoires
       ansible.builtin.assert:
         that:
-          - ansible_os_family == "Debian"
+          - ansible_facts['os_family'] == "Debian"
           - deploy_user | length > 0
           - not manage_nginx_sites or letsencrypt_email | length > 0
         fail_msg: >-
@@ -37,6 +37,11 @@
       ansible.builtin.shell: nginx -t && systemctl reload nginx
       changed_when: true
 
+    - name: Redémarrer fail2ban
+      ansible.builtin.service:
+        name: fail2ban
+        state: restarted
+
     - name: Redémarrer ssh
       ansible.builtin.service:
         name: ssh
@@ -44,8 +49,6 @@
 
   tasks:
     # ── Système (ajouts sans effet sur l'existant) ─────────────────────────
-    # nginx / certbot : déjà présents sur le serveur actuel (aucun changement),
-    # installés sur un serveur neuf.
     # Rafraîchir l'index n'est pas un changement du serveur : sinon la
     # détection de dérive (--check hebdomadaire) signalerait toujours un écart.
     - name: Index apt à jour
@@ -55,10 +58,15 @@
       changed_when: false
       tags: always
 
-    - name: Paquets (mises à jour de sécurité, fail2ban, nginx, certbot)
+    # certbot n'est PAS dans la liste : sur le serveur actuel, les certificats
+    # sont gérés autrement (voir « Certificats HTTPS ») ; l'installer par apt
+    # créerait un second certbot à côté. Installé seulement par
+    # manage_nginx_sites, s'il manque.
+    - name: Paquets (mises à jour de sécurité, fail2ban, nginx)
       ansible.builtin.apt:
-        name: [unattended-upgrades, fail2ban, nginx, certbot, python3-certbot-nginx]
+        name: [unattended-upgrades, fail2ban, python3-systemd, nginx]
         state: present
+      register: base_packages
       tags: system
 
     - name: Mises à jour de sécurité automatiques
@@ -71,11 +79,31 @@
         mode: "0644"
       tags: system
 
+    # Prison SSH sur le VRAI port (pas 22 : DEPLOY_PORT) et lue dans le
+    # journal systemd — Debian 12 n'a plus /var/log/auth.log, sans quoi
+    # fail2ban refuse de démarrer. Ne touche que SSH : aucun site concerné.
+    # En --check, le paquet n'est pas réellement installé : dossier et service
+    # n'existent pas encore, rien à vérifier.
+    - name: Fail2ban — prison SSH
+      ansible.builtin.copy:
+        dest: /etc/fail2ban/jail.d/chcars.local
+        content: |
+          # Géré par Ansible (deploy/ansible)
+          [sshd]
+          enabled = true
+          port = {{ ansible_port | default(22) }}
+          backend = systemd
+        mode: "0644"
+      when: not (ansible_check_mode and base_packages is changed)
+      notify: Redémarrer fail2ban
+      tags: system
+
     - name: Fail2ban actif (bannit les attaques SSH par force brute)
       ansible.builtin.service:
         name: fail2ban
         state: started
         enabled: true
+      when: not (ansible_check_mode and base_packages is changed)
       tags: system
 
     # ── Docker ─────────────────────────────────────────────────────────────
@@ -92,19 +120,15 @@
       when: docker_check.rc != 0
       tags: docker
       block:
-        - name: Clé du dépôt Docker
-          ansible.builtin.get_url:
-            url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
-            dest: /etc/apt/keyrings/docker.asc
-            mode: "0644"
-
         - name: Dépôt Docker officiel
-          ansible.builtin.apt_repository:
-            repo: >-
-              deb [arch={{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }} signed-by=/etc/apt/keyrings/docker.asc]
-              https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable
-            filename: docker
-            state: present
+          ansible.builtin.deb822_repository:
+            name: docker
+            types: deb
+            uris: "https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}"
+            suites: "{{ ansible_facts['distribution_release'] }}"
+            components: stable
+            architectures: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
+            signed_by: "https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}/gpg"
 
         - name: Docker + plugin compose
           ansible.builtin.apt:
@@ -112,11 +136,13 @@
             state: present
             update_cache: true
 
-    - name: Nettoyage hebdomadaire des images inutilisées
+    # Images « pendantes » seulement (sans tag, comme deploy.sh) : le serveur
+    # héberge d'autres projets, dont les images ne doivent jamais disparaître.
+    - name: Nettoyage hebdomadaire des images pendantes
       ansible.builtin.cron:
         name: chcars docker prune
         special_time: weekly
-        job: "docker image prune -af --filter until=168h >/dev/null 2>&1"
+        job: "docker image prune -f >/dev/null 2>&1"
         state: "{{ 'present' if docker_prune_weekly else 'absent' }}"
       tags: docker
 
@@ -189,11 +215,41 @@
       tags: deploy
 
     # ── Certificats HTTPS (renouvellement) ─────────────────────────────────
-    - name: Renouvellement automatique des certificats actif (timer certbot)
+    # Le serveur actuel n'a pas le certbot d'apt : on détecte ce qui est en
+    # place (certbot snap, apt, ou autre chose) et on ne s'occupe que du
+    # renouvellement de certbot s'il existe — jamais d'installation ici.
+    - name: Certbot présent ? (snap ou apt)
+      ansible.builtin.shell: command -v certbot || ls /snap/bin/certbot
+      register: certbot_check
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      tags: [certs, nginx, check]
+
+    # Timer d'apt (certbot.timer) ou de snap (snap.certbot.renew.timer).
+    - name: Timers de renouvellement certbot
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /lib/systemd/system/certbot.timer
+        - /etc/systemd/system/snap.certbot.renew.timer
+      register: certbot_timer_files
+      tags: [certs, nginx, check]
+
+    - name: Renouvellement automatique des certificats actif
       ansible.builtin.systemd_service:
-        name: certbot.timer
+        name: "{{ item.item | basename }}"
         state: started
         enabled: true
+      loop: "{{ certbot_timer_files.results | selectattr('stat.exists') | list }}"
+      loop_control:
+        label: "{{ item.item | basename }}"
+      tags: [certs, nginx]
+
+    - name: Dossier des hooks Let's Encrypt présent ?
+      ansible.builtin.stat:
+        path: /etc/letsencrypt/renewal-hooks/deploy
+      register: letsencrypt_hooks
       tags: [certs, nginx]
 
     - name: Recharger nginx après chaque renouvellement de certificat
@@ -202,9 +258,20 @@
         content: |
           #!/bin/sh
           # Géré par Ansible (deploy/ansible) : nouveau certificat → nginx le sert.
-          nginx -t && systemctl reload nginx
+          # Chemins complets : certbot (snap) lance les hooks avec un PATH réduit.
+          /usr/sbin/nginx -t && /usr/bin/systemctl reload nginx
         mode: "0755"
+      when: letsencrypt_hooks.stat.exists
       tags: [certs, nginx]
+
+    - name: Signaler des certificats non gérés par certbot
+      ansible.builtin.debug:
+        msg: >-
+          ⚠ certbot introuvable (ni apt ni snap) ou sans timer : le renouvellement
+          des certificats n'est pas vérifié par ce playbook. Voir comment HTTPS
+          est assuré sur ce serveur.
+      when: certbot_check.rc != 0 or certbot_timer_files.results | selectattr('stat.exists') | list | length == 0
+      tags: [certs, nginx, check]
 
     - name: Certificats en place
       ansible.builtin.stat:
@@ -215,9 +282,9 @@
       register: certs
       tags: [certs, nginx]
 
-    - name: Signaler un certificat manquant
+    - name: Signaler un certificat Let's Encrypt absent
       ansible.builtin.debug:
-        msg: "⚠ Pas de certificat pour {{ item.item.domain }} (activer manage_nginx_sites pour l'obtenir)."
+        msg: "⚠ Pas de certificat Let's Encrypt pour {{ item.item.domain }} dans /etc/letsencrypt/live."
       loop: "{{ certs.results }}"
       loop_control:
         label: "{{ item.item.domain }}"
@@ -229,6 +296,7 @@
     - name: Tester le renouvellement (sans rien remplacer)
       ansible.builtin.command: certbot renew --dry-run
       changed_when: false
+      when: certbot_check.rc == 0
       tags: [never, check]
 
     - name: Configuration nginx valide
@@ -245,6 +313,12 @@
       when: manage_nginx_sites
       tags: nginx
       block:
+        - name: Certbot (s'il manque)
+          ansible.builtin.apt:
+            name: [certbot, python3-certbot-nginx]
+            state: present
+          when: certbot_check.rc != 0
+
         - name: Certificat Let's Encrypt (s'il manque)
           ansible.builtin.command:
             cmd: >-

@@ -1,8 +1,11 @@
 # Description du serveur CHCars (préprod + prod sur la même machine).
 # Rien de secret ici : les .env restent sur le serveur, écrits à la main.
 #
-# Le serveur est déjà en service : les options qui MODIFIENT l'existant sont à
-# false. Les activer une par une, après un `ansible-playbook site.yml --check --diff`.
+# Le serveur est déjà en service ET héberge d'autres sites (autres domaines,
+# autres stacks Docker) : rien ici ne doit les toucher. Les options qui
+# MODIFIENT l'existant sont à false ; manage_firewall en particulier fermerait
+# tout port utilisé par un autre projet. Certbot est en snap
+# (snap.certbot.renew.timer) : le playbook le détecte, ne l'installe jamais. Les activer une par une, après un `ansible-playbook site.yml --check --diff`.
 
 # Compte utilisé par la CI : le même que le secret GitHub DEPLOY_USER.
 # Obligatoire, à définir dans inventory.yml (jamais créé s'il existe déjà).
@@ -25,7 +28,8 @@ chcars_environments:
     front_port: 3013
     back_port: 3014
 
-# Nettoyage hebdomadaire des images Docker inutilisées.
+# Nettoyage hebdomadaire des images Docker pendantes (sans tag) — jamais celles
+# des autres projets.
 docker_prune_weekly: true
 
 # ── Options qui modifient l'existant (false sur le serveur actuel) ──────────

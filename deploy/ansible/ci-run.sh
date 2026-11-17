@@ -35,7 +35,13 @@ all:
 EOF
 umask 022
 
-pipx install --quiet "ansible-core>=2.17,<2.18"
+# Version figée, dans un environnement à part : le runner fournit déjà une
+# autre version d'Ansible, qui changerait d'une image à l'autre.
+venv="${RUNNER_TEMP:-/tmp}/ansible"
+python3 -m venv "$venv"
+"$venv/bin/pip" install --quiet "ansible-core>=2.18,<2.19"
+export PATH="$venv/bin:$PATH"
+ansible-playbook --version
 ansible-galaxy collection install -r requirements.yml >/dev/null
 
 args=()
