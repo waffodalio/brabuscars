@@ -409,7 +409,7 @@ Un commit déjà tagué (relance du pipeline) n'est pas republié.
 Seuls les push sur `main` déploient ; une PR s'arrête après le build Docker.
 
 **Une image pour tous les environnements** : le front est construit avec
-`NEXT_PUBLIC_API_URL=/api` ; le **nginx du serveur** (`deploy/nginx/chcars.conf`)
+`NEXT_PUBLIC_API_URL=/api` ; le **nginx du serveur** (`deploy/ansible`)
 sert le front et l'API sur une **même origine** (`/api`, `/uploads` → back, le
 reste → front), en HTTPS via certbot (Let's Encrypt). Les conteneurs n'écoutent
 que sur `127.0.0.1` : seul nginx est exposé. La configuration qui change d'un environnement à l'autre vit
@@ -423,7 +423,7 @@ photos séparés), deux plages de ports, deux sites nginx.
 
 |  | Production | Préprod |
 |---|---|---|
-| `DEPLOY_PATH` | `/opt/chcars-prod` | `/opt/chcars-preprod` |
+| `DEPLOY_PATH` | `/var/www/brabuscars/prod` | `/var/www/brabuscars/preprod` |
 | `COMPOSE_PROJECT_NAME` | `chcars-prod` | `chcars-preprod` |
 | Domaine (`SITE_DOMAIN`) | `brabuscars.be` | `preprod.brabuscars.be` |
 | `FRONT_PORT` / `BACK_PORT` / `DB_HOST_PORT` | 3010 / 3011 / 3012 | 3013 / 3014 / 3015 |
@@ -432,10 +432,49 @@ photos séparés), deux plages de ports, deux sites nginx.
 Les ports n'écoutent que sur `127.0.0.1` (nginx seul y accède ; `DB_HOST_PORT`
 sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
 
-1. **Serveur** : Docker + plugin compose, **nginx** + **certbot**
-   (`apt install nginx certbot python3-certbot-nginx`), ports 80/443 ouverts,
-   DNS des **deux** domaines pointé dessus, un utilisateur de déploiement
-   membre du groupe `docker` avec une clé SSH dédiée.
+1. **Serveur** — automatisé par le playbook Ansible `deploy/ansible/site.yml`
+   (*Infrastructure as Code*, rejouable sans risque), **lancé par GitHub
+   Actions** (`.github/workflows/server.yml`) avec les mêmes accès que le
+   déploiement — rien à garder sur un poste. Pensé pour le serveur **déjà en
+   service** : par défaut il n'ajoute que de l'automatisation et des
+   vérifications — mises à jour de sécurité automatiques, fail2ban, nettoyage
+   hebdomadaire des images Docker, **renouvellement des certificats** (timer
+   certbot actif + nginx rechargé après chaque renouvellement), contrôle de
+   `nginx -t`, des certificats et des `.env`. Docker, l'utilisateur de
+   déploiement et ses dossiers (`DEPLOY_PATH_*`) ne sont créés que s'ils
+   manquent ; rien d'existant n'est modifié.
+
+   | Déclencheur | Ce qui se passe |
+   |---|---|
+   | push sur `main` modifiant `deploy/ansible/` | **Vérifier** (`--check --diff`) → **approbation** (environnement `production`) → **Appliquer** |
+   | chaque lundi, 6 h UTC | **Dérive** : `--check` ; échoue (e-mail de GitHub) si le serveur a été modifié à la main |
+   | Actions → Server → Run workflow | `check` ou `apply` (apply : après approbation) |
+
+   Le playbook ne tourne **que depuis `main`** (jamais sur une PR ni une autre
+   branche) : la clé de la CI est root sur le serveur, un playbook modifié
+   hors de `main` ne doit pas pouvoir s'exécuter sans relecture.
+
+   **Prérequis, une fois** : le compte `DEPLOY_USER` doit pouvoir faire `sudo`
+   sans mot de passe (il est déjà dans le groupe `docker`, équivalent root en
+   pratique). Sur le serveur, avec un compte administrateur :
+
+   ```bash
+   echo '<DEPLOY_USER> ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/chcars-ci >/dev/null
+   sudo chmod 440 /etc/sudoers.d/chcars-ci
+   sudo visudo -c   # doit répondre « parsed OK » ; sinon : sudo rm /etc/sudoers.d/chcars-ci
+   ```
+
+   Puis Actions → Server → Run workflow (`check`) pour voir ce qui changerait,
+   et `apply`. L'inventaire est régénéré à chaque exécution depuis les secrets
+   (`deploy/ansible/ci-run.sh`). En local, si besoin :
+   `cp inventory.example.yml inventory.yml` puis `ansible-playbook site.yml --check --diff`.
+
+   Options qui **modifient l'existant**, à `false` dans `group_vars/all.yml`
+   (les activer une à une, par une PR : la vérification montre le diff) :
+   `manage_nginx_sites` (sites nginx réécrits depuis le modèle, étape 3),
+   `manage_firewall` (ufw : SSH, 80, 443, le reste refusé), `ssh_hardening`
+   (mot de passe et root refusés). Sur un serveur neuf : DNS des deux domaines
+   pointé dessus, puis tout activer.
 2. **Un `.env` par environnement**, dans son `DEPLOY_PATH` (jamais versionné).
    Exemple préprod — en prod : `chcars-prod`, `brabuscars.be`, `chcars_prod`,
    `chcarsprod`, ports 3010 / 3011 / 3012 :
@@ -466,25 +505,19 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
 
    Au premier démarrage, l'image MariaDB crée la base et l'utilisateur à
    partir de ces variables ; `deploy.sh` applique ensuite les migrations en attente.
-3. **Deux sites nginx** (en root, une fois), à partir du modèle
-   `deploy/nginx/chcars.conf` :
-
-   ```bash
-   # Production
-   sed -e 's/@ENV@/prod/g' -e 's/@DOMAIN@/brabuscars.be/g'        -e 's/@FRONT_PORT@/3010/g' -e 's/@BACK_PORT@/3011/g'        deploy/nginx/chcars.conf | sudo tee /etc/nginx/sites-available/chcars-prod >/dev/null
-   # Préprod
-   sed -e 's/@ENV@/preprod/g' -e 's/@DOMAIN@/preprod.brabuscars.be/g'        -e 's/@FRONT_PORT@/3013/g' -e 's/@BACK_PORT@/3014/g'        deploy/nginx/chcars.conf | sudo tee /etc/nginx/sites-available/chcars-preprod >/dev/null
-
-   sudo ln -s /etc/nginx/sites-available/chcars-prod /etc/nginx/sites-available/chcars-preprod        /etc/nginx/sites-enabled/
-   sudo nginx -t && sudo systemctl reload nginx
-   sudo certbot --nginx -d brabuscars.be --redirect
-   sudo certbot --nginx -d preprod.brabuscars.be --redirect
-   ```
-
-   certbot ajoute lui-même le bloc HTTPS et renouvelle les certificats
-   automatiquement. Les sites autorisent les envois jusqu'à 16 Mo (photos) et
-   transmettent l'IP réelle du visiteur à l'API (`TRUST_PROXY=1`). Tant qu'une
-   stack n'a pas été déployée, son site répond 502 : c'est normal.
+3. **Deux sites nginx** — sur le serveur actuel, ceux créés à l'installation
+   (`certbot --nginx`), laissés tels quels. Avec `manage_nginx_sites: true`, le
+   playbook les remplace par `deploy/ansible/templates/nginx-site.conf.j2` (un
+   par entrée de `chcars_environments` : domaine, dossier, ports — alignés sur
+   le `.env`), HTTPS et redirection 80 → 443 compris ; l'ancien fichier est
+   gardé en copie horodatée, les certificats existants sont réutilisés (un
+   certificat manquant est obtenu par `certbot certonly`, avec
+   `letsencrypt_email`). `nginx -t` est vérifié avant tout rechargement : une
+   erreur laisse l'ancienne configuration en service. Une fois activé, **ne
+   plus modifier nginx à la main** : changer le modèle, committer, rejouer.
+   Les sites autorisent les envois jusqu'à 16 Mo (photos) et transmettent l'IP
+   réelle du visiteur à l'API (`TRUST_PROXY=1`). Tant qu'une stack n'a pas été
+   déployée, son site répond 502 : c'est normal.
 4. **GitHub → Settings → Secrets and variables → Actions** (niveau dépôt) :
 
    - **Secrets** (communs, même serveur) : `DEPLOY_HOST`, `DEPLOY_USER`,
@@ -496,8 +529,8 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
      |---|---|
      | `SITE_URL_PREPROD` | `https://preprod.brabuscars.be` |
      | `SITE_URL_PROD` | `https://brabuscars.be` |
-     | `DEPLOY_PATH_PREPROD` | `/opt/chcars-preprod` |
-     | `DEPLOY_PATH_PROD` | `/opt/chcars-prod` |
+     | `DEPLOY_PATH_PREPROD` | `/var/www/brabuscars/preprod` |
+     | `DEPLOY_PATH_PROD` | `/var/www/brabuscars/prod` |
      | `DEPLOY_PORT` | port SSH du serveur (**obligatoire**) |
 
    **Validation manuelle de la prod** (**Settings → Environments → production**,
@@ -508,7 +541,7 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
    reviewer) : *Review deployments* → **Approve** ou **Reject**. Sans réponse
    sous 30 jours, le déploiement est annulé.
 5. **Premier administrateur** de chaque environnement, depuis son dossier
-   (`cd /opt/chcars-prod` ou `/opt/chcars-preprod`) :
+   (`cd /var/www/brabuscars/prod` ou `/var/www/brabuscars/preprod`) :
    `docker compose run --rm back node dist/scripts/createAdmin.js --email=… --password=… --super`
    À sa première connexion, il active la double authentification (QR code).
    Téléphone perdu : `docker compose run --rm back node dist/scripts/resetMfa.js --email=…`

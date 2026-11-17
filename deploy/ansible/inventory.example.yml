@@ -1,0 +1,11 @@
+# Copier en inventory.yml (non versionné) et adapter.
+#   cp inventory.example.yml inventory.yml
+all:
+  hosts:
+    chcars:
+      ansible_host: 203.0.113.10        # IP ou nom du serveur (= DEPLOY_HOST)
+      ansible_port: 22                  # port SSH (= DEPLOY_PORT)
+      ansible_user: admin               # compte d'administration avec sudo
+      deploy_user: deploy               # = secret DEPLOY_USER (compte existant)
+      # letsencrypt_email: ops@example.com    # seulement si manage_nginx_sites
+      # deploy_ssh_public_key: "{{ lookup('file', '~/.ssh/chcars_deploy.pub') }}"

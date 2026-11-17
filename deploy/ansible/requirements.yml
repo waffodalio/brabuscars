@@ -1,0 +1,7 @@
+# Collections Ansible utilisées par site.yml :
+#   ansible-galaxy collection install -r requirements.yml
+collections:
+  - name: community.general   # ufw
+    version: ">=9.0.0,<10.0.0"
+  - name: ansible.posix       # authorized_key
+    version: ">=1.5.0,<2.0.0"

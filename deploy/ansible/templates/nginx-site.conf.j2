@@ -1,0 +1,87 @@
+# {{ ansible_managed }}
+#
+# CHCars — site nginx de l'environnement « {{ item.name }} » (reverse proxy du
+# serveur, devant la stack docker compose). Préprod et prod tournent sur le
+# même serveur, chacune avec ses ports, son domaine et ses noms d'upstream
+# (nginx refuse deux upstream du même nom).
+#
+# Une origine unique : /api et /uploads → back, le reste → front (le front est
+# construit avec NEXT_PUBLIC_API_URL=/api). Les conteneurs n'écoutent que sur
+# 127.0.0.1, sur les ports FRONT_PORT / BACK_PORT du .env de l'environnement.
+#
+# Certificat Let's Encrypt obtenu par le playbook (`certbot certonly`) avant
+# l'écriture de ce fichier ; renouvellement automatique (timer certbot), nginx
+# rechargé après chaque renouvellement (hook deploy).
+
+upstream chcars_{{ item.name }}_front {
+    server 127.0.0.1:{{ item.front_port }};
+    keepalive 16;
+}
+
+upstream chcars_{{ item.name }}_back {
+    server 127.0.0.1:{{ item.back_port }};
+    keepalive 16;
+}
+
+# HTTP → HTTPS (sauf le défi ACME, servi par certbot lors du renouvellement).
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ item.domain }};
+    server_tokens off;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    # Syntaxe « listen … http2 » : compatible avec le nginx de Debian 12 /
+    # Ubuntu 24.04 (< 1.25, sans la directive « http2 on »).
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name {{ item.domain }};
+
+    server_tokens off;
+
+    ssl_certificate     /etc/letsencrypt/live/{{ item.domain }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ item.domain }}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:chcars_{{ item.name }}_ssl:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # Photos d'annonces : uploads jusqu'à 15 Mo (MAX_UPLOAD_BYTES) — nginx
+    # refuse tout corps > 1 Mo par défaut.
+    client_max_body_size 16m;
+
+    gzip on;
+    gzip_proxied any;
+    gzip_vary on;
+    gzip_types text/plain text/css application/json application/javascript
+               text/javascript image/svg+xml;
+
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    # Écrasé (pas complété) : l'API fait confiance à un seul proxy
+    # (TRUST_PROXY=1) et lit l'IP client ici — rate limiting fiable, non
+    # falsifiable via un X-Forwarded-For envoyé par le client.
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+
+    location /api/ {
+        proxy_pass http://chcars_{{ item.name }}_back;
+    }
+
+    location /uploads/ {
+        proxy_pass http://chcars_{{ item.name }}_back;
+    }
+
+    location / {
+        proxy_pass http://chcars_{{ item.name }}_front;
+    }
+}

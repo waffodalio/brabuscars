@@ -1,0 +1,315 @@
+# CHCars — automatisation du serveur (Infrastructure as Code).
+#
+# Pensé pour un serveur DÉJÀ en service : par défaut, le playbook n'ajoute que
+# de l'automatisation et des vérifications, et ne réécrit rien de ce qui
+# fonctionne (sites nginx générés par certbot, pare-feu, Docker, utilisateurs,
+# droits des dossiers). Ce qui modifierait l'existant est derrière une option
+# de group_vars/all.yml, désactivée par défaut — l'activer après un
+# `--check --diff`. Sur un serveur neuf, activer les options pour tout installer.
+#
+#   cd deploy/ansible
+#   ansible-playbook site.yml --check --diff     # ce qui changerait, sans rien toucher
+#   ansible-playbook site.yml                    # appliquer
+#   ansible-playbook site.yml --tags check       # + test de renouvellement (certbot --dry-run)
+#
+# Hors périmètre (restent manuels) : les .env, le DNS, les secrets GitHub. Le
+# déploiement de l'application reste fait par la CI (deploy.sh).
+- name: Serveur CHCars
+  hosts: all
+  gather_facts: true
+
+  pre_tasks:
+    - name: Vérifier les variables obligatoires
+      ansible.builtin.assert:
+        that:
+          - ansible_os_family == "Debian"
+          - deploy_user | length > 0
+          - not manage_nginx_sites or letsencrypt_email | length > 0
+        fail_msg: >-
+          Serveur Debian / Ubuntu attendu ; deploy_user (= secret DEPLOY_USER) à
+          définir dans inventory.yml ; letsencrypt_email requis si manage_nginx_sites.
+      tags: always
+
+  handlers:
+    # Jamais de rechargement sur une configuration invalide : l'ancienne
+    # reste en service et le playbook échoue avec l'erreur de nginx -t.
+    - name: Recharger nginx
+      ansible.builtin.shell: nginx -t && systemctl reload nginx
+      changed_when: true
+
+    - name: Redémarrer ssh
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+
+  tasks:
+    # ── Système (ajouts sans effet sur l'existant) ─────────────────────────
+    # nginx / certbot : déjà présents sur le serveur actuel (aucun changement),
+    # installés sur un serveur neuf.
+    # Rafraîchir l'index n'est pas un changement du serveur : sinon la
+    # détection de dérive (--check hebdomadaire) signalerait toujours un écart.
+    - name: Index apt à jour
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      changed_when: false
+      tags: always
+
+    - name: Paquets (mises à jour de sécurité, fail2ban, nginx, certbot)
+      ansible.builtin.apt:
+        name: [unattended-upgrades, fail2ban, nginx, certbot, python3-certbot-nginx]
+        state: present
+      tags: system
+
+    - name: Mises à jour de sécurité automatiques
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+          APT::Periodic::AutocleanInterval "7";
+        mode: "0644"
+      tags: system
+
+    - name: Fail2ban actif (bannit les attaques SSH par force brute)
+      ansible.builtin.service:
+        name: fail2ban
+        state: started
+        enabled: true
+      tags: system
+
+    # ── Docker ─────────────────────────────────────────────────────────────
+    # Déjà installé (quelle que soit la méthode) → on n'y touche pas.
+    - name: Docker présent ?
+      ansible.builtin.command: docker compose version
+      register: docker_check
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      tags: docker
+
+    - name: Installer Docker (serveur neuf uniquement)
+      when: docker_check.rc != 0
+      tags: docker
+      block:
+        - name: Clé du dépôt Docker
+          ansible.builtin.get_url:
+            url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+            dest: /etc/apt/keyrings/docker.asc
+            mode: "0644"
+
+        - name: Dépôt Docker officiel
+          ansible.builtin.apt_repository:
+            repo: >-
+              deb [arch={{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }} signed-by=/etc/apt/keyrings/docker.asc]
+              https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable
+            filename: docker
+            state: present
+
+        - name: Docker + plugin compose
+          ansible.builtin.apt:
+            name: [docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin, docker-compose-plugin]
+            state: present
+            update_cache: true
+
+    - name: Nettoyage hebdomadaire des images inutilisées
+      ansible.builtin.cron:
+        name: chcars docker prune
+        special_time: weekly
+        job: "docker image prune -af --filter until=168h >/dev/null 2>&1"
+        state: "{{ 'present' if docker_prune_weekly else 'absent' }}"
+      tags: docker
+
+    # ── Utilisateur et dossiers de déploiement ─────────────────────────────
+    # Créés seulement s'ils n'existent pas : un compte ou un dossier existant
+    # garde son shell, ses droits et son propriétaire.
+    - name: Utilisateur de déploiement existant ?
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ deploy_user }}"
+      failed_when: false
+      tags: deploy
+
+    - name: Créer l'utilisateur de déploiement (s'il manque)
+      ansible.builtin.user:
+        name: "{{ deploy_user }}"
+        groups: docker
+        append: true
+        shell: /bin/bash
+        password: "!"          # pas de mot de passe : clé SSH uniquement
+      when: deploy_user not in (ansible_facts.getent_passwd | default({}))
+      tags: deploy
+
+    - name: Clé SSH de la CI (ajoutée, jamais retirée)
+      ansible.posix.authorized_key:
+        user: "{{ deploy_user }}"
+        key: "{{ deploy_ssh_public_key }}"
+        state: present
+      when: deploy_ssh_public_key | length > 0
+      tags: deploy
+
+    - name: Dossiers de déploiement existants ?
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+      loop: "{{ chcars_environments }}"
+      loop_control:
+        label: "{{ item.path }}"
+      register: deploy_dirs
+      tags: deploy
+
+    - name: Créer les dossiers de déploiement manquants
+      ansible.builtin.file:
+        path: "{{ item.item.path }}"
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: "0750"
+      loop: "{{ deploy_dirs.results }}"
+      loop_control:
+        label: "{{ item.item.path }}"
+      when: not item.stat.exists
+      tags: deploy
+
+    - name: Vérifier la présence du .env (écrit à la main, jamais versionné)
+      ansible.builtin.stat:
+        path: "{{ item.path }}/.env"
+      loop: "{{ chcars_environments }}"
+      loop_control:
+        label: "{{ item.path }}/.env"
+      register: env_files
+      tags: deploy
+
+    - name: Signaler un .env manquant
+      ansible.builtin.debug:
+        msg: "⚠ {{ item.item.path }}/.env absent : le créer (README § CI/CD) avant le premier déploiement."
+      loop: "{{ env_files.results }}"
+      loop_control:
+        label: "{{ item.item.path }}"
+      when: not item.stat.exists
+      tags: deploy
+
+    # ── Certificats HTTPS (renouvellement) ─────────────────────────────────
+    - name: Renouvellement automatique des certificats actif (timer certbot)
+      ansible.builtin.systemd_service:
+        name: certbot.timer
+        state: started
+        enabled: true
+      tags: [certs, nginx]
+
+    - name: Recharger nginx après chaque renouvellement de certificat
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+        content: |
+          #!/bin/sh
+          # Géré par Ansible (deploy/ansible) : nouveau certificat → nginx le sert.
+          nginx -t && systemctl reload nginx
+        mode: "0755"
+      tags: [certs, nginx]
+
+    - name: Certificats en place
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/live/{{ item.domain }}/fullchain.pem"
+      loop: "{{ chcars_environments }}"
+      loop_control:
+        label: "{{ item.domain }}"
+      register: certs
+      tags: [certs, nginx]
+
+    - name: Signaler un certificat manquant
+      ansible.builtin.debug:
+        msg: "⚠ Pas de certificat pour {{ item.item.domain }} (activer manage_nginx_sites pour l'obtenir)."
+      loop: "{{ certs.results }}"
+      loop_control:
+        label: "{{ item.item.domain }}"
+      when: not item.stat.exists
+      tags: [certs, nginx]
+
+    # Contacte Let's Encrypt (serveur de test, aucun certificat remplacé) :
+    # seulement sur demande, --tags check.
+    - name: Tester le renouvellement (sans rien remplacer)
+      ansible.builtin.command: certbot renew --dry-run
+      changed_when: false
+      tags: [never, check]
+
+    - name: Configuration nginx valide
+      ansible.builtin.command: nginx -t
+      changed_when: false
+      check_mode: false
+      tags: [nginx, check]
+
+    # ── Sites nginx gérés par Ansible (désactivé par défaut) ───────────────
+    # Remplace les fichiers modifiés par certbot par le modèle complet
+    # (templates/nginx-site.conf.j2, HTTPS compris). Les certificats existants
+    # sont réutilisés. À activer après lecture du --check --diff.
+    - name: Sites nginx depuis le modèle
+      when: manage_nginx_sites
+      tags: nginx
+      block:
+        - name: Certificat Let's Encrypt (s'il manque)
+          ansible.builtin.command:
+            cmd: >-
+              certbot certonly --nginx --non-interactive --agree-tos
+              -m {{ letsencrypt_email }} -d {{ item.domain }}
+            creates: "/etc/letsencrypt/live/{{ item.domain }}/fullchain.pem"
+          loop: "{{ chcars_environments }}"
+          loop_control:
+            label: "{{ item.domain }}"
+
+        - name: Sites nginx (un par environnement)
+          ansible.builtin.template:
+            src: nginx-site.conf.j2
+            dest: "/etc/nginx/sites-available/chcars-{{ item.name }}"
+            mode: "0644"
+            backup: true      # copie horodatée de l'ancien fichier, à côté
+          loop: "{{ chcars_environments }}"
+          loop_control:
+            label: "chcars-{{ item.name }}"
+          notify: Recharger nginx
+
+        - name: Sites nginx activés
+          ansible.builtin.file:
+            src: "/etc/nginx/sites-available/chcars-{{ item.name }}"
+            dest: "/etc/nginx/sites-enabled/chcars-{{ item.name }}"
+            state: link
+          loop: "{{ chcars_environments }}"
+          loop_control:
+            label: "chcars-{{ item.name }}"
+          notify: Recharger nginx
+
+    # ── Pare-feu (désactivé par défaut) ────────────────────────────────────
+    # Le port SSH est ouvert AVANT l'activation : jamais de coupure de session.
+    - name: Pare-feu ufw
+      when: manage_firewall
+      tags: firewall
+      block:
+        - name: Ufw installé
+          ansible.builtin.apt:
+            name: ufw
+            state: present
+
+        - name: Pare-feu — ports autorisés
+          community.general.ufw:
+            rule: allow
+            port: "{{ item }}"
+            proto: tcp
+          loop: ["{{ ansible_port | default(22) }}", "80", "443"]
+
+        - name: Pare-feu — tout le reste refusé en entrée
+          community.general.ufw:
+            state: enabled
+            policy: deny
+            direction: incoming
+
+    # ── SSH (désactivé par défaut) ─────────────────────────────────────────
+    - name: SSH par clé uniquement, root refusé
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config.d/10-chcars.conf
+        content: |
+          PasswordAuthentication no
+          KbdInteractiveAuthentication no
+          PermitRootLogin no
+        mode: "0644"
+        validate: "sshd -t -f %s"
+      when: ssh_hardening
+      notify: Redémarrer ssh
+      tags: ssh

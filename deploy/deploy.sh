@@ -2,8 +2,8 @@
 # Déploie une version des images CHCars sur le serveur courant.
 # Appelé par la CI (.github/workflows/deploy.yml) depuis le dossier de
 # déploiement, qui contient docker-compose.yml et le .env du serveur. Le
-# reverse proxy (nginx du serveur, deploy/nginx/chcars.conf) est installé une
-# fois à la main et n'est pas touché ici.
+# serveur lui-même (Docker, nginx, certificats, pare-feu…) est décrit par le
+# playbook Ansible deploy/ansible/site.yml et n'est pas touché ici.
 #
 #   IMAGE_BACK=ghcr.io/<owner>/chcars-back \
 #   IMAGE_FRONT=ghcr.io/<owner>/chcars-front \

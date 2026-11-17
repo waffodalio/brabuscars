@@ -5,7 +5,7 @@
 # Les images sont produites par la CI et poussées sur GHCR ; IMAGE_BACK,
 # IMAGE_FRONT et IMAGE_TAG sont fournis par deploy.sh.
 #
-# Le reverse proxy est le nginx du serveur (deploy/nginx/chcars.conf, HTTPS via
+# Le reverse proxy est le nginx du serveur (deploy/ansible, HTTPS via
 # certbot) : il expose une origine unique (/api et /uploads → back, le reste →
 # front). Les conteneurs n'écoutent donc que sur 127.0.0.1, jamais en public.
 #

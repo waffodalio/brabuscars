@@ -1,0 +1,80 @@
+# Configuration du serveur (Ansible, deploy/ansible/) — même chemin que le code.
+#
+#   push sur main touchant deploy/ansible/ ─► Vérifier (--check --diff)
+#                                   ─► (approbation) ─► Appliquer
+#   chaque lundi                 ─► Dérive : échoue (e-mail) si le serveur a
+#                                   été modifié à la main
+#   Actions → Server → Run       ─► check ou apply à la demande
+#
+# Mêmes accès que deploy.yml (secrets DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY,
+# DEPLOY_KNOWN_HOSTS ; variable DEPLOY_PORT). DEPLOY_USER doit avoir sudo sans
+# mot de passe : README § « CI/CD et déploiement », étape 1. « Appliquer » passe
+# par l'environnement `production` (mêmes reviewers que la mise en prod).
+#
+# Sécurité : la clé utilisée est root sur le serveur (sudo). Le playbook ne
+# tourne donc QUE depuis main — jamais sur une PR ni depuis une autre branche,
+# où un playbook modifié s'exécuterait avec les secrets sans relecture.
+name: Server
+
+on:
+  push:
+    branches: [main]
+    paths: ["deploy/ansible/**", ".github/workflows/server.yml"]
+  schedule:
+    - cron: "0 6 * * 1" # lundi 6 h UTC
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: check = montrer les différences ; apply = appliquer (après approbation)
+        type: choice
+        options: [check, apply]
+        default: check
+
+permissions:
+  contents: read
+
+# Jamais deux exécutions du playbook en même temps sur le serveur.
+concurrency:
+  group: server
+  cancel-in-progress: false
+
+env:
+  SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+  SSH_USER: ${{ secrets.DEPLOY_USER }}
+  SSH_PORT: ${{ vars.DEPLOY_PORT }}
+  SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+  KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+
+jobs:
+  check:
+    name: ${{ github.event_name == 'schedule' && 'Dérive' || 'Vérifier' }}
+    # Uniquement le code de main (voir « Sécurité » en tête de fichier).
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: deploy/ansible
+      - name: ansible-playbook --check --diff
+        env:
+          MODE: ${{ github.event_name == 'schedule' && 'drift' || 'check' }}
+        run: bash deploy/ansible/ci-run.sh
+
+  apply:
+    name: Appliquer
+    needs: check
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' ||
+       (github.event_name == 'workflow_dispatch' && inputs.mode == 'apply'))
+    runs-on: ubuntu-latest
+    # Attend l'approbation (Required reviewers de l'environnement production).
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: deploy/ansible
+      - name: ansible-playbook
+        env:
+          MODE: apply
+        run: bash deploy/ansible/ci-run.sh

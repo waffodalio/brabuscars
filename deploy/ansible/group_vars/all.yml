@@ -1,0 +1,47 @@
+# Description du serveur CHCars (préprod + prod sur la même machine).
+# Rien de secret ici : les .env restent sur le serveur, écrits à la main.
+#
+# Le serveur est déjà en service : les options qui MODIFIENT l'existant sont à
+# false. Les activer une par une, après un `ansible-playbook site.yml --check --diff`.
+
+# Compte utilisé par la CI : le même que le secret GitHub DEPLOY_USER.
+# Obligatoire, à définir dans inventory.yml (jamais créé s'il existe déjà).
+deploy_user: ""
+# Clé PUBLIQUE correspondant au secret DEPLOY_SSH_KEY. Vide = rien n'est ajouté.
+deploy_ssh_public_key: ""
+
+# Un environnement = un dossier de déploiement, un projet compose, un site nginx.
+# Doit rester aligné sur le .env de chaque dossier (FRONT_PORT / BACK_PORT) et
+# sur les variables GitHub DEPLOY_PATH_PREPROD / DEPLOY_PATH_PROD.
+chcars_environments:
+  - name: prod
+    domain: brabuscars.be
+    path: /var/www/brabuscars/prod        # = variable GitHub DEPLOY_PATH_PROD
+    front_port: 3010
+    back_port: 3011
+  - name: preprod
+    domain: preprod.brabuscars.be
+    path: /var/www/brabuscars/preprod     # = variable GitHub DEPLOY_PATH_PREPROD
+    front_port: 3013
+    back_port: 3014
+
+# Nettoyage hebdomadaire des images Docker inutilisées.
+docker_prune_weekly: true
+
+# ── Options qui modifient l'existant (false sur le serveur actuel) ──────────
+
+# Réécrit les sites nginx (aujourd'hui modifiés par certbot) depuis
+# templates/nginx-site.conf.j2 ; l'ancien fichier est gardé en copie.
+# Utile pour gérer ensuite nginx par le dépôt (ex. servir /uploads/ par nginx).
+manage_nginx_sites: false
+# E-mail du compte Let's Encrypt, requis seulement si manage_nginx_sites
+# (obtention d'un certificat manquant). À définir dans inventory.yml.
+letsencrypt_email: ""
+
+# Active ufw : SSH (port de connexion d'Ansible), 80, 443 ; tout le reste refusé.
+# Vérifier d'abord qu'aucun autre service du serveur n'a besoin d'un port ouvert.
+manage_firewall: false
+
+# Refuse mot de passe et root en SSH. Seulement après avoir vérifié la
+# connexion par clé du compte d'administration.
+ssh_hardening: false

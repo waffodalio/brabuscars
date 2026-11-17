@@ -34,3 +34,7 @@ yarn-error.log*
 
 # Source brand assets (original logo image) — kept local, not versioned
 front/brand/
+
+# Inventaire Ansible (adresse du serveur, e-mail) — modèle : deploy/ansible/inventory.example.yml
+deploy/ansible/inventory.yml
+deploy/ansible/playbook.log
