@@ -36,11 +36,6 @@ const icons = {
       <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
     </Icon>
   ),
-  facebook: (
-    <Icon>
-      <path d="M15 3h-2.5A3.5 3.5 0 0 0 9 6.5V10H6.5v3.5H9V21h3.5v-7.5H15l.5-3.5h-3V7a1 1 0 0 1 1-1H15z" />
-    </Icon>
-  ),
   pin: (
     <Icon>
       <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
@@ -85,7 +80,7 @@ const CTA_HIDDEN_SECTIONS = new Set(["connexion", "inscription"]);
  * account columns, the dealership's contact details, and a bottom bar with
  * the copyright, cookie preferences and a back-to-top button. Social icons
  * only appear for the networks configured on the backend
- * (`COMPANY_INSTAGRAM_URL` / `COMPANY_FACEBOOK_URL`).
+ * (`COMPANY_INSTAGRAM_URL`).
  */
 export function AppFooter() {
   const company = useCompany();
@@ -103,7 +98,6 @@ export function AppFooter() {
 
   const socials = [
     { url: company?.instagramUrl, label: t.footer.instagram(name), icon: icons.instagram },
-    { url: company?.facebookUrl, label: t.footer.facebook(name), icon: icons.facebook },
   ].filter((social): social is typeof social & { url: string } =>
     Boolean(social.url),
   );

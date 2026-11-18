@@ -12,7 +12,6 @@ export interface Company {
   hours: Record<Locale, string>;
   /** Social pages (footer) — `null` when not configured. */
   instagramUrl: string | null;
-  facebookUrl: string | null;
   /** VAT number (« BE 0123.456.789 »), shown in the footer — `null` when not configured. */
   vatNumber: string | null;
   /** Registered name with its legal form (legal notice). */

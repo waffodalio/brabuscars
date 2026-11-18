@@ -11,10 +11,21 @@
 # reviewers sont prévenus par e-mail). Une prod réussie publie la release vX.Y.Z.
 name: CI/CD
 
+# Un commit qui ne touche que la configuration du serveur (Ansible, lancé par
+# server.yml) ou la documentation ne reconstruit ni ne redéploie l'application.
+# Dès qu'un autre fichier change dans le même commit, le pipeline tourne.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "deploy/ansible/**"
+      - ".github/workflows/server.yml"
+      - "**/*.md"
   pull_request:
+    paths-ignore:
+      - "deploy/ansible/**"
+      - ".github/workflows/server.yml"
+      - "**/*.md"
   workflow_dispatch:
 
 concurrency:

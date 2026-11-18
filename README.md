@@ -158,7 +158,6 @@ COMPANY_HOURS=Du lundi au samedi, 9h–19h
 COMPANY_HOURS_EN=Monday to Saturday, 9 am–7 pm
 COMPANY_HOURS_NL=Maandag tot zaterdag, 9u–19u
 COMPANY_INSTAGRAM_URL=https://www.instagram.com/<compte>
-COMPANY_FACEBOOK_URL=https://www.facebook.com/<page>
 # Mentions des bons de commande / factures (facultatives mais recommandées)
 COMPANY_VAT_NUMBER=BE 0123.456.789
 COMPANY_IBAN=BE68 5390 0754 7034
@@ -195,7 +194,7 @@ et vivre dans `back/.env.production.local`.
 | `COMPANY_HOURS_EN` / `COMPANY_HOURS_NL` | horaires affichés sur le site en anglais / néerlandais (optionnels ; à défaut, `COMPANY_HOURS` en français) |
 | `COMPANY_VAT_NUMBER` / `COMPANY_IBAN` / `COMPANY_BIC` | n° de TVA, IBAN et BIC de la concession, imprimés sur les bons de commande et factures (pied de page) ; facultatifs mais recommandés. Le n° de TVA sert aussi de n° d'entreprise (BCE) dans les mentions légales |
 | `COMPANY_LEGAL_NAME` / `COMPANY_HOSTING` | pages Mentions légales / Confidentialité : raison sociale avec sa forme (« BrabusCars SRL », défaut `COMPANY_NAME`) et hébergeur du serveur (nom + adresse, ex. « OVH SAS, 2 rue Kellermann, 59100 Roubaix, France ») ; facultatifs, mais l'hébergeur est attendu dans les mentions légales |
-| `COMPANY_INSTAGRAM_URL` / `COMPANY_FACEBOOK_URL` | pages Instagram / Facebook affichées dans le pied de page (optionnelles, `https://` uniquement ; icône masquée si vide) |
+| `COMPANY_INSTAGRAM_URL` | compte Instagram affiché dans le pied de page (optionnel, `https://` uniquement ; icône masquée si vide) |
 
 ### Frontend
 
@@ -491,7 +490,7 @@ sert à administrer la base en local : `mariadb -h 127.0.0.1 -P 3012 -u …`).
    DB_ROOT_PASSWORD=<aléatoire>
    JWT_SECRET=<≥ 32 caractères, différent par environnement>
    MFA_ENCRYPTION_KEY=<openssl rand -hex 32, différent par environnement, ne jamais le changer>
-   # Optionnels : JWT_EXPIRES_IN, COMPANY_*, COMPANY_INSTAGRAM_URL, COMPANY_FACEBOOK_URL,
+   # Optionnels : JWT_EXPIRES_IN, COMPANY_*, COMPANY_INSTAGRAM_URL,
    #              GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (connexion Google ; l'URI de
    #              redirection https://<SITE_DOMAIN>/api/auth/google/callback est déduite),
    #              BACKUP_KEEP (sauvegardes conservées avant migration, défaut 10)

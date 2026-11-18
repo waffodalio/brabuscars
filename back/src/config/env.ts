@@ -171,7 +171,6 @@ const envSchema = z.object({
   COMPANY_HOURS_NL: optionalText,
   /** Social pages shown in the site footer — optional, hidden when empty. */
   COMPANY_INSTAGRAM_URL: optionalHttpsUrl,
-  COMPANY_FACEBOOK_URL: optionalHttpsUrl,
   /** Legal details printed on purchase orders and invoices — optional. */
   COMPANY_VAT_NUMBER: optionalText,
   COMPANY_IBAN: optionalText,
